@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="title"
+            type="String" />
+
+        <variable
+            name="desc"
+            type="String" />
+
+        <variable
+            name="summary"
+            type="String" />
+    </data>
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/selectableItemBackground"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/text_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:ellipsize="end"
+            android:lines="1"
+            android:maxLines="1"
+            android:text="@{title}"
+            android:textColor="@color/colorPrimaryDark"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="アイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトル" />
+
+        <TextView
+            android:id="@+id/text_desc"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@{desc}"
+            android:textColor="@color/colorTextMiddle"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="@+id/text_title"
+            app:layout_constraintStart_toStartOf="@+id/text_title"
+            app:layout_constraintTop_toBottomOf="@+id/text_title"
+            tools:text="アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明" />
+
+        <TextView
+            android:id="@+id/text_summary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:lines="1"
+            android:maxLines="1"
+            android:text="@{summary}"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="@+id/text_title"
+            app:layout_constraintStart_toStartOf="@+id/text_title"
+            app:layout_constraintTop_toBottomOf="@+id/text_desc"
+            tools:text="アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態" />
+    </android.support.constraint.ConstraintLayout>
+</layout>
