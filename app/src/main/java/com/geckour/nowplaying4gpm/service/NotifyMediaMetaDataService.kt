@@ -46,45 +46,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     SettingsActivity.getIntent(this@NotifyMediaMetaDataService)
                 }
 
-                ui(jobs) {
-                    val title = if (hasExtra(MediaStore.Audio.Media.TRACK)) getStringExtra(MediaStore.Audio.Media.TRACK) else null
-                    val artist = if (hasExtra(MediaStore.Audio.Media.ARTIST)) getStringExtra(MediaStore.Audio.Media.ARTIST) else null
-                    val album = if (hasExtra(MediaStore.Audio.Media.ALBUM)) getStringExtra(MediaStore.Audio.Media.ALBUM) else null
-                    val albumArtUri = async {
-                        val cursor = contentResolver.query(
-                                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                arrayOf(MediaStore.Audio.Media.ALBUM_ID),
-                                "${MediaStore.Audio.Media.TITLE}='$title' and ${MediaStore.Audio.Media.ARTIST}='$artist' and ${MediaStore.Audio.Media.ALBUM}='$album'",
-                                null,
-                                null
-                        )
-                        (if (cursor.moveToNext()) {
-                            cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-                        } else null)?.let {
-                            ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
-                        }.apply { cursor.close() }
-                    }.await()
-                    val albumArt =
-                            try {
-                                if (albumArtUri != null) {
-                                    contentResolver.openInputStream(albumArtUri).let {
-                                        BitmapFactory.decodeStream(it, null, null)
-                                    }
-                                } else null
-                            } catch (e: FileNotFoundException) {
-                                Timber.e(e)
-                                null
-                            }
-                    getNotification(
-                            albumArt,
-                            title,
-                            artist,
-                            album,
-                            albumArtUri
-                    )?.apply {
-                        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(0, this)
-                    }
-                }
+                showNotification(this)
             }
         }
     }
@@ -101,6 +63,48 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
             addAction(ACTION_GPM_QUEUE_CHANGED)
         }
         registerReceiver(receiver, intentFilter)
+    }
+
+    private fun showNotification(intent: Intent) {
+        ui(jobs) {
+            val title = if (intent.hasExtra(MediaStore.Audio.Media.TRACK)) intent.getStringExtra(MediaStore.Audio.Media.TRACK) else null
+            val artist = if (intent.hasExtra(MediaStore.Audio.Media.ARTIST)) intent.getStringExtra(MediaStore.Audio.Media.ARTIST) else null
+            val album = if (intent.hasExtra(MediaStore.Audio.Media.ALBUM)) intent.getStringExtra(MediaStore.Audio.Media.ALBUM) else null
+            val albumArtUri = async {
+                val cursor = contentResolver.query(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        arrayOf(MediaStore.Audio.Media.ALBUM_ID),
+                        "${MediaStore.Audio.Media.TITLE}='$title' and ${MediaStore.Audio.Media.ARTIST}='$artist' and ${MediaStore.Audio.Media.ALBUM}='$album'",
+                        null,
+                        null
+                )
+                (if (cursor.moveToNext()) {
+                    cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                } else null)?.let {
+                    ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
+                }.apply { cursor.close() }
+            }.await()
+            val albumArt =
+                    try {
+                        if (albumArtUri != null) {
+                            contentResolver.openInputStream(albumArtUri).let {
+                                BitmapFactory.decodeStream(it, null, null)
+                            }
+                        } else null
+                    } catch (e: FileNotFoundException) {
+                        Timber.e(e)
+                        null
+                    }
+            getNotification(
+                    albumArt,
+                    title,
+                    artist,
+                    album,
+                    albumArtUri
+            )?.apply {
+                (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(0, this)
+            }
+        }
     }
 
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?, albumArtUri: Uri?): Notification? =
@@ -129,7 +133,6 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                                     PendingIntent.FLAG_CANCEL_CURRENT
                             )
                     )
-                    setOngoing(true)
                 }.build()
             }
 }
