@@ -18,49 +18,23 @@
     <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp">
-
-        <TextView
-            android:id="@+id/text_title"
-            tools:text="ダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトルダイアログタイトル"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:lines="1"
-            android:maxLines="1"
-            android:text="@{title}"
-            android:textColor="@color/colorPrimaryDark"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/text_message"
-            tools:text="ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明ダイアログ説明"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@{message}"
-            android:textColor="@color/colorTextMiddle"
-            app:layout_constraintEnd_toEndOf="@+id/text_title"
-            app:layout_constraintStart_toStartOf="@+id/text_title"
-            app:layout_constraintTop_toBottomOf="@+id/text_title" />
+        android:paddingEnd="24dp"
+        android:paddingStart="24dp">
 
         <EditText
             android:id="@+id/editText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:background="@drawable/bg_edit_text"
+            android:hint="@{hint}"
             android:lines="1"
             android:maxLines="1"
             android:padding="4dp"
             android:textColor="@color/colorAccent"
+            android:textCursorDrawable="@null"
             android:textSize="16sp"
-            android:hint="@{hint}"
-            app:layout_constraintEnd_toEndOf="@+id/text_title"
-            app:layout_constraintStart_toStartOf="@+id/text_title"
-            app:layout_constraintTop_toBottomOf="@+id/text_message" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
     </android.support.constraint.ConstraintLayout>
 </layout>
