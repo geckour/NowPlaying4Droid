@@ -108,7 +108,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
             else {
                 (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, NotificationChannel.DEFAULT_CHANNEL_ID)
                 else Notification.Builder(this)).apply {
-                    setSmallIcon(R.mipmap.ic_launcher)
+                    setSmallIcon(R.drawable.ic_notification)
                     setLargeIcon(thumb)
                     setContentTitle(getString(R.string.notification_title))
                     val notificationText =
