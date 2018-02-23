@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.activity
 
 import android.app.Activity
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +10,10 @@ import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
 
 class SharingActivity: Activity() {
+
+    enum class IntentRequestCode {
+        SHARE
+    }
 
     enum class ArgKey {
         TEXT,
@@ -34,7 +39,10 @@ class SharingActivity: Activity() {
                     setStream(it.extras[ArgKey.ALBUM_ART_URI.name] as Uri)
                     setType("image/jpeg")
                 } else setType("text/plain")
-            }.startChooser().apply { finish() }
+            }.createChooserIntent().apply {
+                PendingIntent.getActivity(this@SharingActivity, IntentRequestCode.SHARE.ordinal, this, PendingIntent.FLAG_CANCEL_CURRENT).send()
+                finish()
+            }
         }
     }
 
