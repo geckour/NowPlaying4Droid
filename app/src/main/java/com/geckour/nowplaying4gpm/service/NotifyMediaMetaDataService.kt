@@ -1,7 +1,9 @@
 package com.geckour.nowplaying4gpm.service
 
+import android.Manifest
 import android.app.*
 import android.content.*
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -10,10 +12,14 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.service.notification.NotificationListenerService
+import android.support.v4.content.ContextCompat
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
+import com.geckour.nowplaying4gpm.util.async
 import com.geckour.nowplaying4gpm.util.getSharingText
+import com.geckour.nowplaying4gpm.util.ui
+import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 import java.io.FileNotFoundException
 
@@ -29,37 +35,55 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     }
 
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
+    private val jobs: ArrayList<Job> = ArrayList()
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.apply {
-                val albumArtUri =
-                        (if (hasExtra(MediaStore.Audio.Media.ALBUM_ID)) getLongExtra(MediaStore.Audio.Media.ALBUM_ID, -1)
-                        else null)?.let {
+                if (ContextCompat.checkSelfPermission(
+                                this@NotifyMediaMetaDataService,
+                                Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService)
+                }
+
+                ui(jobs) {
+                    val title = if (hasExtra(MediaStore.Audio.Media.TRACK)) getStringExtra(MediaStore.Audio.Media.TRACK) else null
+                    val artist = if (hasExtra(MediaStore.Audio.Media.ARTIST)) getStringExtra(MediaStore.Audio.Media.ARTIST) else null
+                    val album = if (hasExtra(MediaStore.Audio.Media.ALBUM)) getStringExtra(MediaStore.Audio.Media.ALBUM) else null
+                    val albumArtUri = async {
+                        val cursor = contentResolver.query(
+                                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                arrayOf(MediaStore.Audio.Media.ALBUM_ID),
+                                "${MediaStore.Audio.Media.TITLE}='$title' and ${MediaStore.Audio.Media.ARTIST}='$artist' and ${MediaStore.Audio.Media.ALBUM}='$album'",
+                                null,
+                                null
+                        )
+                        (if (cursor.moveToNext()) {
+                            cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                        } else null)?.let {
                             ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
-                        }
-                val albumArt =
-                        try {
-                            if (albumArtUri != null) {
-                                contentResolver.openInputStream(albumArtUri).let {
-                                    BitmapFactory.decodeStream(it, null, null)
-                                }
-                            } else null
-                        } catch (e: FileNotFoundException) {
-                            Timber.e(e)
-                            null
-                        }
-                val title = if (hasExtra(MediaStore.Audio.Media.TRACK)) getStringExtra(MediaStore.Audio.Media.TRACK) else null
-                val artist = if (hasExtra(MediaStore.Audio.Media.ARTIST)) getStringExtra(MediaStore.Audio.Media.ARTIST) else null
-                val album = if (hasExtra(MediaStore.Audio.Media.ALBUM)) getStringExtra(MediaStore.Audio.Media.ALBUM) else null
-                getNotification(
-                        albumArt,
-                        title,
-                        artist,
-                        album,
-                        albumArtUri
-                )?.apply {
-                    (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(0, this)
+                        }.apply { cursor.close() }
+                    }.await()
+                    val albumArt =
+                            try {
+                                if (albumArtUri != null) {
+                                    contentResolver.openInputStream(albumArtUri).let {
+                                        BitmapFactory.decodeStream(it, null, null)
+                                    }
+                                } else null
+                            } catch (e: FileNotFoundException) {
+                                Timber.e(e)
+                                null
+                            }
+                    getNotification(
+                            albumArt,
+                            title,
+                            artist,
+                            album,
+                            albumArtUri
+                    )?.apply {
+                        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(0, this)
+                    }
                 }
             }
         }

@@ -7,11 +7,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import timber.log.Timber
 
 class SharingActivity: Activity() {
 
-    enum class ArgKeys {
+    enum class ArgKey {
         TEXT,
         ALBUM_ART_URI
     }
@@ -19,23 +18,20 @@ class SharingActivity: Activity() {
     companion object {
         fun createIntent(context: Context, text: String, albumArtUri: Uri? = null): Intent =
                 Intent(context, SharingActivity::class.java).apply {
-                    putExtra(ArgKeys.TEXT.name, text)
-                    if (albumArtUri != null) putExtra(ArgKeys.ALBUM_ART_URI.name, albumArtUri)
+                    putExtra(ArgKey.TEXT.name, text)
+                    if (albumArtUri != null) putExtra(ArgKey.ALBUM_ART_URI.name, albumArtUri)
                 }
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
-        Timber.d("called!!")
-
         intent?.let {
             ShareCompat.IntentBuilder.from(this).apply {
                 setChooserTitle(R.string.share_title)
-                Timber.d("is exist key TEXT in extra: ${it.hasExtra(ArgKeys.TEXT.name)}")
-                if (it.hasExtra(ArgKeys.TEXT.name)) setText(it.getStringExtra(ArgKeys.TEXT.name))
-                if (it.hasExtra(ArgKeys.ALBUM_ART_URI.name)) {
-                    setStream(it.extras[ArgKeys.ALBUM_ART_URI.name] as Uri)
+                if (it.hasExtra(ArgKey.TEXT.name)) setText(it.getStringExtra(ArgKey.TEXT.name))
+                if (it.hasExtra(ArgKey.ALBUM_ART_URI.name)) {
+                    setStream(it.extras[ArgKey.ALBUM_ART_URI.name] as Uri)
                     setType("image/jpeg")
                 } else setType("text/plain")
             }.startChooser().apply { finish() }
