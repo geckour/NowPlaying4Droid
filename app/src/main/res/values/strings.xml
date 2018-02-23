@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">NowPlaying4GPM</string>
+
+    <string name="notification_title">NowPlayingを共有…</string>
+    <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
+
+    <string name="pref_category_general">一般</string>
+    <string name="pref_title_pattern">投稿文のフォーマットを指定</string>
+    <string name="pref_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
+
+    <string name="dialog_button_ok">OK</string>
+
+    <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
+    <string name="dialog_message_pattern_format">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
+    <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
+
+    <string name="share_title">共有先を選択…</string>
 </resources>
