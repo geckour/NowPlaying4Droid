@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+        <variable
+            name="summary_pattern"
+            type="String" />
+    </data>
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+        <Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:elevation="3dp"
+            android:titleTextColor="@android:color/white"
+            tools:title="ツールバータイトル" />
+
+        <include
+            android:id="@+id/category_general"
+            layout="@layout/item_pref_category"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/toolbar"
+            app:title="@{@string/pref_category_general}" />
+
+        <include
+            android:id="@+id/item_pattern_format"
+            layout="@layout/item_pref_item"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:desc="@{@string/pref_desc_pattern}"
+            app:layout_constraintEnd_toEndOf="@+id/category_general"
+            app:layout_constraintStart_toStartOf="@+id/category_general"
+            app:layout_constraintTop_toBottomOf="@+id/category_general"
+            app:summary="@{summary_pattern}"
+            app:title="@{@string/pref_title_pattern}" />
+
+    </android.support.constraint.ConstraintLayout>
+</layout>
