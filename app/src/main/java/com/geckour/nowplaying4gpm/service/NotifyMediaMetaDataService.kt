@@ -17,6 +17,7 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.util.async
+import com.geckour.nowplaying4gpm.util.escapeSql
 import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.ui
 import kotlinx.coroutines.experimental.Job
@@ -28,7 +29,10 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     companion object {
         const val ACTION_GPM_META_CHANGED: String = "com.android.music.metachanged"
         const val ACTION_GPM_PLAY_STATE_CHANGED: String = "com.android.music.playstatechanged"
-        const val ACTION_GPM_PLAYBACK_COMPLETE: String = "com.android.music.playbackcomplete"
+        const val EXTRA_GPM_ARTIST: String = "artist"
+        const val EXTRA_GPM_ALBUM: String = "album"
+        const val EXTRA_GPM_TRACK: String = "track"
+        const val EXTRA_GPM_PLAYING: String = "playing"
         const val ACTION_GPM_QUEUE_CHANGED: String = "com.android.music.queuechanged"
 
         fun getIntent(context: Context): Intent = Intent(context, NotifyMediaMetaDataService::class.java)
@@ -43,10 +47,21 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                 if (ContextCompat.checkSelfPermission(
                                 this@NotifyMediaMetaDataService,
                                 Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService)
-                }
+                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply {
+                        startActivity(this)
+                    }
+                } else {
+                    when (action) {
+                        ACTION_GPM_META_CHANGED -> {
+                            showNotification(this)
+                        }
 
-                showNotification(this)
+                        ACTION_GPM_PLAY_STATE_CHANGED -> {
+                            if (hasExtra(EXTRA_GPM_PLAYING) && !getBooleanExtra(EXTRA_GPM_PLAYING, true)) destroyNotification()
+                            else showNotification(this)
+                        }
+                    }
+                }
             }
         }
     }
@@ -59,30 +74,29 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_GPM_META_CHANGED)
             addAction(ACTION_GPM_PLAY_STATE_CHANGED)
-            addAction(ACTION_GPM_PLAYBACK_COMPLETE)
-            addAction(ACTION_GPM_QUEUE_CHANGED)
         }
         registerReceiver(receiver, intentFilter)
     }
 
     private fun showNotification(intent: Intent) {
         ui(jobs) {
-            val title = if (intent.hasExtra(MediaStore.Audio.Media.TRACK)) intent.getStringExtra(MediaStore.Audio.Media.TRACK) else null
-            val artist = if (intent.hasExtra(MediaStore.Audio.Media.ARTIST)) intent.getStringExtra(MediaStore.Audio.Media.ARTIST) else null
-            val album = if (intent.hasExtra(MediaStore.Audio.Media.ALBUM)) intent.getStringExtra(MediaStore.Audio.Media.ALBUM) else null
+            val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
+            val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
+            val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
             val albumArtUri = async {
                 val cursor = contentResolver.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                         arrayOf(MediaStore.Audio.Media.ALBUM_ID),
-                        "${MediaStore.Audio.Media.TITLE}='$title' and ${MediaStore.Audio.Media.ARTIST}='$artist' and ${MediaStore.Audio.Media.ALBUM}='$album'",
+                        getContentQuerySelection(title, artist, album),
                         null,
                         null
                 )
-                (if (cursor.moveToNext()) {
-                    cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-                } else null)?.let {
-                    ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
-                }.apply { cursor.close() }
+
+                return@async (if (cursor.moveToNext()) {
+                    cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)).let {
+                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
+                    }
+                } else null).apply { cursor.close() }
             }.await()
             val albumArt =
                     try {
@@ -95,16 +109,22 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                         Timber.e(e)
                         null
                     }
+
             getNotification(
                     albumArt,
                     title,
                     artist,
                     album,
                     albumArtUri
-            )?.apply {
-                (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(0, this)
-            }
+            )?.apply { (getSystemService(NotificationManager::class.java)).notify(0, this) }
         }
+    }
+
+    private fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
+            "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
+
+    private fun destroyNotification() {
+        (getSystemService(NotificationManager::class.java)).cancelAll()
     }
 
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?, albumArtUri: Uri?): Notification? =

@@ -36,6 +36,8 @@ fun String.getSharingText(title: String, artist: String, album: String): String 
     return MessageFormat.format(pattern, title, artist, album)
 }
 
+fun String.escapeSql(): String = replace("'", "''")
+
 fun AlertDialog.Builder.generate(
         title: String,
         message: String,
