@@ -187,12 +187,10 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                         setStyle(Notification.DecoratedMediaCustomViewStyle())
                         addAction(actionOpenSetting)
                     }
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        thumb?.apply {
-                            setColorized(true)
-                            val color = Palette.from(this).generate().getLightMutedColor(Color.WHITE)
-                            setColor(color)
-                        }
+                    thumb?.apply {
+                        if (Build.VERSION.SDK_INT >= 26) setColorized(true)
+                        val color = Palette.from(this).generate().getLightMutedColor(Color.WHITE)
+                        setColor(color)
                     }
                 }.build()
             }
