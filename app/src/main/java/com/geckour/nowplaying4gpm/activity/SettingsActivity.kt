@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
+import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
@@ -54,15 +55,19 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             PermissionRequestCode.READ_EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    startService(NotifyMediaMetaDataService.getIntent(this))
+                    startNotificationService()
                 } else requestStoragePermission()
             }
         }
     }
 
+    private fun startNotificationService() =
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(NotifyMediaMetaDataService.getIntent(this))
+            else startService(NotifyMediaMetaDataService.getIntent(this))
+
     private fun requestStoragePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            startService(NotifyMediaMetaDataService.getIntent(this))
+            startNotificationService()
         } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PermissionRequestCode.READ_EXTERNAL_STORAGE.ordinal)
     }
 

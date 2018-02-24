@@ -75,8 +75,11 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
 
-
-        if (Build.VERSION.SDK_INT >= 26) createDefaultChannel()
+        if (Build.VERSION.SDK_INT >= 26) {
+            createDefaultChannel()
+            showDummyNotification()
+            destroyNotification()
+        }
 
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_GPM_META_CHANGED)
@@ -146,6 +149,9 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         }
     }
 
+    private fun showDummyNotification() =
+            startForeground(R.string.notification_channel_id_share, getDummyNotification())
+
     private fun destroyNotification() {
         stopForeground(true)
     }
@@ -194,4 +200,12 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     }
                 }.build()
             }
+
+    private fun getDummyNotification(): Notification =
+            (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
+            else Notification.Builder(this)).apply {
+                setSmallIcon(R.drawable.ic_notification)
+                setContentTitle(getString(R.string.notification_title))
+                setContentText(getString(R.string.notification_text_dummy))
+            }.build()
 }
