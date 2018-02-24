@@ -45,6 +45,7 @@ fun AlertDialog.Builder.generate(
     setMessage(message)
     setView(view)
     setPositiveButton(R.string.dialog_button_ok) { dialog, which -> callback(dialog, which) }
+    setNegativeButton(R.string.dialog_button_ng) { dialog, _ -> dialog.dismiss() }
 
     return create()
 }

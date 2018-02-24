@@ -9,6 +9,7 @@
     <string name="pref_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
 
     <string name="dialog_button_ok">OK</string>
+    <string name="dialog_button_ng">キャンセル</string>
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
     <string name="dialog_message_pattern_format">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
