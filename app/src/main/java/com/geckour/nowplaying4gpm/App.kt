@@ -19,10 +19,11 @@ class App: Application() {
             Stetho.initializeWithDefaults(this)
         }
 
-        if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not()) {
-            sharedPreferences.edit()
-                    .putString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, getString(R.string.default_sharing_text_pattern))
-                    .apply()
-        }
+        sharedPreferences.edit().apply {
+            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not())
+                putString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, getString(R.string.default_sharing_text_pattern))
+            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_ID.name).not())
+                putInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_ID.name, R.string.palette_light_vibrant)
+        }.apply()
     }
 }

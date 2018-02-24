@@ -196,7 +196,17 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     }
                     thumb?.apply {
                         if (Build.VERSION.SDK_INT >= 26) setColorized(true)
-                        val color = Palette.from(this).generate().getLightMutedColor(Color.WHITE)
+                        val color = Palette.from(this).generate().let{
+                            when (sharedPreferences.getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_ID.name, -1)) {
+                                R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
+                                R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
+                                R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)
+                                R.string.palette_light_muted -> it.getLightMutedColor(Color.WHITE)
+                                R.string.palette_muted -> it.getMutedColor(Color.WHITE)
+                                R.string.palette_dark_muted -> it.getDarkMutedColor(Color.WHITE)
+                                else -> it.getLightVibrantColor(Color.WHITE)
+                            }
+                        }
                         setColor(color)
                     }
                 }.build()
