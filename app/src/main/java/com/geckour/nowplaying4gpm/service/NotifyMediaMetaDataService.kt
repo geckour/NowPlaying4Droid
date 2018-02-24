@@ -189,6 +189,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                                     PendingIntent.FLAG_CANCEL_CURRENT
                             )
                     )
+                    setOngoing(true)
                     if (Build.VERSION.SDK_INT >= 24) {
                         setStyle(Notification.DecoratedMediaCustomViewStyle())
                         addAction(actionOpenSetting)
