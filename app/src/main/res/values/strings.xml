@@ -16,4 +16,6 @@
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
 
     <string name="share_title">共有先を選択…</string>
+
+    <string name="action_open_pref">設定</string>
 </resources>

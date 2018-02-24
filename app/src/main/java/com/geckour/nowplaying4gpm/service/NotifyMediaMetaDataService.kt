@@ -6,6 +6,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
@@ -141,10 +142,9 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                                     getString(R.string.default_sharing_text_pattern))
                                     .getSharingText(title, artist, album)
                     setContentText(notificationText)
-                    setStyle(Notification.BigPictureStyle()
+                    setStyle(Notification.BigTextStyle()
                             .setBigContentTitle(getString(R.string.notification_title))
-                            .setSummaryText(notificationText).bigPicture(thumb)
-                            .bigLargeIcon(thumb))
+                            .bigText(notificationText))
                     setContentIntent(
                             PendingIntent.getActivity(
                                     this@NotifyMediaMetaDataService,
@@ -153,6 +153,16 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                                     PendingIntent.FLAG_CANCEL_CURRENT
                             )
                     )
+                    if (Build.VERSION.SDK_INT >= 24) {
+                        val settingIntent =
+                                PendingIntent.getActivity(
+                                        this@NotifyMediaMetaDataService,
+                                        0,
+                                        SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
+                                        PendingIntent.FLAG_CANCEL_CURRENT
+                                )
+                        setActions(Notification.Action.Builder(null, getString(R.string.action_open_pref), settingIntent).build())
+                    }
                 }.build()
             }
 }
