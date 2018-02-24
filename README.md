@@ -9,4 +9,5 @@ Android app for sharing #NowPlaying from Google Play Music app.
 - Reside in notification area to share #NowPlaying
 - Custom pattern of sharing text format
 - Try to fetch album art (It succeeds only when playing song is exist inside of device)
-- Change background color of notification for shareing (only for Android O or later)
+- Change accent color of notification for shareing based on album art colors
+- Change background color of notification for shareing based on album art colors (only for Android O or later)
