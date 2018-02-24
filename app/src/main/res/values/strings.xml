@@ -4,6 +4,10 @@
     <string name="notification_title">NowPlayingを共有…</string>
     <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
 
+    <string name="notification_channel_id_share">NOTIFICATION_CHANNEL_SHARE</string>
+    <string name="notification_channel_name_share">共有</string>
+    <string name="notification_channel_description_share">NowPlaying共有用通知</string>
+
     <string name="pref_category_general">一般</string>
     <string name="pref_title_pattern">投稿文のフォーマットを指定</string>
     <string name="pref_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>

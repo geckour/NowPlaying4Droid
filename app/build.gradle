@@ -54,4 +54,7 @@ dependencies {
 
     // Inspect
     compile 'com.facebook.stetho:stetho:1.5.0'
+
+    // Palette API
+    implementation "com.android.support:palette-v7:$android_support_version"
 }

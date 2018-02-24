@@ -6,6 +6,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
@@ -13,7 +14,9 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.service.notification.NotificationListenerService
+import android.support.annotation.RequiresApi
 import android.support.v4.content.ContextCompat
+import android.support.v7.graphics.Palette
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
@@ -72,11 +75,33 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
 
+
+        if (Build.VERSION.SDK_INT >= 26) createDefaultChannel()
+
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_GPM_META_CHANGED)
             addAction(ACTION_GPM_PLAY_STATE_CHANGED)
         }
         registerReceiver(receiver, intentFilter)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        unregisterReceiver(receiver)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createDefaultChannel() {
+        val name = getString(R.string.notification_channel_name_share)
+        val description = getString(R.string.notification_channel_description_share)
+        val channel =
+                NotificationChannel(
+                        getString(R.string.notification_channel_id_share),
+                        name,
+                        NotificationManager.IMPORTANCE_LOW
+                ).apply { this.description = description }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     private fun showNotification(intent: Intent) {
@@ -117,34 +142,39 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     artist,
                     album,
                     albumArtUri
-            )?.apply { (getSystemService(NotificationManager::class.java)).notify(0, this) }
+            )?.apply { startForeground(R.string.notification_channel_id_share, this) }
         }
+    }
+
+    private fun destroyNotification() {
+        stopForeground(true)
     }
 
     private fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
             "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-    private fun destroyNotification() {
-        (getSystemService(NotificationManager::class.java)).cancelAll()
-    }
-
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?, albumArtUri: Uri?): Notification? =
             if (title == null || artist == null || album == null) null
             else {
-                (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, NotificationChannel.DEFAULT_CHANNEL_ID)
+                (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
                 else Notification.Builder(this)).apply {
-                    setSmallIcon(R.drawable.ic_notification)
-                    setLargeIcon(thumb)
-                    setContentTitle(getString(R.string.notification_title))
+                    val actionOpenSetting =
+                            PendingIntent.getActivity(
+                                    this@NotifyMediaMetaDataService,
+                                    0,
+                                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
+                                    PendingIntent.FLAG_CANCEL_CURRENT
+                            ).let { Notification.Action.Builder(Icon.createWithResource(this@NotifyMediaMetaDataService, R.drawable.ic_settings_black_24px), getString(R.string.action_open_pref), it).build() }
                     val notificationText =
                             sharedPreferences.getString(
                                     SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
                                     getString(R.string.default_sharing_text_pattern))
                                     .getSharingText(title, artist, album)
+
+                    setSmallIcon(R.drawable.ic_notification)
+                    setLargeIcon(thumb)
+                    setContentTitle(getString(R.string.notification_title))
                     setContentText(notificationText)
-                    setStyle(Notification.BigTextStyle()
-                            .setBigContentTitle(getString(R.string.notification_title))
-                            .bigText(notificationText))
                     setContentIntent(
                             PendingIntent.getActivity(
                                     this@NotifyMediaMetaDataService,
@@ -154,14 +184,15 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                             )
                     )
                     if (Build.VERSION.SDK_INT >= 24) {
-                        val settingIntent =
-                                PendingIntent.getActivity(
-                                        this@NotifyMediaMetaDataService,
-                                        0,
-                                        SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
-                                        PendingIntent.FLAG_CANCEL_CURRENT
-                                )
-                        setActions(Notification.Action.Builder(null, getString(R.string.action_open_pref), settingIntent).build())
+                        setStyle(Notification.DecoratedMediaCustomViewStyle())
+                        addAction(actionOpenSetting)
+                    }
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        thumb?.apply {
+                            setColorized(true)
+                            val color = Palette.from(this).generate().getLightMutedColor(Color.WHITE)
+                            setColor(color)
+                        }
                     }
                 }.build()
             }
