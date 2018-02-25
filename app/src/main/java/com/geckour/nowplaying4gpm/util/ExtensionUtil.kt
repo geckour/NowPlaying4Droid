@@ -1,9 +1,13 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.view.View
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.activity.SettingsActivity
+import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Job
@@ -51,3 +55,9 @@ fun AlertDialog.Builder.generate(
 
     return create()
 }
+
+fun SharedPreferences.getFormatPatternFromPreference(context: Context): String =
+        getString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
+
+fun SharedPreferences.getChoseColorIndexFromPreference(): Int =
+        getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))

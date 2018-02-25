@@ -19,11 +19,9 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.graphics.Palette
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
+import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
-import com.geckour.nowplaying4gpm.util.async
-import com.geckour.nowplaying4gpm.util.escapeSql
-import com.geckour.nowplaying4gpm.util.getSharingText
-import com.geckour.nowplaying4gpm.util.ui
+import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 import java.io.FileNotFoundException
@@ -197,7 +195,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     thumb?.apply {
                         if (Build.VERSION.SDK_INT >= 26) setColorized(true)
                         val color = Palette.from(this).generate().let{
-                            when (sharedPreferences.getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_ID.name, -1)) {
+                            when (paletteArray[sharedPreferences.getChoseColorIndexFromPreference()]) {
                                 R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
                                 R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
                                 R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)
