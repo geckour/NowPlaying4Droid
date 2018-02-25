@@ -27,8 +27,10 @@
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
+    <string name="dialog_title_alert_no_for_share">共有できません</string>
     <string name="dialog_message_pattern_format">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
+    <string name="dialog_message_alert_no_for_share">共有する曲情報が取得できませんでした</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
 
     <string name="share_title">共有先を選択…</string>

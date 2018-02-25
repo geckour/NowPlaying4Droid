@@ -56,6 +56,18 @@ fun AlertDialog.Builder.generate(
     return create()
 }
 
+fun SharedPreferences.refreshCurrent(title: String?, artist: String?, album: String?) =
+        edit().apply {
+            if (title != null) putString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name, title)
+            else remove(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name)
+
+            if (artist != null) putString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name, artist)
+            else remove(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name)
+
+            if (album != null) putString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name, album)
+            else remove(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name)
+        }.apply()
+
 fun SharedPreferences.getFormatPatternFromPreference(context: Context): String =
         getString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
 
