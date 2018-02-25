@@ -107,9 +107,11 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private fun showNotification(intent: Intent) {
         ui(jobs) {
-            val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
+            val title = (if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null)
             val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
             val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
+            sharedPreferences.refreshCurrent(title, artist, album)
+
             val albumArtUri = async {
                 val cursor = contentResolver.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -125,6 +127,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     }
                 } else null).apply { cursor.close() }
             }.await()
+
             val albumArt =
                     try {
                         if (albumArtUri != null) {
@@ -152,10 +155,8 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private fun destroyNotification() {
         stopForeground(true)
+        sharedPreferences.refreshCurrent(null, null, null)
     }
-
-    private fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
-            "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?, albumArtUri: Uri?): Notification? =
             if (title == null || artist == null || album == null) null

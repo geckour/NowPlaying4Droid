@@ -3,15 +3,14 @@ package com.geckour.nowplaying4gpm.activity
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
-import android.content.SharedPreferences
+import android.content.*
 import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.provider.MediaStore
 import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
@@ -23,15 +22,17 @@ import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
-import com.geckour.nowplaying4gpm.util.generate
-import com.geckour.nowplaying4gpm.util.getChoseColorIndexFromPreference
-import com.geckour.nowplaying4gpm.util.getFormatPatternFromPreference
+import com.geckour.nowplaying4gpm.util.*
+import kotlinx.coroutines.experimental.Job
 
 class SettingsActivity : Activity() {
 
     enum class PrefKey {
         PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
-        PREF_KEY_CHOSE_COLOR_INDEX
+        PREF_KEY_CHOSE_COLOR_INDEX,
+        PREF_KEY_CURRENT_TITLE,
+        PREF_KEY_CURRENT_ARTIST,
+        PREF_KEY_CURRENT_ALBUM
     }
 
     enum class PermissionRequestCode {
@@ -53,6 +54,7 @@ class SettingsActivity : Activity() {
 
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
     private lateinit var binding: ActivitySettingsBinding
+    private val jobs: ArrayList<Job> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +62,7 @@ class SettingsActivity : Activity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
         binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
+        binding.fab.setOnClickListener { onClickFab() }
         binding.summaryPattern = sharedPreferences.getFormatPatternFromPreference(this)
         binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndexFromPreference()])
         binding.itemPatternFormat?.root?.setOnClickListener { onClickItemPatternFormat() }
@@ -90,6 +93,52 @@ class SettingsActivity : Activity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             startNotificationService()
         } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PermissionRequestCode.READ_EXTERNAL_STORAGE.ordinal)
+    }
+
+    private fun onClickFab() {
+        val title =
+                if (sharedPreferences.contains(PrefKey.PREF_KEY_CURRENT_TITLE.name)) sharedPreferences.getString(PrefKey.PREF_KEY_CURRENT_TITLE.name, null)
+                else null
+        val artist =
+                if (sharedPreferences.contains(PrefKey.PREF_KEY_CURRENT_ARTIST.name)) sharedPreferences.getString(PrefKey.PREF_KEY_CURRENT_ARTIST.name, null)
+                else null
+        val album =
+                if (sharedPreferences.contains(PrefKey.PREF_KEY_CURRENT_ALBUM.name)) sharedPreferences.getString(PrefKey.PREF_KEY_CURRENT_ALBUM.name, null)
+                else null
+
+        if (title == null || artist == null || album == null) {
+            AlertDialog.Builder(this)
+                    .setTitle(R.string.dialog_title_alert_no_for_share)
+                    .setMessage(R.string.dialog_message_alert_no_for_share)
+                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+                    .show()
+        } else {
+            ui(jobs) {
+                val sharingText =
+                        sharedPreferences.getString(
+                                SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
+                                getString(R.string.default_sharing_text_pattern))
+                                .getSharingText(title, artist, album)
+                val albumArtUri = async {
+                    val cursor = contentResolver.query(
+                            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                            arrayOf(MediaStore.Audio.Media.ALBUM_ID),
+                            getContentQuerySelection(title, artist, album),
+                            null,
+                            null
+                    )
+
+                    return@async (if (cursor.moveToNext()) {
+                        cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)).let {
+                            ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
+                        }
+                    } else null).apply { cursor.close() }
+                }.await()
+
+                val intent = SharingActivity.createIntent(this@SettingsActivity, sharingText, albumArtUri)
+                startActivity(intent)
+            }
+        }
     }
 
     private fun onClickItemPatternFormat() {
