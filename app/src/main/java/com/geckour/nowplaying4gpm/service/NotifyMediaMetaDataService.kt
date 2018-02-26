@@ -19,11 +19,10 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
-import com.geckour.nowplaying4gpm.api.ITunesApiClient
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
-import java.io.FileNotFoundException
 
 class NotifyMediaMetaDataService: NotificationListenerService() {
 
@@ -115,7 +114,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
             val albumArt =
                     try {
                         contentResolver.openInputStream(
-                                getAlbumArtUriFromDevice(
+                                getArtworkUriFromDevice(
                                         getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
                                 )
                         ).let {
@@ -126,7 +125,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
                         getBitmapFromUrl(
                                 this@NotifyMediaMetaDataService,
-                                getAlbumArtUrlFromITunesApi(ITunesApiClient(), title, artist, album)
+                                getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist)
                         )
                     }
 
