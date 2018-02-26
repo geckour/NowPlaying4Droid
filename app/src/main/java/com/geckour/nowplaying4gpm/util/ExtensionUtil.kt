@@ -73,3 +73,5 @@ fun SharedPreferences.getFormatPatternFromPreference(context: Context): String =
 
 fun SharedPreferences.getChoseColorIndexFromPreference(): Int =
         getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
+
+fun List<Job>.cancelAll() = forEach { it.cancel() }

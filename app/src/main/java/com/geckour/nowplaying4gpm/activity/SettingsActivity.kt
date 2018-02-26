@@ -18,6 +18,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.api.ITunesApiClient
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
@@ -36,7 +37,7 @@ class SettingsActivity : Activity() {
     }
 
     enum class PermissionRequestCode {
-        READ_EXTERNAL_STORAGE
+        EXTERNAL_STORAGE
     }
 
     companion object {
@@ -77,7 +78,7 @@ class SettingsActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         when (requestCode) {
-            PermissionRequestCode.READ_EXTERNAL_STORAGE.ordinal -> {
+            PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
                     startNotificationService()
                 } else requestStoragePermission()
@@ -90,9 +91,10 @@ class SettingsActivity : Activity() {
             else startService(NotifyMediaMetaDataService.getIntent(this))
 
     private fun requestStoragePermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             startNotificationService()
-        } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PermissionRequestCode.READ_EXTERNAL_STORAGE.ordinal)
+        } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
     }
 
     private fun onClickFab() {
@@ -113,31 +115,8 @@ class SettingsActivity : Activity() {
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
                     .show()
         } else {
-            ui(jobs) {
-                val sharingText =
-                        sharedPreferences.getString(
-                                SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
-                                getString(R.string.default_sharing_text_pattern))
-                                .getSharingText(title, artist, album)
-                val albumArtUri = async {
-                    val cursor = contentResolver.query(
-                            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                            arrayOf(MediaStore.Audio.Media.ALBUM_ID),
-                            getContentQuerySelection(title, artist, album),
-                            null,
-                            null
-                    )
-
-                    return@async (if (cursor.moveToNext()) {
-                        cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)).let {
-                            ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
-                        }
-                    } else null).apply { cursor.close() }
-                }.await()
-
-                val intent = SharingActivity.createIntent(this@SettingsActivity, sharingText, albumArtUri)
-                startActivity(intent)
-            }
+            val intent = SharingActivity.createIntent(this@SettingsActivity, title, artist, album)
+            startActivity(intent)
         }
     }
 
