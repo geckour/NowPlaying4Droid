@@ -9,12 +9,11 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.api.ITunesApiClient
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
-import java.io.FileNotFoundException
 
 class SharingActivity: Activity() {
 
@@ -58,7 +57,7 @@ class SharingActivity: Activity() {
 
             ui(jobs) {
                 val artworkUri =
-                        getAlbumArtUriFromDevice(getAlbumIdFromDevice(this@SharingActivity, track, artist, album)).let {
+                        getArtworkUriFromDevice(getAlbumIdFromDevice(this@SharingActivity, track, artist, album)).let {
                             try {
                                 contentResolver.openInputStream(it).close()
                                 it
@@ -67,7 +66,7 @@ class SharingActivity: Activity() {
 
                                 getBitmapFromUrl(
                                         this@SharingActivity,
-                                        getAlbumArtUrlFromITunesApi(ITunesApiClient(), track, artist, album)
+                                        getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist)
                                 )?.let {
                                     if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name)) {
                                         try {

@@ -6,11 +6,9 @@ import android.app.AlertDialog
 import android.content.*
 import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.provider.MediaStore
 import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +16,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.api.ITunesApiClient
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding

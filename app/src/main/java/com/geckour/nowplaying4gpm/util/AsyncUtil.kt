@@ -7,7 +7,9 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.api.ITunesApiClient
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.model.Image
+import timber.log.Timber
 
 suspend fun getAlbumIdFromDevice(context: Context, title: String?, artist: String?, album: String?): Long? =
         if (title == null || artist == null || album == null) null
@@ -27,12 +29,11 @@ suspend fun getAlbumIdFromDevice(context: Context, title: String?, artist: Strin
             }.await()
         }
 
-suspend fun getAlbumArtUriFromDevice(albumId: Long?): Uri? =
+suspend fun getArtworkUriFromDevice(albumId: Long?): Uri? =
         async { albumId?.let { ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it) } }.await()
 
-suspend fun getAlbumArtUrlFromITunesApi(client: ITunesApiClient, title: String?, artist: String?, album: String?): String? =
-        client.searchAlbum(title, artist, album)
-                .resultItems.firstOrNull()?.artworkUrl
+suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, album: String?, artist: String?): String? =
+        client.searchAlbum(album, artist)?.artworks?.let { it.find { it.size == Image.Size.EX_LARGE.rawStr } ?: it.lastOrNull() }?.url
 
 suspend fun getAlbumArtUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
             Uri.parse(async {
@@ -46,4 +47,10 @@ suspend fun getAlbumArtUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
 
 suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
         if (url == null) null
-        else async { Glide.with(context).asBitmap().load(url).submit().get() }.await()
+        else {
+            try { async { Glide.with(context).asBitmap().load(url).submit().get() }.await() }
+            catch (e: Throwable) {
+                Timber.e(e)
+                null
+            }
+        }

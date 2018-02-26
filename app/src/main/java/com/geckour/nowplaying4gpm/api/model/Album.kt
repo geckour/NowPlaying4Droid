@@ -3,9 +3,13 @@ package com.geckour.nowplaying4gpm.api.model
 import com.google.gson.annotations.SerializedName
 
 data class Album(
-        @SerializedName("collectionName")
-        val name: String,
+        @SerializedName("mbid")
+        val id: String,
 
-        @SerializedName("artworkUrl100")
-        val artworkUrl: String
+        val title: String,
+
+        val artist: String,
+
+        @SerializedName("image")
+        val artworks: List<Image>
 )
