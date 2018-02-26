@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.preference.PreferenceManager
-import android.provider.MediaStore
 import android.service.notification.NotificationListenerService
 import android.support.annotation.RequiresApi
 import android.support.v4.content.ContextCompat
@@ -21,6 +20,7 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
+import com.geckour.nowplaying4gpm.api.ITunesApiClient
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
@@ -112,40 +112,34 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
             val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
             sharedPreferences.refreshCurrent(title, artist, album)
 
-            val albumArtUri = async {
-                val cursor = contentResolver.query(
-                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        arrayOf(MediaStore.Audio.Media.ALBUM_ID),
-                        getContentQuerySelection(title, artist, album),
-                        null,
-                        null
-                )
-
-                return@async (if (cursor.moveToNext()) {
-                    cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)).let {
-                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it)
-                    }
-                } else null).apply { cursor.close() }
-            }.await()
-
             val albumArt =
                     try {
-                        if (albumArtUri != null) {
-                            contentResolver.openInputStream(albumArtUri).let {
-                                BitmapFactory.decodeStream(it, null, null)
-                            }
-                        } else null
+                        contentResolver.openInputStream(
+                                getAlbumArtUriFromDevice(
+                                        getAlbumIdFromDevice(
+                                                this@NotifyMediaMetaDataService,
+                                                title,
+                                                artist,
+                                                album
+                                        )
+                                )
+                        ).let {
+                            BitmapFactory.decodeStream(it, null, null).apply { it.close() }
+                        }
                     } catch (e: FileNotFoundException) {
                         Timber.e(e)
-                        null
+
+                        getBitmapFromUrl(
+                                this@NotifyMediaMetaDataService,
+                                getAlbumArtUrlFromITunesApi(ITunesApiClient(), title, artist, album)
+                        )
                     }
 
             getNotification(
                     albumArt,
                     title,
                     artist,
-                    album,
-                    albumArtUri
+                    album
             )?.apply { startForeground(R.string.notification_channel_id_share, this) }
         }
     }
@@ -158,7 +152,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         sharedPreferences.refreshCurrent(null, null, null)
     }
 
-    private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?, albumArtUri: Uri?): Notification? =
+    private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?): Notification? =
             if (title == null || artist == null || album == null) null
             else {
                 (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
@@ -184,7 +178,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                             PendingIntent.getActivity(
                                     this@NotifyMediaMetaDataService,
                                     0,
-                                    SharingActivity.createIntent(this@NotifyMediaMetaDataService, notificationText, albumArtUri),
+                                    SharingActivity.createIntent(this@NotifyMediaMetaDataService, title, artist, album),
                                     PendingIntent.FLAG_CANCEL_CURRENT
                             )
                     )
