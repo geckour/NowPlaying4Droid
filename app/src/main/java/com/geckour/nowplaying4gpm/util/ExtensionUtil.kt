@@ -30,6 +30,15 @@ fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: su
             }
         }.apply { managerList.add(this) }
 
+fun defLaunch(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
+        launch {
+            try { block }
+            catch (e: Exception) {
+                Timber.e(e)
+                onError(e)
+            }
+        }.apply { managerList.add(this) }
+
 fun String.getSharingText(title: String, artist: String, album: String): String {
     val pattern = this
             .replace("{", "'{'")

@@ -33,7 +33,8 @@ class SettingsActivity : Activity() {
         PREF_KEY_CHOSE_COLOR_INDEX,
         PREF_KEY_CURRENT_TITLE,
         PREF_KEY_CURRENT_ARTIST,
-        PREF_KEY_CURRENT_ALBUM
+        PREF_KEY_CURRENT_ALBUM,
+        PREF_KEY_TEMP_ALBUM_ART_URI
     }
 
     enum class PermissionRequestCode {
@@ -84,6 +85,12 @@ class SettingsActivity : Activity() {
                 } else requestStoragePermission()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        jobs.cancelAll()
     }
 
     private fun startNotificationService() =

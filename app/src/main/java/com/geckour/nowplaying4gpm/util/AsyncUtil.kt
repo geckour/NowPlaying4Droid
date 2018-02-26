@@ -45,4 +45,5 @@ suspend fun getAlbumArtUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
             }.await())
 
 suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
-        async { Glide.with(context).asBitmap().load(url).submit().get() }.await()
+        if (url == null) null
+        else async { Glide.with(context).asBitmap().load(url).submit().get() }.await()

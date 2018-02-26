@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.preference.PreferenceManager
@@ -90,6 +89,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         super.onDestroy()
 
         unregisterReceiver(receiver)
+        jobs.cancelAll()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -107,7 +107,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private fun showNotification(intent: Intent) {
         ui(jobs) {
-            val title = (if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null)
+            val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
             val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
             val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
             sharedPreferences.refreshCurrent(title, artist, album)
@@ -116,17 +116,12 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     try {
                         contentResolver.openInputStream(
                                 getAlbumArtUriFromDevice(
-                                        getAlbumIdFromDevice(
-                                                this@NotifyMediaMetaDataService,
-                                                title,
-                                                artist,
-                                                album
-                                        )
+                                        getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
                                 )
                         ).let {
                             BitmapFactory.decodeStream(it, null, null).apply { it.close() }
                         }
-                    } catch (e: FileNotFoundException) {
+                    } catch (e: Throwable) {
                         Timber.e(e)
 
                         getBitmapFromUrl(
@@ -163,7 +158,13 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                                     0,
                                     SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
                                     PendingIntent.FLAG_CANCEL_CURRENT
-                            ).let { Notification.Action.Builder(Icon.createWithResource(this@NotifyMediaMetaDataService, R.drawable.ic_settings_black_24px), getString(R.string.action_open_pref), it).build() }
+                            ).let {
+                                Notification.Action.Builder(
+                                        Icon.createWithResource(this@NotifyMediaMetaDataService, R.drawable.ic_settings_black_24px),
+                                        getString(R.string.action_open_pref),
+                                        it
+                                ).build()
+                            }
                     val notificationText =
                             sharedPreferences.getString(
                                     SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
