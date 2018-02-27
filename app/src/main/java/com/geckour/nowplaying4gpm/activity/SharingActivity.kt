@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.activity
 
 import android.app.Activity
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -11,7 +12,6 @@ import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
-import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -56,47 +56,9 @@ class SharingActivity: Activity() {
                             .getSharingText(track, artist, album)
 
             ui(jobs) {
-                val artworkUri = async {
-                    if (sharedPreferences.getWhetherBundleArtwork()) {
-                        getArtworkUriFromDevice(getAlbumIdFromDevice(this@SharingActivity, track, artist, album)).let {
-                            try {
-                                contentResolver.openInputStream(it).close()
-                                it
-                            } catch (e: Throwable) {
-                                Timber.e(e)
+                val artworkUri = getArtworkUri(track, artist, album)
 
-                                getBitmapFromUrl(
-                                        this@SharingActivity,
-                                        getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist)
-                                )?.let {
-                                    if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name)) {
-                                        try {
-                                            val uriString = sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, "")
-                                            if (uriString.isNotBlank()) {
-                                                async { contentResolver.delete(Uri.parse(uriString), null, null) }.await()
-                                            }
-                                        } catch (e: Exception) {
-                                            Timber.e(e)
-                                        }
-                                    }
-                                    val uri = getAlbumArtUriFromBitmap(this@SharingActivity, it)
-                                    uri?.apply { sharedPreferences.edit().putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, this.toString()).apply() }
-                                }
-                            }
-                        }
-                    } else null
-                }.await()
-
-                ShareCompat.IntentBuilder.from(this@SharingActivity)
-                        .setChooserTitle(R.string.share_title)
-                        .setText(sharingText)
-                        .also {
-                            artworkUri?.apply {
-                                it.setStream(this)
-                                it.setType("image/jpeg")
-                            } ?: run { it.setType("text/plain") }
-                        }.createChooserIntent()
-                        .apply { startActivityForResult(this, IntentRequestCode.SHARE.ordinal) }
+                startShare(sharingText, artworkUri)
             }
         }
     }
@@ -105,19 +67,38 @@ class SharingActivity: Activity() {
         super.onCreate(savedInstanceState)
 
         onNewIntent(intent)
+        finish()
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+    private suspend fun getArtworkUri(track: String?, artist: String?, album: String?): Uri? =
+            if (sharedPreferences.getWhetherBundleArtwork()) {
+                getArtworkUriFromDevice(this@SharingActivity, getAlbumIdFromDevice(this@SharingActivity, track, artist, album))
+                        ?: getBitmapFromUrl(this@SharingActivity, getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist))?.let {
+                            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name)) {
+                                try {
+                                    val uriString = sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, "")
+                                    if (uriString.isNotBlank()) contentResolver.delete(Uri.parse(uriString), null, null)
+                                } catch (e: Exception) { Timber.e(e) }
+                            }
 
-        when (requestCode) {
-            IntentRequestCode.SHARE.ordinal -> finish()
-        }
-    }
+                            getAlbumArtUriFromBitmap(this@SharingActivity, it)?.apply {
+                                sharedPreferences.edit()
+                                        .putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, this.toString())
+                                        .apply()
+                            }
+                        }
+            } else null
 
-    override fun onDestroy() {
-        super.onDestroy()
-
-        jobs.cancelAll()
-    }
+    private fun startShare(text: String, stream: Uri?) =
+            ShareCompat.IntentBuilder.from(this@SharingActivity)
+                    .setChooserTitle(R.string.share_title)
+                    .setText(text).also { stream?.apply { it.setStream(this).setType("image/jpeg") } ?: run { it.setType("text/plain") } }
+                    .createChooserIntent()
+                    .apply {
+                        PendingIntent.getActivity(
+                                this@SharingActivity,
+                                IntentRequestCode.SHARE.ordinal,
+                                this@apply,
+                                PendingIntent.FLAG_UPDATE_CURRENT).send()
+                    }
 }

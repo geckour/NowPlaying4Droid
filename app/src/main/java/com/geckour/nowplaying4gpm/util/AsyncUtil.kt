@@ -29,11 +29,21 @@ suspend fun getAlbumIdFromDevice(context: Context, title: String?, artist: Strin
             }.await()
         }
 
-suspend fun getArtworkUriFromDevice(albumId: Long?): Uri? =
-        async { albumId?.let { ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it) } }.await()
+suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
+        albumId?.let { async {
+            ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it).let {
+                try {
+                    context.contentResolver.openInputStream(it).close()
+                    it
+                } catch (e: Throwable) {
+                    Timber.e(e)
+                    null
+                }
+            }
+        }.await() }
 
-suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, album: String?, artist: String?): String? =
-        client.searchAlbum(album, artist)?.artworks?.let { it.find { it.size == Image.Size.EX_LARGE.rawStr } ?: it.lastOrNull() }?.url
+suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, album: String?, artist: String?, size: Image.Size = Image.Size.EX_LARGE): String? =
+        client.searchAlbum(album, artist)?.artworks?.let { it.find { it.size == size.rawStr } ?: it.lastOrNull() }?.url
 
 suspend fun getAlbumArtUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
             Uri.parse(async {
@@ -46,9 +56,8 @@ suspend fun getAlbumArtUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
             }.await())
 
 suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
-        if (url == null) null
-        else {
-            try { async { Glide.with(context).asBitmap().load(url).submit().get() }.await() }
+        url?.let {
+            try { async { Glide.with(context).asBitmap().load(it).submit().get() }.await() }
             catch (e: Throwable) {
                 Timber.e(e)
                 null

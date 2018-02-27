@@ -25,7 +25,7 @@
         </activity>
 
         <activity android:name=".activity.SharingActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:theme="@android:style/Theme.NoDisplay"
             android:launchMode="singleTask"
             android:noHistory="true" />
 

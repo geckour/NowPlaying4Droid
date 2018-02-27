@@ -20,6 +20,7 @@ import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
@@ -106,22 +107,17 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                 sharedPreferences.refreshCurrentMetadata(title, artist, album)
 
                 val albumArt =
-                        try {
-                            contentResolver.openInputStream(
-                                    getArtworkUriFromDevice(
-                                            getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
-                                    )
-                            ).let {
+                        getArtworkUriFromDevice(
+                                this@NotifyMediaMetaDataService,
+                                getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
+                        )?.let {
+                            contentResolver.openInputStream(it).let {
                                 BitmapFactory.decodeStream(it, null, null).apply { it.close() }
                             }
-                        } catch (e: Throwable) {
-                            Timber.e(e)
-
-                            getBitmapFromUrl(
-                                    this@NotifyMediaMetaDataService,
-                                    getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist)
-                            )
-                        }
+                        } ?: getBitmapFromUrl(
+                                this@NotifyMediaMetaDataService,
+                                getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist, Image.Size.MEDIUM)
+                        )
 
                 getNotification(
                         albumArt,
