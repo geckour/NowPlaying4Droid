@@ -56,7 +56,8 @@ class SharingActivity: Activity() {
                             .getSharingText(track, artist, album)
 
             ui(jobs) {
-                val artworkUri =
+                val artworkUri = async {
+                    if (sharedPreferences.getWhetherBundleArtwork()) {
                         getArtworkUriFromDevice(getAlbumIdFromDevice(this@SharingActivity, track, artist, album)).let {
                             try {
                                 contentResolver.openInputStream(it).close()
@@ -74,13 +75,17 @@ class SharingActivity: Activity() {
                                             if (uriString.isNotBlank()) {
                                                 async { contentResolver.delete(Uri.parse(uriString), null, null) }.await()
                                             }
-                                        } catch (e: Exception) { Timber.e(e) }
+                                        } catch (e: Exception) {
+                                            Timber.e(e)
+                                        }
                                     }
                                     val uri = getAlbumArtUriFromBitmap(this@SharingActivity, it)
                                     uri?.apply { sharedPreferences.edit().putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, this.toString()).apply() }
                                 }
                             }
                         }
+                    } else null
+                }.await()
 
                 ShareCompat.IntentBuilder.from(this@SharingActivity)
                         .setChooserTitle(R.string.share_title)
@@ -89,7 +94,7 @@ class SharingActivity: Activity() {
                             artworkUri?.apply {
                                 it.setStream(this)
                                 it.setType("image/jpeg")
-                            } ?: run { it.setText("text/plain") }
+                            } ?: run { it.setType("text/plain") }
                         }.createChooserIntent()
                         .apply { startActivityForResult(this, IntentRequestCode.SHARE.ordinal) }
             }

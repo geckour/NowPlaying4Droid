@@ -30,6 +30,7 @@ class SettingsActivity : Activity() {
         PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
         PREF_KEY_CHOSEN_COLOR_INDEX,
         PREF_KEY_WHETHER_RESIDE,
+        PREF_KEY_WHETHER_BUNDLE_ARTWORK,
         PREF_KEY_CURRENT_TITLE,
         PREF_KEY_CURRENT_ARTIST,
         PREF_KEY_CURRENT_ALBUM,
@@ -66,27 +67,22 @@ class SettingsActivity : Activity() {
         binding.fab.setOnClickListener { onClickFab() }
         binding.summaryPattern = sharedPreferences.getFormatPattern(this)
         binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndex()])
-        binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummryResId())
+        binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummaryResId())
+        binding.summarySwitchBundleArtwork = getString(sharedPreferences.getWhetherBundleArtworkSummaryResId())
         binding.itemPatternFormat?.root?.setOnClickListener { onClickItemPatternFormat() }
         binding.itemChooseColor?.root?.setOnClickListener { onClickItemChooseColor() }
         binding.itemSwitchReside?.apply {
             root?.setOnClickListener { onClickItemSwitchReside() }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(Switch(this@SettingsActivity).apply {
-                    setOnClickListener {
-                        sharedPreferences.edit()
-                                .putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, isChecked)
-                                .apply()
-                        binding.summarySwitchReside =
-                                getString(
-                                        if (isChecked) R.string.pref_item_summary_switch_reside_notification_on
-                                        else R.string.pref_item_summary_switch_reside_notification_off
-                                )
-                        if (isChecked) requestStoragePermission()
-                    }
-                    isChecked = sharedPreferences.getBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
-                })
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE,{ summary -> binding.summarySwitchReside = summary }) { requestStoragePermission() })
+            }
+        }
+        binding.itemSwitchBundleArtwork?.apply {
+            root?.setOnClickListener { onClickItemSwitchBundleArtwork() }
+            extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK, { summary -> binding.summarySwitchBundleArtwork = summary }))
             }
         }
 
@@ -215,7 +211,22 @@ class SettingsActivity : Activity() {
         }.show()
     }
 
-    private fun onClickItemSwitchReside() {
-        (binding.itemSwitchReside?.extra?.getChildAt(0) as? Switch)?.performClick()
-    }
+    private fun onClickItemSwitchReside() = (binding.itemSwitchReside?.extra?.getChildAt(0) as? Switch)?.performClick()
+
+    private fun onClickItemSwitchBundleArtwork() = (binding.itemSwitchBundleArtwork?.extra?.getChildAt(0) as? Switch)?.performClick()
+
+    private fun getSwitch(prefKey: PrefKey, onSetSummary: (summary: String) -> Unit, onChecked: () -> Unit = {}): Switch =
+            Switch(this@SettingsActivity).apply {
+                setOnClickListener {
+                    sharedPreferences.edit()
+                            .putBoolean(prefKey.name, isChecked)
+                            .apply()
+                    onSetSummary(getString(
+                            if (isChecked) R.string.pref_item_summary_switch_on
+                            else R.string.pref_item_summary_switch_off
+                    ))
+                    if (isChecked) onChecked()
+                }
+                isChecked = sharedPreferences.getBoolean(prefKey.name, true)
+            }
 }
