@@ -70,12 +70,14 @@ class SharingActivity: Activity() {
                                 )?.let {
                                     if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name)) {
                                         try {
-                                            val tempUri: Uri = Gson().fromJson(sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, ""), Uri::class.java)
-                                            async { contentResolver.delete(tempUri, null, null) }.await()
+                                            val uriString = sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, "")
+                                            if (uriString.isNotBlank()) {
+                                                async { contentResolver.delete(Uri.parse(uriString), null, null) }.await()
+                                            }
                                         } catch (e: Exception) { Timber.e(e) }
                                     }
                                     val uri = getAlbumArtUriFromBitmap(this@SharingActivity, it)
-                                    uri?.apply { sharedPreferences.edit().putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, Gson().toJson(this)).apply() }
+                                    uri?.apply { sharedPreferences.edit().putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, this.toString()).apply() }
                                 }
                             }
                         }

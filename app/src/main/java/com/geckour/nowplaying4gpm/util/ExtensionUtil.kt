@@ -32,7 +32,7 @@ fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: su
 
 fun defLaunch(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
         launch {
-            try { block }
+            try { block() }
             catch (e: Exception) {
                 Timber.e(e)
                 onError(e)
