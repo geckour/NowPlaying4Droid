@@ -65,7 +65,20 @@ fun AlertDialog.Builder.generate(
     return create()
 }
 
-fun SharedPreferences.refreshCurrent(title: String?, artist: String?, album: String?) =
+fun SharedPreferences.init(context: Context) {
+    edit().apply {
+        if (contains(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not())
+            putString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
+        if (contains(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name).not())
+            putInt(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
+        if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not())
+            putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
+        if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not())
+            putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
+    }.apply()
+}
+
+fun SharedPreferences.refreshCurrentMetadata(title: String?, artist: String?, album: String?) =
         edit().apply {
             if (title != null) putString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name, title)
             else remove(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name)
@@ -83,12 +96,20 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
 fun SharedPreferences.getChoseColorIndex(): Int =
         getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
 
-fun SharedPreferences.getWhetherResideSummryResId(): Int =
-        if (getWhetherReside()) R.string.pref_item_summary_switch_reside_notification_on
-        else R.string.pref_item_summary_switch_reside_notification_off
+fun SharedPreferences.getWhetherResideSummaryResId(): Int =
+        if (getWhetherReside()) R.string.pref_item_summary_switch_on
+        else R.string.pref_item_summary_switch_off
+
+fun SharedPreferences.getWhetherBundleArtworkSummaryResId(): Int =
+        if (getWhetherBundleArtwork()) R.string.pref_item_summary_switch_on
+        else R.string.pref_item_summary_switch_off
 
 fun SharedPreferences.getWhetherReside(): Boolean =
         contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
                 || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
+
+fun SharedPreferences.getWhetherBundleArtwork(): Boolean =
+        contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not()
+                || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
 
 fun List<Job>.cancelAll() = forEach { it.cancel() }

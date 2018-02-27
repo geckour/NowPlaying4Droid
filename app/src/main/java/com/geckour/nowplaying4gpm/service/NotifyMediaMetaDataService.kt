@@ -103,7 +103,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                 val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
                 val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
                 val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
-                sharedPreferences.refreshCurrent(title, artist, album)
+                sharedPreferences.refreshCurrentMetadata(title, artist, album)
 
                 val albumArt =
                         try {
@@ -138,7 +138,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private fun destroyNotification() {
         stopForeground(true)
-        sharedPreferences.refreshCurrent(null, null, null)
+        sharedPreferences.refreshCurrentMetadata(null, null, null)
     }
 
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?): Notification? =

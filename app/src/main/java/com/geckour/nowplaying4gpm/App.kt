@@ -6,6 +6,7 @@ import android.preference.PreferenceManager
 import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
+import com.geckour.nowplaying4gpm.util.init
 import timber.log.Timber
 
 class App: Application() {
@@ -20,13 +21,6 @@ class App: Application() {
             Stetho.initializeWithDefaults(this)
         }
 
-        sharedPreferences.edit().apply {
-            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not())
-                putString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, getString(R.string.default_sharing_text_pattern))
-            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name).not())
-                putInt(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
-            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not())
-                putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
-        }.apply()
+        sharedPreferences.init(this)
     }
 }
