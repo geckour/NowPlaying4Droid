@@ -20,6 +20,10 @@
         <variable
             name="summary_switch_bundle_artwork"
             type="String" />
+
+        <variable
+            name="summary_switch_colorize_notification_bg"
+            type="String" />
     </data>
 
     <android.support.constraint.ConstraintLayout
@@ -103,6 +107,15 @@
                     app:desc="@{@string/pref_item_desc_choose_color}"
                     app:summary="@{summary_choose_color}"
                     app:title="@{@string/pref_item_title_choose_color}"/>
+
+                <include
+                    android:id="@+id/item_switch_colorize_notification_bg"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
+                    app:summary="@{summary_switch_colorize_notification_bg}"
+                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
 
             </LinearLayout>
         </ScrollView>
