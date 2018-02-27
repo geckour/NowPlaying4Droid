@@ -41,8 +41,6 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (sharedPreferences.getWhetherReside().not()) onDestroy()
-
             intent?.apply {
                 if (ContextCompat.checkSelfPermission(
                                 this@NotifyMediaMetaDataService,
