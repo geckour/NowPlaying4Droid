@@ -75,6 +75,8 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
         if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not())
             putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
+        if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not())
+            putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
     }.apply()
 }
 
@@ -104,6 +106,10 @@ fun SharedPreferences.getWhetherBundleArtworkSummaryResId(): Int =
         if (getWhetherBundleArtwork()) R.string.pref_item_summary_switch_on
         else R.string.pref_item_summary_switch_off
 
+fun SharedPreferences.getWhetherColorizeNotificationBgSummaryResId(): Int =
+        if (getWhetherColorizeNotificationBg()) R.string.pref_item_summary_switch_on
+        else R.string.pref_item_summary_switch_off
+
 fun SharedPreferences.getWhetherReside(): Boolean =
         contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
                 || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
@@ -111,5 +117,9 @@ fun SharedPreferences.getWhetherReside(): Boolean =
 fun SharedPreferences.getWhetherBundleArtwork(): Boolean =
         contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not()
                 || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
+
+fun SharedPreferences.getWhetherColorizeNotificationBg(): Boolean =
+        contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not()
+                || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
 
 fun List<Job>.cancelAll() = forEach { it.cancel() }

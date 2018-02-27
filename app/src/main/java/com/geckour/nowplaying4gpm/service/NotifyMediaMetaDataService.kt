@@ -183,7 +183,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                         addAction(actionOpenSetting)
                     }
                     thumb?.apply {
-                        if (Build.VERSION.SDK_INT >= 26) setColorized(true)
+                        if (Build.VERSION.SDK_INT >= 26 && sharedPreferences.getWhetherColorizeNotificationBg()) setColorized(true)
                         val color = Palette.from(this).generate().let{
                             when (paletteArray[sharedPreferences.getChoseColorIndex()]) {
                                 R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
