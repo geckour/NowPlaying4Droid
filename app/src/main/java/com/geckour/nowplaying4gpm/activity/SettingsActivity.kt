@@ -14,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Switch
 import android.widget.TextView
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
@@ -27,7 +28,8 @@ class SettingsActivity : Activity() {
 
     enum class PrefKey {
         PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
-        PREF_KEY_CHOSE_COLOR_INDEX,
+        PREF_KEY_CHOSEN_COLOR_INDEX,
+        PREF_KEY_WHETHER_RESIDE,
         PREF_KEY_CURRENT_TITLE,
         PREF_KEY_CURRENT_ARTIST,
         PREF_KEY_CURRENT_ALBUM,
@@ -62,11 +64,30 @@ class SettingsActivity : Activity() {
 
         binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
         binding.fab.setOnClickListener { onClickFab() }
-        binding.summaryPattern = sharedPreferences.getFormatPatternFromPreference(this)
-        binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndexFromPreference()])
+        binding.summaryPattern = sharedPreferences.getFormatPattern(this)
+        binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndex()])
+        binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummryResId())
         binding.itemPatternFormat?.root?.setOnClickListener { onClickItemPatternFormat() }
-        binding.itemChooseColor?.root?.setOnClickListener {
-            onClickItemChooseColor()
+        binding.itemChooseColor?.root?.setOnClickListener { onClickItemChooseColor() }
+        binding.itemSwitchReside?.apply {
+            root?.setOnClickListener { onClickItemSwitchReside() }
+            extra.apply {
+                visibility = View.VISIBLE
+                addView(Switch(this@SettingsActivity).apply {
+                    setOnClickListener {
+                        sharedPreferences.edit()
+                                .putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, isChecked)
+                                .apply()
+                        binding.summarySwitchReside =
+                                getString(
+                                        if (isChecked) R.string.pref_item_summary_switch_reside_notification_on
+                                        else R.string.pref_item_summary_switch_reside_notification_off
+                                )
+                        if (isChecked) requestStoragePermission()
+                    }
+                    isChecked = sharedPreferences.getBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
+                })
+            }
         }
 
         requestStoragePermission()
@@ -132,7 +153,7 @@ class SettingsActivity : Activity() {
                 false
         ).apply {
             hint = getString(R.string.dialog_hint_pattern_format)
-            editText.setText(sharedPreferences.getFormatPatternFromPreference(this@SettingsActivity))
+            editText.setText(sharedPreferences.getFormatPattern(this@SettingsActivity))
             editText.setSelection(editText.text.length)
         }
 
@@ -173,7 +194,7 @@ class SettingsActivity : Activity() {
                     }.apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
             spinner.apply {
                 adapter = arrayAdapter
-                setSelection(sharedPreferences.getChoseColorIndexFromPreference())
+                setSelection(sharedPreferences.getChoseColorIndex())
             }
         }
 
@@ -185,12 +206,16 @@ class SettingsActivity : Activity() {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val paletteIndex = chooseColorBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
-                            .putInt(PrefKey.PREF_KEY_CHOSE_COLOR_INDEX.name, paletteIndex)
+                            .putInt(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteIndex)
                             .apply()
                     binding.summaryChooseColor = getString(paletteArray[paletteIndex])
                 }
             }
             dialog.dismiss()
         }.show()
+    }
+
+    private fun onClickItemSwitchReside() {
+        (binding.itemSwitchReside?.extra?.getChildAt(0) as? Switch)?.performClick()
     }
 }

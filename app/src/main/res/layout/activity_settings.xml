@@ -12,6 +12,10 @@
         <variable
             name="summary_choose_color"
             type="String" />
+
+        <variable
+            name="summary_switch_reside"
+            type="String" />
     </data>
 
     <android.support.constraint.ConstraintLayout
@@ -47,29 +51,45 @@
                 android:orientation="vertical">
 
                 <include
-                    android:id="@+id/category_general"
+                    android:id="@+id/category_share"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_general}"/>
+                    app:title="@{@string/pref_category_share}"/>
 
                 <include
                     android:id="@+id/item_pattern_format"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:desc="@{@string/pref_desc_pattern}"
+                    app:desc="@{@string/pref_item_desc_pattern}"
                     app:summary="@{summary_pattern}"
-                    app:title="@{@string/pref_title_pattern}"/>
+                    app:title="@{@string/pref_item_title_pattern}"/>
+
+                <include
+                    android:id="@+id/category_notification"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_notification}"/>
+
+                <include
+                    android:id="@+id/item_switch_reside"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_reside_notification}"
+                    app:summary="@{summary_switch_reside}"
+                    app:title="@{@string/pref_item_title_switch_reside_notification}"/>
 
                 <include
                     android:id="@+id/item_choose_color"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:desc="@{@string/pref_desc_choose_color}"
+                    app:desc="@{@string/pref_item_desc_choose_color}"
                     app:summary="@{summary_choose_color}"
-                    app:title="@{@string/pref_title_choose_color}"/>
+                    app:title="@{@string/pref_item_title_choose_color}"/>
 
             </LinearLayout>
         </ScrollView>
@@ -81,6 +101,7 @@
             android:layout_marginBottom="8dp"
             android:layout_marginEnd="8dp"
             android:clickable="true"
+            android:focusable="true"
             android:scaleType="fitCenter"
             android:tint="@android:color/white"
             app:backgroundTint="@color/colorPrimary"
