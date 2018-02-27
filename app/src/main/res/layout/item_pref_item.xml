@@ -48,10 +48,20 @@
             android:text="@{desc}"
             android:textColor="@color/colorTextMiddle"
             android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="@+id/text_title"
+            app:layout_constraintEnd_toStartOf="@+id/extra"
             app:layout_constraintStart_toStartOf="@+id/text_title"
             app:layout_constraintTop_toBottomOf="@+id/text_title"
             tools:text="アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明" />
+
+        <FrameLayout
+            android:id="@+id/extra"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:paddingStart="8dp"
+            app:layout_constraintBottom_toBottomOf="@id/text_desc"
+            app:layout_constraintEnd_toEndOf="@id/text_title"
+            app:layout_constraintTop_toTopOf="@id/text_desc" />
 
         <TextView
             android:id="@+id/text_summary"

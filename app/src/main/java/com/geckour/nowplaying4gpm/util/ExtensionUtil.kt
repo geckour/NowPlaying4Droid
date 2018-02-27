@@ -77,10 +77,18 @@ fun SharedPreferences.refreshCurrent(title: String?, artist: String?, album: Str
             else remove(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name)
         }.apply()
 
-fun SharedPreferences.getFormatPatternFromPreference(context: Context): String =
+fun SharedPreferences.getFormatPattern(context: Context): String =
         getString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
 
-fun SharedPreferences.getChoseColorIndexFromPreference(): Int =
-        getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
+fun SharedPreferences.getChoseColorIndex(): Int =
+        getInt(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
+
+fun SharedPreferences.getWhetherResideSummryResId(): Int =
+        if (getWhetherReside()) R.string.pref_item_summary_switch_reside_notification_on
+        else R.string.pref_item_summary_switch_reside_notification_off
+
+fun SharedPreferences.getWhetherReside(): Boolean =
+        contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
+                || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
 
 fun List<Job>.cancelAll() = forEach { it.cancel() }

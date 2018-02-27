@@ -27,13 +27,11 @@ import timber.log.Timber
 class NotifyMediaMetaDataService: NotificationListenerService() {
 
     companion object {
-        const val ACTION_GPM_META_CHANGED: String = "com.android.music.metachanged"
         const val ACTION_GPM_PLAY_STATE_CHANGED: String = "com.android.music.playstatechanged"
         const val EXTRA_GPM_ARTIST: String = "artist"
         const val EXTRA_GPM_ALBUM: String = "album"
         const val EXTRA_GPM_TRACK: String = "track"
         const val EXTRA_GPM_PLAYING: String = "playing"
-        const val ACTION_GPM_QUEUE_CHANGED: String = "com.android.music.queuechanged"
 
         fun getIntent(context: Context): Intent = Intent(context, NotifyMediaMetaDataService::class.java)
     }
@@ -43,6 +41,8 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            if (sharedPreferences.getWhetherReside().not()) onDestroy()
+
             intent?.apply {
                 if (ContextCompat.checkSelfPermission(
                                 this@NotifyMediaMetaDataService,
@@ -52,10 +52,6 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     }
                 } else {
                     when (action) {
-                        ACTION_GPM_META_CHANGED -> {
-                            showNotification(this)
-                        }
-
                         ACTION_GPM_PLAY_STATE_CHANGED -> {
                             if (hasExtra(EXTRA_GPM_PLAYING) && !getBooleanExtra(EXTRA_GPM_PLAYING, true)) destroyNotification()
                             else showNotification(this)
@@ -77,17 +73,16 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
             destroyNotification()
         }
 
-        val intentFilter = IntentFilter().apply {
-            addAction(ACTION_GPM_META_CHANGED)
-            addAction(ACTION_GPM_PLAY_STATE_CHANGED)
-        }
+        val intentFilter = IntentFilter().apply { addAction(ACTION_GPM_PLAY_STATE_CHANGED) }
+
         registerReceiver(receiver, intentFilter)
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        unregisterReceiver(receiver)
+        try { unregisterReceiver(receiver) } catch (e: IllegalArgumentException) { Timber.e(e) }
+        destroyNotification()
         jobs.cancelAll()
     }
 
@@ -105,36 +100,38 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     }
 
     private fun showNotification(intent: Intent) {
-        ui(jobs) {
-            val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
-            val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
-            val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
-            sharedPreferences.refreshCurrent(title, artist, album)
+        if (sharedPreferences.getWhetherReside()) {
+            ui(jobs) {
+                val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
+                val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
+                val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
+                sharedPreferences.refreshCurrent(title, artist, album)
 
-            val albumArt =
-                    try {
-                        contentResolver.openInputStream(
-                                getArtworkUriFromDevice(
-                                        getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
-                                )
-                        ).let {
-                            BitmapFactory.decodeStream(it, null, null).apply { it.close() }
+                val albumArt =
+                        try {
+                            contentResolver.openInputStream(
+                                    getArtworkUriFromDevice(
+                                            getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
+                                    )
+                            ).let {
+                                BitmapFactory.decodeStream(it, null, null).apply { it.close() }
+                            }
+                        } catch (e: Throwable) {
+                            Timber.e(e)
+
+                            getBitmapFromUrl(
+                                    this@NotifyMediaMetaDataService,
+                                    getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist)
+                            )
                         }
-                    } catch (e: Throwable) {
-                        Timber.e(e)
 
-                        getBitmapFromUrl(
-                                this@NotifyMediaMetaDataService,
-                                getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist)
-                        )
-                    }
-
-            getNotification(
-                    albumArt,
-                    title,
-                    artist,
-                    album
-            )?.apply { startForeground(R.string.notification_channel_id_share, this) }
+                getNotification(
+                        albumArt,
+                        title,
+                        artist,
+                        album
+                )?.apply { startForeground(R.string.notification_channel_id_share, this) }
+            }
         }
     }
 
@@ -190,7 +187,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                     thumb?.apply {
                         if (Build.VERSION.SDK_INT >= 26) setColorized(true)
                         val color = Palette.from(this).generate().let{
-                            when (paletteArray[sharedPreferences.getChoseColorIndexFromPreference()]) {
+                            when (paletteArray[sharedPreferences.getChoseColorIndex()]) {
                                 R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
                                 R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
                                 R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)

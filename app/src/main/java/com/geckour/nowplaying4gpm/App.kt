@@ -23,8 +23,10 @@ class App: Application() {
         sharedPreferences.edit().apply {
             if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not())
                 putString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, getString(R.string.default_sharing_text_pattern))
-            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_INDEX.name).not())
-                putInt(SettingsActivity.PrefKey.PREF_KEY_CHOSE_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
+            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name).not())
+                putInt(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
+            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not())
+                putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
         }.apply()
     }
 }
