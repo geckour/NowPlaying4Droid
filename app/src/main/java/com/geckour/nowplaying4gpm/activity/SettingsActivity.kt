@@ -241,6 +241,7 @@ class SettingsActivity : Activity() {
                             .putInt(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteIndex)
                             .apply()
                     binding.summaryChooseColor = getString(paletteArray[paletteIndex])
+                    showNotification()
                 }
             }
             dialog.dismiss()

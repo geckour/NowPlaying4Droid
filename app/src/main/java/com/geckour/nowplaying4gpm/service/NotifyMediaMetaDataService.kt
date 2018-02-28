@@ -45,27 +45,21 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.apply {
-                if (ContextCompat.checkSelfPermission(
-                                this@NotifyMediaMetaDataService,
-                                Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply { startActivity(this) }
-                } else {
-                    when (action) {
-                        ACTION_GPM_PLAY_STATE_CHANGED -> {
-                            val title = if (hasExtra(EXTRA_GPM_TRACK)) getStringExtra(EXTRA_GPM_TRACK) else null
-                            val artist = if (hasExtra(EXTRA_GPM_ARTIST)) getStringExtra(EXTRA_GPM_ARTIST) else null
-                            val album = if (hasExtra(EXTRA_GPM_ALBUM)) getStringExtra(EXTRA_GPM_ALBUM) else null
-                            sharedPreferences.refreshCurrentMetadata(title, artist, album)
+                when (action) {
+                    ACTION_GPM_PLAY_STATE_CHANGED -> {
+                        val title = if (hasExtra(EXTRA_GPM_TRACK)) getStringExtra(EXTRA_GPM_TRACK) else null
+                        val artist = if (hasExtra(EXTRA_GPM_ARTIST)) getStringExtra(EXTRA_GPM_ARTIST) else null
+                        val album = if (hasExtra(EXTRA_GPM_ALBUM)) getStringExtra(EXTRA_GPM_ALBUM) else null
+                        sharedPreferences.refreshCurrentMetadata(title, artist, album)
 
-                            if (hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true))
-                                showNotification(title, artist, album)
-                            else destroyNotification(true)
-                        }
-
-                        ACTION_DESTROY_NOTIFICATION -> destroyNotification()
-
-                        ACTION_SHOW_NOTIFICATION -> showNotification()
+                        if (hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true))
+                            showNotification(title, artist, album)
+                        else destroyNotification(true)
                     }
+
+                    ACTION_DESTROY_NOTIFICATION -> destroyNotification()
+
+                    ACTION_SHOW_NOTIFICATION -> showNotification()
                 }
             }
         }
@@ -89,6 +83,8 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         }
 
         registerReceiver(receiver, intentFilter)
+
+        showNotification()
     }
 
     override fun onDestroy() {
@@ -113,7 +109,11 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     }
 
     private fun showNotification(title: String?, artist: String?, album: String?) {
-        if (sharedPreferences.getWhetherReside()) {
+        if (ContextCompat.checkSelfPermission(
+                        this@NotifyMediaMetaDataService,
+                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply { startActivity(this) }
+        } else if (sharedPreferences.getWhetherReside()) {
             ui(jobs) {
                 val albumArt =
                         getArtworkUriFromDevice(
@@ -143,11 +143,13 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     private fun showNotification() {
         sharedPreferences.apply {
-            val title = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name, null) else null
-            val artist = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name, null) else null
-            val album = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name, null) else null
+            if (getWhetherReside()) {
+                val title = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name, null) else null
+                val artist = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name, null) else null
+                val album = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name, null) else null
 
-            showNotification(title, artist, album)
+                showNotification(title, artist, album)
+            }
         }
     }
 
