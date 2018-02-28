@@ -51,6 +51,8 @@ fun SharedPreferences.init(context: Context) {
             putInt(SettingsActivity.PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteArray.indexOf(R.string.palette_light_vibrant))
         if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not())
             putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
+        if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_USE_API.name).not())
+            putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_USE_API.name, true)
         if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not())
             putBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
         if (contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not())
@@ -80,6 +82,10 @@ fun SharedPreferences.getWhetherResideSummaryResId(): Int =
         if (getWhetherReside()) R.string.pref_item_summary_switch_on
         else R.string.pref_item_summary_switch_off
 
+fun SharedPreferences.getWhetherUseApiSummaryResId(): Int =
+        if (getWhetherUseApi()) R.string.pref_item_summary_switch_on
+        else R.string.pref_item_summary_switch_off
+
 fun SharedPreferences.getWhetherBundleArtworkSummaryResId(): Int =
         if (getWhetherBundleArtwork()) R.string.pref_item_summary_switch_on
         else R.string.pref_item_summary_switch_off
@@ -91,6 +97,10 @@ fun SharedPreferences.getWhetherColorizeNotificationBgSummaryResId(): Int =
 fun SharedPreferences.getWhetherReside(): Boolean =
         contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
                 || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
+
+fun SharedPreferences.getWhetherUseApi(): Boolean =
+        contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_USE_API.name).not()
+                || getBoolean(SettingsActivity.PrefKey.PREF_KEY_WHETHER_USE_API.name, true)
 
 fun SharedPreferences.getWhetherBundleArtwork(): Boolean =
         contains(SettingsActivity.PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not()

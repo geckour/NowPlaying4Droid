@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.FrameLayout
 import android.widget.Switch
 import android.widget.TextView
 import com.geckour.nowplaying4gpm.R
@@ -31,6 +32,7 @@ class SettingsActivity : Activity() {
         PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
         PREF_KEY_CHOSEN_COLOR_INDEX,
         PREF_KEY_WHETHER_RESIDE,
+        PREF_KEY_WHETHER_USE_API,
         PREF_KEY_WHETHER_BUNDLE_ARTWORK,
         PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG,
         PREF_KEY_CURRENT_TITLE,
@@ -70,12 +72,13 @@ class SettingsActivity : Activity() {
         binding.summaryPattern = sharedPreferences.getFormatPattern(this)
         binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndex()])
         binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummaryResId())
+        binding.summarySwitchUseApi = getString(sharedPreferences.getWhetherUseApiSummaryResId())
         binding.summarySwitchBundleArtwork = getString(sharedPreferences.getWhetherBundleArtworkSummaryResId())
         binding.summarySwitchColorizeNotificationBg = getString(sharedPreferences.getWhetherColorizeNotificationBgSummaryResId())
         binding.itemPatternFormat?.root?.setOnClickListener { onClickItemPatternFormat() }
         binding.itemChooseColor?.root?.setOnClickListener { onClickItemChooseColor() }
         binding.itemSwitchReside?.apply {
-            root?.setOnClickListener { onClickItemSwitchReside() }
+            root?.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { checkState, summary ->
@@ -86,8 +89,15 @@ class SettingsActivity : Activity() {
                 })
             }
         }
+        binding.itemSwitchUseApi?.apply {
+            root?.setOnClickListener { onClickItemWithSwitch(extra) }
+            extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary -> binding.summarySwitchUseApi = summary })
+            }
+        }
         binding.itemSwitchBundleArtwork?.apply {
-            root?.setOnClickListener { onClickItemSwitchBundleArtwork() }
+            root?.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary -> binding.summarySwitchBundleArtwork = summary })
@@ -96,7 +106,7 @@ class SettingsActivity : Activity() {
         binding.itemSwitchColorizeNotificationBg?.apply {
             if (Build.VERSION.SDK_INT < 26) root.visibility = View.GONE
             else {
-                root?.setOnClickListener { onClickItemSwitchColorizeNotificationBg() }
+                root?.setOnClickListener { onClickItemWithSwitch(extra) }
                 extra.apply {
                     visibility = View.VISIBLE
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary -> binding.summarySwitchColorizeNotificationBg = summary })
@@ -237,11 +247,7 @@ class SettingsActivity : Activity() {
         }.show()
     }
 
-    private fun onClickItemSwitchReside() = (binding.itemSwitchReside?.extra?.getChildAt(0) as? Switch)?.performClick()
-
-    private fun onClickItemSwitchBundleArtwork() = (binding.itemSwitchBundleArtwork?.extra?.getChildAt(0) as? Switch)?.performClick()
-
-    private fun onClickItemSwitchColorizeNotificationBg() = (binding.itemSwitchColorizeNotificationBg?.extra?.getChildAt(0) as? Switch)?.performClick()
+    private fun onClickItemWithSwitch(extra: FrameLayout?) = (extra?.getChildAt(0) as? Switch)?.performClick()
 
     private fun getSwitch(prefKey: PrefKey, onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch =
             Switch(this@SettingsActivity).apply {

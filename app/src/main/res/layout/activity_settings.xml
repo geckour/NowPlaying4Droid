@@ -18,6 +18,10 @@
             type="String" />
 
         <variable
+            name="summary_switch_use_api"
+            type="String" />
+
+        <variable
             name="summary_switch_bundle_artwork"
             type="String" />
 
@@ -57,6 +61,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
+
+                <include
+                    android:id="@+id/category_general"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_general}"/>
+
+                <include
+                    android:id="@+id/item_switch_use_api"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_use_api}"
+                    app:summary="@{summary_switch_use_api}"
+                    app:title="@{@string/pref_item_title_switch_use_api}"/>
 
                 <include
                     android:id="@+id/category_share"

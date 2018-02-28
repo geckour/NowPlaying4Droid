@@ -115,7 +115,6 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     private fun showNotification(title: String?, artist: String?, album: String?) {
         if (sharedPreferences.getWhetherReside()) {
             ui(jobs) {
-
                 val albumArt =
                         getArtworkUriFromDevice(
                                 this@NotifyMediaMetaDataService,
@@ -124,10 +123,13 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                             contentResolver.openInputStream(it).let {
                                 BitmapFactory.decodeStream(it, null, null).apply { it.close() }
                             }
-                        } ?: getBitmapFromUrl(
-                                this@NotifyMediaMetaDataService,
-                                getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist, Image.Size.MEDIUM)
-                        )
+                        } ?: run {
+                            if (sharedPreferences.getWhetherUseApi().not()) null
+                            else getBitmapFromUrl(
+                                    this@NotifyMediaMetaDataService,
+                                    getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist, Image.Size.MEDIUM)
+                            )
+                        }
 
                 getNotification(
                         albumArt,

@@ -73,26 +73,30 @@ class SharingActivity: Activity() {
     private suspend fun getArtworkUri(track: String?, artist: String?, album: String?): Uri? =
             if (sharedPreferences.getWhetherBundleArtwork()) {
                 getArtworkUriFromDevice(this@SharingActivity, getAlbumIdFromDevice(this@SharingActivity, track, artist, album))
-                        ?: getBitmapFromUrl(this@SharingActivity, getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist))?.let {
-                            if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name)) {
-                                try {
-                                    val uriString = sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, "")
-                                    if (uriString.isNotBlank()) contentResolver.delete(Uri.parse(uriString), null, null)
-                                } catch (e: Exception) { Timber.e(e) }
-                            }
+                        ?: run {
+                            if (sharedPreferences.getWhetherUseApi()) {
+                                getBitmapFromUrl(this@SharingActivity, getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist))?.let {
+                                    if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name)) {
+                                        try {
+                                            val uriString = sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, "")
+                                            if (uriString.isNotBlank()) contentResolver.delete(Uri.parse(uriString), null, null)
+                                        } catch (e: Exception) { Timber.e(e) }
+                                    }
 
-                            getAlbumArtUriFromBitmap(this@SharingActivity, it)?.apply {
-                                sharedPreferences.edit()
-                                        .putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, this.toString())
-                                        .apply()
-                            }
+                                    getAlbumArtUriFromBitmap(this@SharingActivity, it)?.apply {
+                                        sharedPreferences.edit()
+                                                .putString(SettingsActivity.PrefKey.PREF_KEY_TEMP_ALBUM_ART_URI.name, this.toString())
+                                                .apply()
+                                    }
+                                }
+                            } else null
                         }
             } else null
 
     private fun startShare(text: String, stream: Uri?) =
             ShareCompat.IntentBuilder.from(this@SharingActivity)
                     .setChooserTitle(R.string.share_title)
-                    .setText(text).also { stream?.apply { it.setStream(this).setType("image/jpeg") } ?: run { it.setType("text/plain") } }
+                    .setText(text).also { stream?.apply { it.setStream(this).setType("image/jpeg") } ?: it.setType("text/plain") }
                     .createChooserIntent()
                     .apply {
                         PendingIntent.getActivity(
