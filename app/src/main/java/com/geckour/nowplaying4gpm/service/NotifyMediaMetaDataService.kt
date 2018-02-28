@@ -28,6 +28,8 @@ import timber.log.Timber
 class NotifyMediaMetaDataService: NotificationListenerService() {
 
     companion object {
+        const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
+        const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
         const val ACTION_GPM_PLAY_STATE_CHANGED: String = "com.android.music.playstatechanged"
         const val EXTRA_GPM_ARTIST: String = "artist"
         const val EXTRA_GPM_ALBUM: String = "album"
@@ -46,15 +48,23 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                 if (ContextCompat.checkSelfPermission(
                                 this@NotifyMediaMetaDataService,
                                 Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply {
-                        startActivity(this)
-                    }
+                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply { startActivity(this) }
                 } else {
                     when (action) {
                         ACTION_GPM_PLAY_STATE_CHANGED -> {
-                            if (hasExtra(EXTRA_GPM_PLAYING) && !getBooleanExtra(EXTRA_GPM_PLAYING, true)) destroyNotification()
-                            else showNotification(this)
+                            val title = if (hasExtra(EXTRA_GPM_TRACK)) getStringExtra(EXTRA_GPM_TRACK) else null
+                            val artist = if (hasExtra(EXTRA_GPM_ARTIST)) getStringExtra(EXTRA_GPM_ARTIST) else null
+                            val album = if (hasExtra(EXTRA_GPM_ALBUM)) getStringExtra(EXTRA_GPM_ALBUM) else null
+                            sharedPreferences.refreshCurrentMetadata(title, artist, album)
+
+                            if (hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true))
+                                showNotification(title, artist, album)
+                            else destroyNotification(true)
                         }
+
+                        ACTION_DESTROY_NOTIFICATION -> destroyNotification()
+
+                        ACTION_SHOW_NOTIFICATION -> showNotification()
                     }
                 }
             }
@@ -72,7 +82,11 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
             destroyNotification()
         }
 
-        val intentFilter = IntentFilter().apply { addAction(ACTION_GPM_PLAY_STATE_CHANGED) }
+        val intentFilter = IntentFilter().apply {
+            addAction(ACTION_GPM_PLAY_STATE_CHANGED)
+            addAction(ACTION_DESTROY_NOTIFICATION)
+            addAction(ACTION_SHOW_NOTIFICATION)
+        }
 
         registerReceiver(receiver, intentFilter)
     }
@@ -81,7 +95,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         super.onDestroy()
 
         try { unregisterReceiver(receiver) } catch (e: IllegalArgumentException) { Timber.e(e) }
-        destroyNotification()
+        destroyNotification(true)
         jobs.cancelAll()
     }
 
@@ -98,13 +112,9 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun showNotification(intent: Intent) {
+    private fun showNotification(title: String?, artist: String?, album: String?) {
         if (sharedPreferences.getWhetherReside()) {
             ui(jobs) {
-                val title = if (intent.hasExtra(EXTRA_GPM_TRACK)) intent.getStringExtra(EXTRA_GPM_TRACK) else null
-                val artist = if (intent.hasExtra(EXTRA_GPM_ARTIST)) intent.getStringExtra(EXTRA_GPM_ARTIST) else null
-                val album = if (intent.hasExtra(EXTRA_GPM_ALBUM)) intent.getStringExtra(EXTRA_GPM_ALBUM) else null
-                sharedPreferences.refreshCurrentMetadata(title, artist, album)
 
                 val albumArt =
                         getArtworkUriFromDevice(
@@ -129,12 +139,22 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         }
     }
 
+    private fun showNotification() {
+        sharedPreferences.apply {
+            val title = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_TITLE.name, null) else null
+            val artist = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ARTIST.name, null) else null
+            val album = if (contains(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name)) getString(SettingsActivity.PrefKey.PREF_KEY_CURRENT_ALBUM.name, null) else null
+
+            showNotification(title, artist, album)
+        }
+    }
+
     private fun showDummyNotification() =
             startForeground(R.string.notification_channel_id_share, getDummyNotification())
 
-    private fun destroyNotification() {
+    private fun destroyNotification(clearMetadata: Boolean = false) {
         stopForeground(true)
-        sharedPreferences.refreshCurrentMetadata(null, null, null)
+        if (clearMetadata) sharedPreferences.refreshCurrentMetadata(null, null, null)
     }
 
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?): Notification? =

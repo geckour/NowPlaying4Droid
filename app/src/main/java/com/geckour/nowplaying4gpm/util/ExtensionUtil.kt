@@ -17,28 +17,6 @@ import timber.log.Timber
 import java.text.MessageFormat
 import kotlin.coroutines.experimental.CoroutineContext
 
-
-fun <T> async(context: CoroutineContext = CommonPool, block: suspend CoroutineScope.() -> T) =
-        kotlinx.coroutines.experimental.async(context, block = block)
-
-fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
-        launch(UI) {
-            try { block() }
-            catch (e: Exception) {
-                Timber.e(e)
-                onError(e)
-            }
-        }.apply { managerList.add(this) }
-
-fun defLaunch(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
-        launch {
-            try { block() }
-            catch (e: Exception) {
-                Timber.e(e)
-                onError(e)
-            }
-        }.apply { managerList.add(this) }
-
 fun String.getSharingText(title: String, artist: String, album: String): String {
     val pattern = this
             .replace("{", "'{'")

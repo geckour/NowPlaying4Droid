@@ -9,7 +9,34 @@ import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
+import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.CoroutineScope
+import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
+import kotlin.coroutines.experimental.CoroutineContext
+
+fun <T> async(context: CoroutineContext = CommonPool, block: suspend CoroutineScope.() -> T) =
+        kotlinx.coroutines.experimental.async(context, block = block)
+
+fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
+        launch(UI) {
+            try { block() }
+            catch (e: Exception) {
+                Timber.e(e)
+                onError(e)
+            }
+        }.apply { managerList.add(this) }
+
+fun defLaunch(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
+        launch {
+            try { block() }
+            catch (e: Exception) {
+                Timber.e(e)
+                onError(e)
+            }
+        }.apply { managerList.add(this) }
 
 suspend fun getAlbumIdFromDevice(context: Context, title: String?, artist: String?, album: String?): Long? =
         if (title == null || artist == null || album == null) null

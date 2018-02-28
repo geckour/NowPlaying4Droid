@@ -3,6 +3,7 @@ package com.geckour.nowplaying4gpm.activity
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.NotificationManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
@@ -77,14 +78,19 @@ class SettingsActivity : Activity() {
             root?.setOnClickListener { onClickItemSwitchReside() }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE,{ summary -> binding.summarySwitchReside = summary }) { requestStoragePermission() })
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { checkState, summary ->
+                    binding.summarySwitchReside = summary
+
+                    if (checkState) showNotification()
+                    else destroyNotification()
+                })
             }
         }
         binding.itemSwitchBundleArtwork?.apply {
             root?.setOnClickListener { onClickItemSwitchBundleArtwork() }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK, { summary -> binding.summarySwitchBundleArtwork = summary }))
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary -> binding.summarySwitchBundleArtwork = summary })
             }
         }
         binding.itemSwitchColorizeNotificationBg?.apply {
@@ -93,12 +99,12 @@ class SettingsActivity : Activity() {
                 root?.setOnClickListener { onClickItemSwitchColorizeNotificationBg() }
                 extra.apply {
                     visibility = View.VISIBLE
-                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG, { summary -> binding.summarySwitchColorizeNotificationBg = summary }))
+                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary -> binding.summarySwitchColorizeNotificationBg = summary })
                 }
             }
         }
 
-        requestStoragePermission()
+        requestStoragePermission { startNotificationService() }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
@@ -108,7 +114,7 @@ class SettingsActivity : Activity() {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
                     startNotificationService()
-                } else requestStoragePermission()
+                } else requestStoragePermission { startNotificationService() }
             }
         }
     }
@@ -123,10 +129,18 @@ class SettingsActivity : Activity() {
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(NotifyMediaMetaDataService.getIntent(this))
             else startService(NotifyMediaMetaDataService.getIntent(this))
 
-    private fun requestStoragePermission() {
+    private fun showNotification() =
+            requestStoragePermission {
+                sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_SHOW_NOTIFICATION })
+            }
+
+    private fun destroyNotification() =
+            sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_DESTROY_NOTIFICATION })
+
+    private fun requestStoragePermission(onPermit: () -> Unit = {}) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            startNotificationService()
+            onPermit()
         } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
     }
 
@@ -229,17 +243,14 @@ class SettingsActivity : Activity() {
 
     private fun onClickItemSwitchColorizeNotificationBg() = (binding.itemSwitchColorizeNotificationBg?.extra?.getChildAt(0) as? Switch)?.performClick()
 
-    private fun getSwitch(prefKey: PrefKey, onSetSummary: (summary: String) -> Unit, onChecked: () -> Unit = {}): Switch =
+    private fun getSwitch(prefKey: PrefKey, onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch =
             Switch(this@SettingsActivity).apply {
                 setOnClickListener {
                     sharedPreferences.edit()
                             .putBoolean(prefKey.name, isChecked)
                             .apply()
-                    onSetSummary(getString(
-                            if (isChecked) R.string.pref_item_summary_switch_on
-                            else R.string.pref_item_summary_switch_off
-                    ))
-                    if (isChecked) onChecked()
+
+                    onCheckStateChanged(isChecked, getString(if (isChecked) R.string.pref_item_summary_switch_on else R.string.pref_item_summary_switch_off))
                 }
                 isChecked = sharedPreferences.getBoolean(prefKey.name, true)
             }
