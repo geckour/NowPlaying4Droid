@@ -43,7 +43,7 @@ fun String.getSharingText(title: String, artist: String, album: String): String 
                         "AR" -> artist
                         "AL" -> album
                         else -> it
-                    }
+                    }.replace(Regex("^'(.*)'$"), "$1")
                 }
 
 fun String.splitIncludeDelimiter(vararg delimiters: String) =
