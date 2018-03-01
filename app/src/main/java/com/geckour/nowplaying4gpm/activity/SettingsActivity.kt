@@ -192,7 +192,8 @@ class SettingsActivity : Activity() {
         AlertDialog.Builder(this).generate(
                 getString(R.string.dialog_title_pattern_format),
                 getString(R.string.dialog_message_pattern_format),
-                patternFormatDialogBinding.root) { dialog, which ->
+                patternFormatDialogBinding.root
+        ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val pattern = patternFormatDialogBinding.editText.text.toString()
@@ -202,6 +203,7 @@ class SettingsActivity : Activity() {
                     binding.summaryPattern = pattern
                 }
             }
+            showNotification()
             dialog.dismiss()
         }.show()
     }

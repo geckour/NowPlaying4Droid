@@ -12,44 +12,41 @@ import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
 fun String.getSharingText(title: String, artist: String, album: String): String =
-        this.splitIncludeDelimiter("'", "TI", "AR", "AL")
-                .let { nonEscapeList ->
-                    val singleQuoteElement = nonEscapeList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }.toMutableList()
-                    var list4operate = nonEscapeList
+        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL").apply { Timber.d("split list: $this") }
+                .let { splitList ->
+                    val delimiters = splitList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }.apply { if (lastIndex < 0) return@let splitList }
+                    return@let ArrayList<String>().apply {
+                        for (i in 0 until delimiters.lastIndex step 2) {
+                            this.addAll(splitList.subList(
+                                    if (i == 0) 0 else delimiters[i - 1].first + 1,
+                                    delimiters[i].first))
 
-                    while (singleQuoteElement.size > 1) {
-                        val fromElement = singleQuoteElement[singleQuoteElement.lastIndex - 1]
-                        val toElement = singleQuoteElement[singleQuoteElement.lastIndex]
+                            this.add(splitList.subList(
+                                    delimiters[i].first,
+                                    delimiters[i + 1].first + 1).joinToString(""))
+                        }
 
-                        val concatString =
-                                nonEscapeList.subList(fromElement.first, toElement.first + 1).joinToString("")
-
-                        list4operate = listOf(
-                                *list4operate.subList(0, fromElement.first).toTypedArray(),
-                                concatString,
-                                *list4operate.subList(
-                                        if (toElement.first < nonEscapeList.lastIndex - 1) toElement.first + 1 else nonEscapeList.lastIndex,
-                                        nonEscapeList.size
-                                ).toTypedArray()
-                        )
-                        singleQuoteElement.removeAt(singleQuoteElement.lastIndex)
-                        singleQuoteElement.removeAt(singleQuoteElement.lastIndex)
+                        this.addAll(splitList.subList(
+                                if (delimiters[delimiters.lastIndex].first + 1 < splitList.lastIndex) delimiters[delimiters.lastIndex].first + 1 else splitList.lastIndex,
+                                splitList.size))
                     }
-
-                    list4operate.apply { Timber.d("escaped list: $this") }
                 }.joinToString("") {
-                    when (it) {
-                        "TI" -> title
-                        "AR" -> artist
-                        "AL" -> album
-                        else -> it
-                    }.replace(Regex("^'(.*)'$"), "$1")
+                    return@joinToString Regex("^'(.+)'$").let { regex ->
+                        if (it.matches(regex)) it.replace(regex, "$1")
+                        else when (it) {
+                            "'" -> ""
+                            "''" -> "'"
+                            "TI" -> title
+                            "AR" -> artist
+                            "AL" -> album
+                            else -> it
+                        }
+                    }
                 }
 
 fun String.splitIncludeDelimiter(vararg delimiters: String) =
         delimiters.joinToString("|").let { pattern ->
-            this.split(Regex("(?=$pattern)"))
-                    .flatMap { it.split(Regex("(?<=$pattern)")) }
+            this.split(Regex("(?<=$pattern)|(?=$pattern)"))
         }
 
 fun String.escapeSql(): String = replace("'", "''")
