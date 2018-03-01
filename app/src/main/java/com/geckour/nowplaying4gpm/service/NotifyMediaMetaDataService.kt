@@ -162,8 +162,11 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?): Notification? =
             if (title == null || artist == null || album == null) null
             else {
-                (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
-                else Notification.Builder(this)).apply {
+                val notificationBuilder =
+                        if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
+                        else Notification.Builder(this)
+
+                notificationBuilder.apply {
                     val actionOpenSetting =
                             PendingIntent.getActivity(
                                     this@NotifyMediaMetaDataService,

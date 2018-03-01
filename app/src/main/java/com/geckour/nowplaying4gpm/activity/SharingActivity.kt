@@ -50,9 +50,7 @@ class SharingActivity: Activity() {
             if (track == null || artist == null || album == null) return
 
             val sharingText =
-                    sharedPreferences.getString(
-                            SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
-                            getString(R.string.default_sharing_text_pattern))
+                    sharedPreferences.getString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, getString(R.string.default_sharing_text_pattern))
                             .getSharingText(track, artist, album)
 
             ui(jobs) {
