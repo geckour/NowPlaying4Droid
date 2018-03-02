@@ -29,7 +29,7 @@ class SharingActivity: Activity() {
     }
 
     companion object {
-        fun createIntent(context: Context, track: String?, artist: String?, album: String?): Intent =
+        fun getIntent(context: Context, track: String?, artist: String?, album: String?): Intent =
                 Intent(context, SharingActivity::class.java).apply {
                     if (track != null) putExtra(ArgKey.TRACK.name, track)
                     if (artist != null) putExtra(ArgKey.ARTIST.name, artist)

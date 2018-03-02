@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.activity
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.app.NotificationManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
@@ -172,7 +171,7 @@ class SettingsActivity : Activity() {
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
                     .show()
         } else {
-            val intent = SharingActivity.createIntent(this@SettingsActivity, title, artist, album)
+            val intent = SharingActivity.getIntent(this@SettingsActivity, title, artist, album)
             startActivity(intent)
         }
     }
