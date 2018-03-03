@@ -228,7 +228,7 @@ class SettingsActivity : Activity() {
                     Activity.RESULT_CANCELED -> {
                         showErrorDialog(
                                 R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_already_purchase)
+                                R.string.dialog_message_alert_on_cancel_purchase)
                     }
                 }
             }
