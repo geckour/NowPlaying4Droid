@@ -136,7 +136,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
     private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null) =
             AppWidgetManager.getInstance(this).apply {
-                val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java)).firstOrNull() ?: return@apply
+                val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java))
                 updateAppWidget(
                         ids,
                         RemoteViews(this@NotifyMediaMetaDataService.packageName, R.layout.widget_share).apply {
