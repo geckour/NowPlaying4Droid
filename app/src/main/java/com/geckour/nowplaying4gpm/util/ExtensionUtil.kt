@@ -4,37 +4,43 @@ import android.app.AlertDialog
 import android.content.DialogInterface
 import android.view.View
 import com.geckour.nowplaying4gpm.R
-import kotlinx.coroutines.experimental.CommonPool
-import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
-import timber.log.Timber
-import java.text.MessageFormat
-import kotlin.coroutines.experimental.CoroutineContext
 
+fun String.getSharingText(title: String, artist: String, album: String): String =
+        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL")
+                .let { splitList ->
+                    val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }.apply { if (lastIndex < 0) return@let splitList }
+                    return@let ArrayList<String>().apply {
+                        for (i in 0 until escapes.lastIndex step 2) {
+                            this.addAll(splitList.subList(
+                                    if (i == 0) 0 else escapes[i - 1].first + 1,
+                                    escapes[i].first))
 
-fun <T> async(context: CoroutineContext = CommonPool, block: suspend CoroutineScope.() -> T) =
-        kotlinx.coroutines.experimental.async(context, block = block)
+                            this.add(splitList.subList(
+                                    escapes[i].first,
+                                    escapes[i + 1].first + 1).joinToString(""))
+                        }
 
-fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
-        launch(UI) {
-            try { block() }
-            catch (e: Exception) {
-                Timber.e(e)
-                onError(e)
-            }
-        }.apply { managerList.add(this) }
+                        this.addAll(splitList.subList(
+                                if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex) escapes[escapes.lastIndex].first + 1 else splitList.lastIndex,
+                                splitList.size))
+                    }
+                }.joinToString("") {
+                    return@joinToString Regex("^'(.+)'$").let { regex ->
+                        if (it.matches(regex)) it.replace(regex, "$1")
+                        else when (it) {
+                            "'" -> ""
+                            "''" -> "'"
+                            "TI" -> title
+                            "AR" -> artist
+                            "AL" -> album
+                            else -> it
+                        }
+                    }
+                }
 
-fun String.getSharingText(title: String, artist: String, album: String): String {
-    val pattern = this
-            .replace("{", "'{'")
-            .replace("}", "'}'")
-            .replace("TI", "{0}")
-            .replace("AR", "{1}")
-            .replace("AL", "{2}")
-    return MessageFormat.format(pattern, title, artist, album)
-}
+fun String.splitIncludeDelimiter(vararg delimiters: String) =
+        delimiters.joinToString("|").let { pattern -> this.split(Regex("(?<=$pattern)|(?=$pattern)")) }
 
 fun String.escapeSql(): String = replace("'", "''")
 
@@ -51,3 +57,5 @@ fun AlertDialog.Builder.generate(
 
     return create()
 }
+
+fun List<Job>.cancelAll() = forEach { it.cancel() }

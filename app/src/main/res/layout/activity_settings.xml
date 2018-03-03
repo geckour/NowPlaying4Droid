@@ -4,8 +4,29 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
+
         <variable
             name="summary_pattern"
+            type="String" />
+
+        <variable
+            name="summary_choose_color"
+            type="String" />
+
+        <variable
+            name="summary_switch_reside"
+            type="String" />
+
+        <variable
+            name="summary_switch_use_api"
+            type="String" />
+
+        <variable
+            name="summary_switch_bundle_artwork"
+            type="String" />
+
+        <variable
+            name="summary_switch_colorize_notification_bg"
             type="String" />
     </data>
 
@@ -13,40 +34,142 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-
         <Toolbar
             android:id="@+id/toolbar"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:elevation="3dp"
             android:titleTextColor="@android:color/white"
-            tools:title="ツールバータイトル" />
-
-        <include
-            android:id="@+id/category_general"
-            layout="@layout/item_pref_category"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/toolbar"
-            app:title="@{@string/pref_category_general}" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:title="ツールバータイトル"/>
 
-        <include
-            android:id="@+id/item_pattern_format"
-            layout="@layout/item_pref_item"
+        <ScrollView
+            android:id="@+id/scrollView"
             android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/toolbar">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <include
+                    android:id="@+id/category_general"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_general}"/>
+
+                <include
+                    android:id="@+id/item_switch_use_api"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_use_api}"
+                    app:summary="@{summary_switch_use_api}"
+                    app:title="@{@string/pref_item_title_switch_use_api}"/>
+
+                <include
+                    android:id="@+id/category_share"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_share}"/>
+
+                <include
+                    android:id="@+id/item_pattern_format"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_pattern}"
+                    app:summary="@{summary_pattern}"
+                    app:title="@{@string/pref_item_title_pattern}"/>
+
+                <include
+                    android:id="@+id/item_switch_bundle_artwork"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_bundle_artwork}"
+                    app:summary="@{summary_switch_bundle_artwork}"
+                    app:title="@{@string/pref_item_title_switch_bundle_artwork}"/>
+
+                <include
+                    android:id="@+id/category_notification"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_notification}"/>
+
+                <include
+                    android:id="@+id/item_switch_reside"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_reside_notification}"
+                    app:summary="@{summary_switch_reside}"
+                    app:title="@{@string/pref_item_title_switch_reside_notification}"/>
+
+                <include
+                    android:id="@+id/item_choose_color"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_choose_color}"
+                    app:summary="@{summary_choose_color}"
+                    app:title="@{@string/pref_item_title_choose_color}"/>
+
+                <include
+                    android:id="@+id/item_switch_colorize_notification_bg"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
+                    app:summary="@{summary_switch_colorize_notification_bg}"
+                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
+
+                <include
+                    android:id="@+id/category_others"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_others}"/>
+
+                <include
+                    android:id="@+id/item_donate"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_donate}"
+                    app:title="@{@string/pref_item_title_donate}"/>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:desc="@{@string/pref_desc_pattern}"
-            app:layout_constraintEnd_toEndOf="@+id/category_general"
-            app:layout_constraintStart_toStartOf="@+id/category_general"
-            app:layout_constraintTop_toBottomOf="@+id/category_general"
-            app:summary="@{summary_pattern}"
-            app:title="@{@string/pref_title_pattern}" />
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:scaleType="fitCenter"
+            android:tint="@android:color/white"
+            app:backgroundTint="@color/colorPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/ic_app_icon" />
 
     </android.support.constraint.ConstraintLayout>
 </layout>

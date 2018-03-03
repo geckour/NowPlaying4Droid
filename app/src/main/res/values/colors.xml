@@ -5,4 +5,7 @@
     <color name="colorAccent">#01579b</color>
 
     <color name="colorTextMiddle">#c0000000</color>
+    <color name="colorShadowTextDark">#80000000</color>
+    <color name="colorShadowTextLight">#50ffffff</color>
+    <color name="colorMaskInactive">#e0ffffff</color>
 </resources>

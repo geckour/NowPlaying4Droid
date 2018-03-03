@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
+import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
+import com.geckour.nowplaying4gpm.util.init
 import timber.log.Timber
 
 class App: Application() {
@@ -19,10 +21,6 @@ class App: Application() {
             Stetho.initializeWithDefaults(this)
         }
 
-        if (sharedPreferences.contains(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not()) {
-            sharedPreferences.edit()
-                    .putString(SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, getString(R.string.default_sharing_text_pattern))
-                    .apply()
-        }
+        sharedPreferences.init(this)
     }
 }

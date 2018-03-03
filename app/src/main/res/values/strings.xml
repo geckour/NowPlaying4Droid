@@ -2,24 +2,60 @@
     <string name="app_name">NowPlaying4GPM</string>
 
     <string name="notification_title">NowPlayingを共有…</string>
+    <string name="notification_text_dummy">ダミー通知</string>
     <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
 
-    <string name="notification_channel_id_share">NOTIFICATION_CHANNEL_SHARE</string>
     <string name="notification_channel_name_share">共有</string>
     <string name="notification_channel_description_share">NowPlaying共有用通知</string>
 
-    <string name="pref_category_general">一般</string>
-    <string name="pref_title_pattern">投稿文のフォーマットを指定</string>
-    <string name="pref_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
+    <string name="pref_category_general">全般</string>
+    <string name="pref_category_share">共有</string>
+    <string name="pref_category_others">その他</string>
+    <string name="pref_category_notification">通知</string>
+    <string name="pref_mask_desc">寄付によってロックが解除されます</string>
+    <string name="pref_item_title_pattern">投稿文のフォーマットを指定</string>
+    <string name="pref_item_title_choose_color">通知の配色を選択</string>
+    <string name="pref_item_title_switch_reside_notification">通知の常駐切り替え</string>
+    <string name="pref_item_title_switch_use_api">アートワーク取得時の通信</string>
+    <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
+    <string name="pref_item_title_switch_colorize_notification_bg">通知の背景色</string>
+    <string name="pref_item_title_donate">寄付</string>
+    <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
+    <string name="pref_item_desc_choose_color">アートワークを基にしたカラーパレットから選択</string>
+    <string name="pref_item_desc_switch_reside_notification">Google Play Musicアプリにて再生時に共有用通知を表示する</string>
+    <string name="pref_item_desc_switch_use_api">アートワーク取得の補助手段として外部サービスと通信する</string>
+    <string name="pref_item_desc_switch_bundle_artwork">アルバムアートワークを添付する</string>
+    <string name="pref_item_desc_switch_colorize_notification_bg">共有用通知に背景色を設定する</string>
+    <string name="pref_item_desc_donate">寄付する (一部機能のロックが解除されます)</string>
+    <string name="pref_item_summary_switch_on">ON</string>
+    <string name="pref_item_summary_switch_off">OFF</string>
+
+    <string name="palette_light_vibrant">Light Vibrant</string>
+    <string name="palette_vibrant">Vibrant</string>
+    <string name="palette_dark_vibrant">Dark Vibrant</string>
+    <string name="palette_light_muted">Light Muted</string>
+    <string name="palette_muted">Muted</string>
+    <string name="palette_dark_muted">Dark Muted</string>
 
     <string name="dialog_button_ok">OK</string>
     <string name="dialog_button_ng">キャンセル</string>
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
+    <string name="dialog_title_choose_color">カラーパレットから選択</string>
+    <string name="dialog_title_alert_no_for_share">共有できません</string>
+    <string name="dialog_title_alert_failure_purchase">購入できませんでした</string>
     <string name="dialog_message_pattern_format">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
+    <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
+    <string name="dialog_message_alert_no_metadata">曲情報を取得できませんでした</string>
+    <string name="dialog_message_alert_failure_purchase">購入処理中にエラーが発生しました</string>
+    <string name="dialog_message_alert_already_purchase">既に購入しています</string>
+    <string name="dialog_message_alert_on_start_purchase">購入処理を開始できませんでした</string>
+    <string name="dialog_message_alert_on_cancel_purchase">購入処理をキャンセルしました</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
 
     <string name="share_title">共有先を選択…</string>
 
     <string name="action_open_pref">設定</string>
+
+    <string name="widget_desc">NowPlayingを共有…</string>
 </resources>

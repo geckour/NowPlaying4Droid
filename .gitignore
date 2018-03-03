@@ -33,3 +33,8 @@ captures/
 
 .idea/
 *.iml
+release.gradle
+secret.properties
+app/release/
+*.jks
+google-services.json
