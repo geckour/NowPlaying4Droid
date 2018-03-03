@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.*
+import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
 
 class SharingActivity: Activity() {
@@ -30,6 +31,8 @@ class SharingActivity: Activity() {
                     if (artworkUri != null) putExtra(ArgKey.ARTWORK_URI.name, artworkUri)
                 }
     }
+
+    private lateinit var analytics: FirebaseAnalytics
     private val jobs: ArrayList<Job> = ArrayList()
 
     override fun onNewIntent(intent: Intent?) {
@@ -45,6 +48,8 @@ class SharingActivity: Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        analytics = FirebaseAnalytics.getInstance(this)
 
         onNewIntent(intent)
         finish()

@@ -28,6 +28,7 @@ import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
 import com.geckour.nowplaying4gpm.util.*
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
@@ -69,6 +70,7 @@ class SettingsActivity : Activity() {
         )
     }
 
+    private lateinit var analytics: FirebaseAnalytics
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
     private lateinit var binding: ActivitySettingsBinding
     private val jobs: ArrayList<Job> = ArrayList()
@@ -77,6 +79,8 @@ class SettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        analytics = FirebaseAnalytics.getInstance(this)
 
         val donationState = sharedPreferences.getDonateBillingState()
 
