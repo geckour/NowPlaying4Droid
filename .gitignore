@@ -33,4 +33,4 @@ captures/
 
 .idea/
 *.iml
-Key.kt
+secret.properties

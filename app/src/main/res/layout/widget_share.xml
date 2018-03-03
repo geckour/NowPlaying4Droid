@@ -23,11 +23,11 @@
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
-            android:shadowColor="@color/colorTextMiddle"
-            android:shadowRadius="4.0"
+            android:shadowColor="@color/colorShadowTextLight"
+            android:shadowRadius="3"
             android:text="@string/widget_desc"
-            android:textColor="@color/colorPrimaryDark"
-            android:textSize="12sp" />
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp"/>
 
         <TextView
             android:id="@+id/widget_summary_share"
@@ -37,9 +37,9 @@
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
-            android:shadowColor="@color/colorTextMiddle"
-            android:shadowRadius="4.0"
-            android:text="@string/dialog_message_alert_no_for_share"
+            android:shadowColor="@color/colorShadowTextDark"
+            android:shadowRadius="3"
+            android:text="@string/dialog_message_alert_no_metadata"
             android:textColor="@android:color/white"
             android:textSize="10sp"
             tools:text="#NowPlaying Title - Artist (Album)" />
