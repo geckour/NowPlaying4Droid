@@ -21,13 +21,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?android:attr/selectableItemBackground"
-        android:padding="8dp">
+        >
 
         <TextView
             android:id="@+id/text_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
@@ -38,7 +40,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="アイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトル" />
+            tools:text="アイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトル"/>
 
         <TextView
             android:id="@+id/text_desc"
@@ -51,23 +53,24 @@
             app:layout_constraintEnd_toStartOf="@+id/extra"
             app:layout_constraintStart_toStartOf="@+id/text_title"
             app:layout_constraintTop_toBottomOf="@+id/text_title"
-            tools:text="アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明" />
+            tools:text="アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明"/>
 
         <FrameLayout
             android:id="@+id/extra"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone"
             android:paddingStart="8dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@id/text_desc"
             app:layout_constraintEnd_toEndOf="@id/text_title"
-            app:layout_constraintTop_toTopOf="@id/text_desc" />
+            app:layout_constraintTop_toTopOf="@id/text_desc"/>
 
         <TextView
             android:id="@+id/text_summary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp"
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
@@ -76,6 +79,29 @@
             app:layout_constraintEnd_toEndOf="@+id/text_title"
             app:layout_constraintStart_toStartOf="@+id/text_title"
             app:layout_constraintTop_toBottomOf="@+id/text_desc"
-            tools:text="アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態"/>
+
+        <FrameLayout
+            android:id="@+id/mask_inactive"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/colorMaskInactive"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorShadowTextDark"
+                android:textSize="16sp"
+                android:text="@string/pref_mask_desc"
+                android:layout_gravity="center"/>
+        </FrameLayout>
     </android.support.constraint.ConstraintLayout>
 </layout>
