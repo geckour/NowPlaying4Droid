@@ -269,25 +269,24 @@ class SettingsActivity : Activity() {
             }
 
     private fun onClickFab() {
-        val title =
-                if (sharedPreferences.contains(PrefKey.PREF_KEY_CURRENT_TITLE.name)) sharedPreferences.getString(PrefKey.PREF_KEY_CURRENT_TITLE.name, null)
-                else null
-        val artist =
-                if (sharedPreferences.contains(PrefKey.PREF_KEY_CURRENT_ARTIST.name)) sharedPreferences.getString(PrefKey.PREF_KEY_CURRENT_ARTIST.name, null)
-                else null
-        val album =
-                if (sharedPreferences.contains(PrefKey.PREF_KEY_CURRENT_ALBUM.name)) sharedPreferences.getString(PrefKey.PREF_KEY_CURRENT_ALBUM.name, null)
-                else null
+        val text = sharedPreferences.getSharingText(this)
 
-        if (title == null || artist == null || album == null) {
-            AlertDialog.Builder(this)
-                    .setTitle(R.string.dialog_title_alert_no_for_share)
-                    .setMessage(R.string.dialog_message_alert_no_for_share)
-                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
-                    .show()
+        if (text == null) {
+            showErrorDialog(
+                    R.string.dialog_title_alert_no_for_share,
+                    R.string.dialog_message_alert_no_metadata
+            )
         } else {
-            val intent = SharingActivity.getIntent(this@SettingsActivity, title, artist, album)
-            startActivity(intent)
+            ui(jobs) {
+                val intent =
+                        SharingActivity.getIntent(this@SettingsActivity,
+                                text,
+                                getArtworkUri(this@SettingsActivity,
+                                        sharedPreferences.getCurrentTitle(),
+                                        sharedPreferences.getCurrentArtist(),
+                                        sharedPreferences.getCurrentAlbum()))
+                startActivity(intent)
+            }
         }
     }
 

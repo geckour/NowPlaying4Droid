@@ -28,7 +28,11 @@ import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
-class NotifyMediaMetaDataService: NotificationListenerService() {
+class NotifyMediaMetaDataService : NotificationListenerService() {
+
+    enum class Channel(val id: Int) {
+        NOTIFICATION_CHANNEL_SHARE(180)
+    }
 
     companion object {
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
@@ -45,7 +49,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
     private val jobs: ArrayList<Job> = ArrayList()
 
-    private val receiver: BroadcastReceiver = object: BroadcastReceiver() {
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.apply {
                 when (action) {
@@ -53,16 +57,17 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
                         val title = if (hasExtra(EXTRA_GPM_TRACK)) getStringExtra(EXTRA_GPM_TRACK) else null
                         val artist = if (hasExtra(EXTRA_GPM_ARTIST)) getStringExtra(EXTRA_GPM_ARTIST) else null
                         val album = if (hasExtra(EXTRA_GPM_ALBUM)) getStringExtra(EXTRA_GPM_ALBUM) else null
-                        onReceiveMetadata(title, artist, album)
 
-                        if (hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true))
-                            showNotification(title, artist, album)
-                        else destroyNotification(true)
+                        val playStart = hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true)
+
+                        onReceiveMetadata(title, artist, album, playStart)
+                        updateNotification(title, artist, album, playStart)
+                        updateWidget(title, artist, album)
                     }
 
                     ACTION_DESTROY_NOTIFICATION -> destroyNotification()
 
-                    ACTION_SHOW_NOTIFICATION -> showNotification()
+                    ACTION_SHOW_NOTIFICATION -> updateNotification()
                 }
             }
         }
@@ -90,7 +95,7 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        showNotification()
+        updateNotification()
 
         return Service.START_STICKY
     }
@@ -98,33 +103,15 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
     override fun onDestroy() {
         super.onDestroy()
 
-        try { unregisterReceiver(receiver) } catch (e: IllegalArgumentException) { Timber.e(e) }
-        destroyNotification(true)
+        try {
+            unregisterReceiver(receiver)
+        } catch (e: IllegalArgumentException) {
+            Timber.e(e)
+        }
+        onReceiveMetadata(null, null, null)
+        destroyNotification()
         jobs.cancelAll()
     }
-
-    private fun onReceiveMetadata(title: String?, artist: String?, album: String?) {
-        updateSharedPreference(title, artist, album)
-        updateWidget()
-    }
-
-    private fun updateSharedPreference(title: String?, artist: String?, album: String?) =
-            sharedPreferences.refreshCurrentMetadata(title, artist, album)
-
-    private fun updateWidget() =
-            AppWidgetManager.getInstance(this).apply {
-                updateAppWidget(
-                        getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java)).first(),
-                        RemoteViews(this@NotifyMediaMetaDataService.packageName, R.layout.widget_share).apply {
-                            val summary = sharedPreferences.getSharingText(this@NotifyMediaMetaDataService)
-
-                            setTextViewText(R.id.widget_summary_share, summary ?: this@NotifyMediaMetaDataService.getString(R.string.dialog_message_alert_no_for_share))
-
-                            setOnClickPendingIntent(R.id.widget_share_root, ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService, ShareWidgetProvider.Action.SHARE))
-                            setOnClickPendingIntent(R.id.widget_button_setting, ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService, ShareWidgetProvider.Action.OPEN_SETTING))
-                        }
-                )
-            }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createDefaultChannel() {
@@ -132,121 +119,137 @@ class NotifyMediaMetaDataService: NotificationListenerService() {
         val description = getString(R.string.notification_channel_description_share)
         val channel =
                 NotificationChannel(
-                        getString(R.string.notification_channel_id_share),
+                        Channel.NOTIFICATION_CHANNEL_SHARE.name,
                         name,
                         NotificationManager.IMPORTANCE_LOW
                 ).apply { this.description = description }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun showNotification(title: String?, artist: String?, album: String?) {
+    private fun onReceiveMetadata(title: String?, artist: String?, album: String?, playStart: Boolean = true) {
+        if (playStart) updateSharedPreference(title, artist, album)
+        else updateSharedPreference(null, null, null)
+    }
+
+    private fun updateSharedPreference(title: String?, artist: String?, album: String?) =
+            sharedPreferences.refreshCurrentMetadata(title, artist, album)
+
+    private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null) =
+            AppWidgetManager.getInstance(this).apply {
+                val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java)).firstOrNull() ?: return@apply
+                updateAppWidget(
+                        ids,
+                        RemoteViews(this@NotifyMediaMetaDataService.packageName, R.layout.widget_share).apply {
+                            val summary =
+                                    if (title == null || artist == null || album == null) sharedPreferences.getSharingText(this@NotifyMediaMetaDataService)
+                                    else sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService).getSharingText(title, artist, album)
+
+                            setTextViewText(R.id.widget_summary_share, summary ?: this@NotifyMediaMetaDataService.getString(R.string.dialog_message_alert_no_metadata))
+
+                            setOnClickPendingIntent(R.id.widget_share_root, ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService, ShareWidgetProvider.Action.SHARE))
+                            setOnClickPendingIntent(R.id.widget_button_setting, ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService, ShareWidgetProvider.Action.OPEN_SETTING))
+                        }
+                )
+            }
+
+    private fun updateNotification(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) {
+        sharedPreferences.apply {
+            val ti = if (playStart) title ?: getCurrentTitle() else null
+            val ar = if (playStart) artist ?: getCurrentArtist() else null
+            val al = if (playStart) album ?: getCurrentAlbum() else null
+
+            if (getWhetherReside() && ti != null && ar != null && al != null) showNotification(ti, ar, al)
+            else destroyNotification()
+        }
+    }
+
+    private fun showNotification(title: String, artist: String, album: String) {
         if (ContextCompat.checkSelfPermission(
                         this@NotifyMediaMetaDataService,
                         Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply { startActivity(this) }
-        } else if (sharedPreferences.getWhetherReside()) {
+        } else {
             ui(jobs) {
-                val albumArt =
-                        getArtworkUriFromDevice(
-                                this@NotifyMediaMetaDataService,
-                                getAlbumIdFromDevice(this@NotifyMediaMetaDataService, title, artist, album)
-                        )?.let {
-                            contentResolver.openInputStream(it).let {
-                                BitmapFactory.decodeStream(it, null, null).apply { it.close() }
-                            }
-                        } ?: run {
-                            if (sharedPreferences.getWhetherUseApi().not()) null
-                            else getBitmapFromUrl(
-                                    this@NotifyMediaMetaDataService,
-                                    getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist, Image.Size.MEDIUM)
-                            )
-                        }
+                val albumArt = getArtworkBitmap(this@NotifyMediaMetaDataService, title, artist, album)
 
-                getNotification(
-                        albumArt,
-                        title,
-                        artist,
-                        album
-                )?.apply { startForeground(R.string.notification_channel_id_share, this) }
+                getNotification(albumArt, title, artist, album).apply {
+                    startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                }
             }
         }
     }
 
-    private fun showNotification() =
-            sharedPreferences.apply { if (getWhetherReside()) showNotification(getCurrentTitle(), getCurrentArtist(), getCurrentAlbum()) }
-
     private fun showDummyNotification() =
-            startForeground(R.string.notification_channel_id_share, getDummyNotification())
+            startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, getDummyNotification())
 
-    private fun destroyNotification(clearMetadata: Boolean = false) {
-        stopForeground(true)
-        if (clearMetadata) sharedPreferences.refreshCurrentMetadata(null, null, null)
+    private fun destroyNotification() =
+            stopForeground(true)
+
+    private suspend fun getNotification(thumb: Bitmap?, title: String, artist: String, album: String): Notification {
+        val notificationBuilder =
+                if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, Channel.NOTIFICATION_CHANNEL_SHARE.name)
+                else Notification.Builder(this)
+
+        return notificationBuilder.apply {
+            val actionOpenSetting =
+                    PendingIntent.getActivity(
+                            this@NotifyMediaMetaDataService,
+                            0,
+                            SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
+                            PendingIntent.FLAG_CANCEL_CURRENT
+                    ).let {
+                        Notification.Action.Builder(
+                                Icon.createWithResource(this@NotifyMediaMetaDataService, R.drawable.ic_settings_black_24px),
+                                getString(R.string.action_open_pref),
+                                it
+                        ).build()
+                    }
+            val notificationText =
+                    sharedPreferences.getString(
+                            SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
+                            getString(R.string.default_sharing_text_pattern))
+                            .getSharingText(title, artist, album)
+
+            setSmallIcon(R.drawable.ic_notification)
+            setLargeIcon(thumb)
+            setContentTitle(getString(R.string.notification_title))
+            setContentText(notificationText)
+            setContentIntent(
+                    PendingIntent.getActivity(
+                            this@NotifyMediaMetaDataService,
+                            0,
+                            SharingActivity.getIntent(this@NotifyMediaMetaDataService,
+                                    sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService)
+                                            .getSharingText(title, artist, album), getArtworkUri(this@NotifyMediaMetaDataService, title, artist, album)),
+                            PendingIntent.FLAG_CANCEL_CURRENT
+                    )
+            )
+            setOngoing(true)
+            if (Build.VERSION.SDK_INT >= 24) {
+                setStyle(Notification.DecoratedMediaCustomViewStyle())
+                addAction(actionOpenSetting)
+            }
+            thumb?.apply {
+                if (Build.VERSION.SDK_INT >= 26 && sharedPreferences.getWhetherColorizeNotificationBg()) setColorized(true)
+
+                val color = Palette.from(this).generate().let {
+                    when (paletteArray[sharedPreferences.getChoseColorIndex()]) {
+                        R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
+                        R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
+                        R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)
+                        R.string.palette_light_muted -> it.getLightMutedColor(Color.WHITE)
+                        R.string.palette_muted -> it.getMutedColor(Color.WHITE)
+                        R.string.palette_dark_muted -> it.getDarkMutedColor(Color.WHITE)
+                        else -> it.getLightVibrantColor(Color.WHITE)
+                    }
+                }
+                setColor(color)
+            }
+        }.build()
     }
 
-    private fun getNotification(thumb: Bitmap?, title: String?, artist: String?, album: String?): Notification? =
-            if (title == null || artist == null || album == null) null
-            else {
-                val notificationBuilder =
-                        if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
-                        else Notification.Builder(this)
-
-                notificationBuilder.apply {
-                    val actionOpenSetting =
-                            PendingIntent.getActivity(
-                                    this@NotifyMediaMetaDataService,
-                                    0,
-                                    SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
-                                    PendingIntent.FLAG_CANCEL_CURRENT
-                            ).let {
-                                Notification.Action.Builder(
-                                        Icon.createWithResource(this@NotifyMediaMetaDataService, R.drawable.ic_settings_black_24px),
-                                        getString(R.string.action_open_pref),
-                                        it
-                                ).build()
-                            }
-                    val notificationText =
-                            sharedPreferences.getString(
-                                    SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
-                                    getString(R.string.default_sharing_text_pattern))
-                                    .getSharingText(title, artist, album)
-
-                    setSmallIcon(R.drawable.ic_notification)
-                    setLargeIcon(thumb)
-                    setContentTitle(getString(R.string.notification_title))
-                    setContentText(notificationText)
-                    setContentIntent(
-                            PendingIntent.getActivity(
-                                    this@NotifyMediaMetaDataService,
-                                    0,
-                                    SharingActivity.getIntent(this@NotifyMediaMetaDataService, title, artist, album),
-                                    PendingIntent.FLAG_CANCEL_CURRENT
-                            )
-                    )
-                    setOngoing(true)
-                    if (Build.VERSION.SDK_INT >= 24) {
-                        setStyle(Notification.DecoratedMediaCustomViewStyle())
-                        addAction(actionOpenSetting)
-                    }
-                    thumb?.apply {
-                        if (Build.VERSION.SDK_INT >= 26 && sharedPreferences.getWhetherColorizeNotificationBg()) setColorized(true)
-                        val color = Palette.from(this).generate().let{
-                            when (paletteArray[sharedPreferences.getChoseColorIndex()]) {
-                                R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
-                                R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
-                                R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)
-                                R.string.palette_light_muted -> it.getLightMutedColor(Color.WHITE)
-                                R.string.palette_muted -> it.getMutedColor(Color.WHITE)
-                                R.string.palette_dark_muted -> it.getDarkMutedColor(Color.WHITE)
-                                else -> it.getLightVibrantColor(Color.WHITE)
-                            }
-                        }
-                        setColor(color)
-                    }
-                }.build()
-            }
-
     private fun getDummyNotification(): Notification =
-            (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, getString(R.string.notification_channel_id_share))
+            (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, Channel.NOTIFICATION_CHANNEL_SHARE.name)
             else Notification.Builder(this)).apply {
                 setSmallIcon(R.drawable.ic_notification)
                 setContentTitle(getString(R.string.notification_title))
