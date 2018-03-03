@@ -47,6 +47,7 @@
             tools:title="ツールバータイトル"/>
 
         <ScrollView
+            android:id="@+id/scrollView"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginEnd="8dp"
@@ -136,6 +137,21 @@
                     app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
                     app:summary="@{summary_switch_colorize_notification_bg}"
                     app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
+
+                <include
+                    android:id="@+id/category_others"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_others}"/>
+
+                <include
+                    android:id="@+id/item_donate"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_donate}"
+                    app:title="@{@string/pref_item_title_donate}"/>
 
             </LinearLayout>
         </ScrollView>

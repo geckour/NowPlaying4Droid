@@ -5,12 +5,12 @@
     <string name="notification_text_dummy">ダミー通知</string>
     <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
 
-    <string name="notification_channel_id_share">NOTIFICATION_CHANNEL_SHARE</string>
     <string name="notification_channel_name_share">共有</string>
     <string name="notification_channel_description_share">NowPlaying共有用通知</string>
 
     <string name="pref_category_general">全般</string>
     <string name="pref_category_share">共有</string>
+    <string name="pref_category_others">その他</string>
     <string name="pref_category_notification">通知</string>
     <string name="pref_mask_desc">寄付によってロックが解除されます</string>
     <string name="pref_item_title_pattern">投稿文のフォーマットを指定</string>
@@ -19,12 +19,14 @@
     <string name="pref_item_title_switch_use_api">アートワーク取得時の通信</string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
     <string name="pref_item_title_switch_colorize_notification_bg">通知の背景色</string>
+    <string name="pref_item_title_donate">寄付</string>
     <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="pref_item_desc_choose_color">アートワークを基にしたカラーパレットから選択</string>
     <string name="pref_item_desc_switch_reside_notification">Google Play Musicアプリにて再生時に共有用通知を表示する</string>
     <string name="pref_item_desc_switch_use_api">アートワーク取得の補助手段として外部サービスと通信する</string>
     <string name="pref_item_desc_switch_bundle_artwork">アルバムアートワークを添付する</string>
     <string name="pref_item_desc_switch_colorize_notification_bg">共有用通知に背景色を設定する</string>
+    <string name="pref_item_desc_donate">寄付する (一部機能のロックが解除されます)</string>
     <string name="pref_item_summary_switch_on">ON</string>
     <string name="pref_item_summary_switch_off">OFF</string>
 
