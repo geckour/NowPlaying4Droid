@@ -37,7 +37,8 @@ class SettingsActivity : Activity() {
         PREF_KEY_CURRENT_TITLE,
         PREF_KEY_CURRENT_ARTIST,
         PREF_KEY_CURRENT_ALBUM,
-        PREF_KEY_TEMP_ALBUM_ART_URI
+        PREF_KEY_TEMP_ALBUM_ART_URI,
+        PREF_KEY_BILLING_DONATE
     }
 
     enum class PermissionRequestCode {
