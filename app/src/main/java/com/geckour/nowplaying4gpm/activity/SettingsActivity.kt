@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
@@ -17,13 +18,19 @@ import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import android.widget.Switch
 import android.widget.TextView
+import com.android.vending.billing.IInAppBillingService
+import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.api.BillingApiClient
+import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
 import com.geckour.nowplaying4gpm.util.*
+import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
+import timber.log.Timber
 
 class SettingsActivity : Activity() {
 
@@ -45,6 +52,10 @@ class SettingsActivity : Activity() {
         EXTERNAL_STORAGE
     }
 
+    enum class IntentSenderRequestCode {
+        BILLING
+    }
+
     companion object {
         fun getIntent(context: Context): Intent = Intent(context, SettingsActivity::class.java)
 
@@ -61,58 +72,105 @@ class SettingsActivity : Activity() {
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
     private lateinit var binding: ActivitySettingsBinding
     private val jobs: ArrayList<Job> = ArrayList()
+    private lateinit var serviceConnection: ServiceConnection
+    private var billingService: IInAppBillingService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val donationState = sharedPreferences.getDonateBillingState()
+
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
         binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
-        binding.fab.setOnClickListener { onClickFab() }
+
         binding.summaryPattern = sharedPreferences.getFormatPattern(this)
         binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndex()])
         binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummaryResId())
         binding.summarySwitchUseApi = getString(sharedPreferences.getWhetherUseApiSummaryResId())
         binding.summarySwitchBundleArtwork = getString(sharedPreferences.getWhetherBundleArtworkSummaryResId())
         binding.summarySwitchColorizeNotificationBg = getString(sharedPreferences.getWhetherColorizeNotificationBgSummaryResId())
+
+        binding.fab.setOnClickListener { onClickFab() }
+
+        binding.scrollView.apply {
+            setOnScrollChangeListener { _, _, y, _, oldY ->
+                if (y > oldY && getChildAt(0).measuredHeight <= measuredHeight + y) binding.fab.hide()
+                if (y < oldY && binding.fab.isShown.not()) binding.fab.show()
+            }
+        }
+
+        binding.itemSwitchUseApi?.apply {
+            maskInactive.visibility = if (donationState) View.GONE else View.VISIBLE
+            root.setOnClickListener { onClickItemWithSwitch(extra) }
+            extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
+                    binding.summarySwitchUseApi = summary
+                    updateNotification()
+                })
+            }
+        }
+
         binding.itemPatternFormat?.root?.setOnClickListener { onClickItemPatternFormat() }
+
         binding.itemChooseColor?.root?.setOnClickListener { onClickItemChooseColor() }
+
         binding.itemSwitchReside?.apply {
-            root?.setOnClickListener { onClickItemWithSwitch(extra) }
+            root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { checkState, summary ->
                     binding.summarySwitchReside = summary
 
-                    if (checkState) showNotification()
+                    if (checkState) updateNotification()
                     else destroyNotification()
                 })
             }
         }
-        binding.itemSwitchUseApi?.apply {
-            root?.setOnClickListener { onClickItemWithSwitch(extra) }
-            extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary -> binding.summarySwitchUseApi = summary })
-            }
-        }
+
         binding.itemSwitchBundleArtwork?.apply {
-            root?.setOnClickListener { onClickItemWithSwitch(extra) }
+            root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary -> binding.summarySwitchBundleArtwork = summary })
             }
         }
+
         binding.itemSwitchColorizeNotificationBg?.apply {
             if (Build.VERSION.SDK_INT < 26) root.visibility = View.GONE
             else {
-                root?.setOnClickListener { onClickItemWithSwitch(extra) }
+                root.setOnClickListener { onClickItemWithSwitch(extra) }
                 extra.apply {
                     visibility = View.VISIBLE
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary -> binding.summarySwitchColorizeNotificationBg = summary })
                 }
             }
         }
+
+        binding.itemDonate?.apply {
+            if (donationState) root.visibility = View.GONE
+            else root.setOnClickListener {
+                ui(jobs) { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
+            }
+        }
+
+        serviceConnection = object : ServiceConnection {
+            override fun onServiceDisconnected(name: ComponentName?) {
+                billingService = null
+            }
+
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                IInAppBillingService.Stub.asInterface(service).apply {
+                    billingService = IInAppBillingService.Stub.asInterface(service)
+                }
+            }
+        }
+        bindService(
+                Intent("com.android.vending.billing.InAppBillingService.BIND").apply { `package` = "com.android.vending" },
+                serviceConnection,
+                Context.BIND_AUTO_CREATE
+        )
 
         requestStoragePermission { startNotificationService() }
     }
@@ -132,14 +190,49 @@ class SettingsActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
 
+        billingService?.apply { unbindService(serviceConnection) }
         jobs.cancelAll()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            IntentSenderRequestCode.BILLING.ordinal -> {
+                when (resultCode) {
+                    Activity.RESULT_OK -> {
+                        data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
+                            var success = false
+                            try {
+                                val purchaseResult = Gson().fromJson(this, PurchaseResult::class.java)
+                                if (purchaseResult.purchaseState == 0) {
+                                    success = true
+                                    sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, true).apply()
+                                    binding.itemSwitchUseApi?.maskInactive?.visibility = View.GONE
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e)
+                            }
+
+                            if (success.not())
+                                showErrorDialog(
+                                        R.string.dialog_title_alert_failure_purchase,
+                                        R.string.dialog_message_alert_failure_purchase
+                                )
+                        }
+                    }
+                    Activity.RESULT_CANCELED -> {
+                    }
+                }
+            }
+        }
     }
 
     private fun startNotificationService() =
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(NotifyMediaMetaDataService.getIntent(this))
             else startService(NotifyMediaMetaDataService.getIntent(this))
 
-    private fun showNotification() =
+    private fun updateNotification() =
             requestStoragePermission {
                 sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_SHOW_NOTIFICATION })
             }
@@ -153,6 +246,27 @@ class SettingsActivity : Activity() {
             onPermit()
         } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
     }
+
+    private suspend fun startBillingTransaction(skuName: String) =
+            billingService?.let {
+                BillingApiClient(it).apply {
+                    val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
+                        showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
+                        return@let
+                    }
+                    if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
+                        showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_already_purchase)
+                        return@let
+                    }
+                }
+                startIntentSenderForResult(
+                        BillingApiClient(it)
+                                .getBuyIntent(this@SettingsActivity, skuName)
+                                ?.intentSender,
+                        IntentSenderRequestCode.BILLING.ordinal,
+                        Intent(), 0, 0, 0
+                )
+            }
 
     private fun onClickFab() {
         val title =
@@ -203,7 +317,7 @@ class SettingsActivity : Activity() {
                     binding.summaryPattern = pattern
                 }
             }
-            showNotification()
+            updateNotification()
             dialog.dismiss()
         }.show()
     }
@@ -216,7 +330,7 @@ class SettingsActivity : Activity() {
                 false
         ).apply {
             val arrayAdapter =
-                    object: ArrayAdapter<String>(
+                    object : ArrayAdapter<String>(
                             this@SettingsActivity,
                             android.R.layout.simple_spinner_item,
                             paletteArray.map { getString(it) }) {
@@ -243,7 +357,7 @@ class SettingsActivity : Activity() {
                             .putInt(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteIndex)
                             .apply()
                     binding.summaryChooseColor = getString(paletteArray[paletteIndex])
-                    showNotification()
+                    updateNotification()
                 }
             }
             dialog.dismiss()
@@ -263,4 +377,11 @@ class SettingsActivity : Activity() {
                 }
                 isChecked = sharedPreferences.getBoolean(prefKey.name, true)
             }
+
+    private fun showErrorDialog(titleResId: Int, messageResId: Int) =
+            AlertDialog.Builder(this)
+                    .setTitle(titleResId)
+                    .setMessage(messageResId)
+                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+                    .show()
 }
