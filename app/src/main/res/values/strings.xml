@@ -50,6 +50,7 @@
     <string name="dialog_message_alert_failure_purchase">購入処理中にエラーが発生しました</string>
     <string name="dialog_message_alert_already_purchase">既に購入しています</string>
     <string name="dialog_message_alert_on_start_purchase">購入処理を開始できませんでした</string>
+    <string name="dialog_message_alert_on_cancel_purchase">購入処理をキャンセルしました</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
 
     <string name="share_title">共有先を選択…</string>

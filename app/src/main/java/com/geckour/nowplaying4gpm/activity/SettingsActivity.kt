@@ -207,21 +207,24 @@ class SettingsActivity : Activity() {
                                 val purchaseResult = Gson().fromJson(this, PurchaseResult::class.java)
                                 if (purchaseResult.purchaseState == 0) {
                                     success = true
-                                    sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, true).apply()
-                                    binding.itemSwitchUseApi?.maskInactive?.visibility = View.GONE
+                                    reflectDonation()
                                 }
                             } catch (e: Exception) {
                                 Timber.e(e)
                             }
 
-                            if (success.not())
+                            if (success.not()) {
                                 showErrorDialog(
                                         R.string.dialog_title_alert_failure_purchase,
                                         R.string.dialog_message_alert_failure_purchase
                                 )
+                            }
                         }
                     }
                     Activity.RESULT_CANCELED -> {
+                        showErrorDialog(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_already_purchase)
                     }
                 }
             }
@@ -247,26 +250,28 @@ class SettingsActivity : Activity() {
         } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
     }
 
-    private suspend fun startBillingTransaction(skuName: String) =
-            billingService?.let {
-                BillingApiClient(it).apply {
-                    val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
-                        showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
-                        return@let
-                    }
-                    if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
-                        showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_already_purchase)
-                        return@let
-                    }
+    private suspend fun startBillingTransaction(skuName: String) {
+        billingService?.let {
+            BillingApiClient(it).apply {
+                val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
+                    showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
+                    return
                 }
-                startIntentSenderForResult(
-                        BillingApiClient(it)
-                                .getBuyIntent(this@SettingsActivity, skuName)
-                                ?.intentSender,
-                        IntentSenderRequestCode.BILLING.ordinal,
-                        Intent(), 0, 0, 0
-                )
+                if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
+                    showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_already_purchase)
+                    reflectDonation()
+                    return
+                }
             }
+            startIntentSenderForResult(
+                    BillingApiClient(it)
+                            .getBuyIntent(this@SettingsActivity, skuName)
+                            ?.intentSender,
+                    IntentSenderRequestCode.BILLING.ordinal,
+                    Intent(), 0, 0, 0
+            )
+        }
+    }
 
     private fun onClickFab() {
         val text = sharedPreferences.getSharingText(this)
@@ -383,4 +388,9 @@ class SettingsActivity : Activity() {
                     .setMessage(messageResId)
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
                     .show()
+
+    private fun reflectDonation() {
+        sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, true).apply()
+        binding.itemSwitchUseApi?.maskInactive?.visibility = View.GONE
+    }
 }
