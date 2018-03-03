@@ -21,12 +21,26 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
     }
+
+    applicationVariants.all {
+        def keyNameLastFm = "LAST_FM_API_KEY"
+        it.buildConfigField "String", keyNameLastFm, getKey(keyNameLastFm)
+        def keyNameSkuDonate = "SKU_KEY_DONATE"
+        it.buildConfigField "String", keyNameSkuDonate, getKey(keyNameSkuDonate)
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+}
+
+static def getKey(keyName) {
+    Properties props = new Properties()
+    props.load(new FileInputStream(new File('secret.properties')))
+    return '"' + props[keyName] + '"'
 }
 
 dependencies {
