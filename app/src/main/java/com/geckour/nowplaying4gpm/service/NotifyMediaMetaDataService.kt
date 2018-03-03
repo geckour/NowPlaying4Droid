@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -21,8 +20,6 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
-import com.geckour.nowplaying4gpm.api.LastFmApiClient
-import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
@@ -62,7 +59,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
                         onReceiveMetadata(title, artist, album, playStart)
                         updateNotification(title, artist, album, playStart)
-                        updateWidget(title, artist, album)
+                        updateWidget(title, artist, album, playStart)
                     }
 
                     ACTION_DESTROY_NOTIFICATION -> destroyNotification()
@@ -134,15 +131,20 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     private fun updateSharedPreference(title: String?, artist: String?, album: String?) =
             sharedPreferences.refreshCurrentMetadata(title, artist, album)
 
-    private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null) =
+    private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean) =
             AppWidgetManager.getInstance(this).apply {
                 val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java))
                 updateAppWidget(
                         ids,
                         RemoteViews(this@NotifyMediaMetaDataService.packageName, R.layout.widget_share).apply {
                             val summary =
-                                    if (title == null || artist == null || album == null) sharedPreferences.getSharingText(this@NotifyMediaMetaDataService)
-                                    else sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService).getSharingText(title, artist, album)
+                                    if (playStart) {
+                                        if (title == null || artist == null || album == null) {
+                                            sharedPreferences.getSharingText(this@NotifyMediaMetaDataService)
+                                        } else {
+                                            sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService).getSharingText(title, artist, album)
+                                        }
+                                    } else null
 
                             setTextViewText(R.id.widget_summary_share, summary ?: this@NotifyMediaMetaDataService.getString(R.string.dialog_message_alert_no_metadata))
 
