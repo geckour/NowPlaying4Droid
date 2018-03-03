@@ -29,10 +29,28 @@ android {
         it.buildConfigField "String", keyNameSkuDonate, getKey(keyNameSkuDonate)
     }
 
+    signingConfigs {
+        debug {
+            keyAlias 'AndroidDebugKey'
+            keyPassword 'android'
+            storeFile file("${project.rootDir}/app/signing/debug.keystore")
+            storePassword 'android'
+        }
+        release {
+            def releaseSettingGradleFile = new File("${project.rootDir}/app/signing/release.gradle")
+            if (releaseSettingGradleFile.exists()) {
+                apply from: releaseSettingGradleFile, to: android
+            } else {
+                throw new GradleException("Missing ${releaseSettingGradleFile.getAbsolutePath()} . Generate the file by copying and modifying ${project.rootDir}/app/signing/release.gradle.sample .")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }
