@@ -395,6 +395,7 @@ class SettingsActivity : Activity() {
 
     private fun reflectDonation() {
         sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, true).apply()
+        binding.itemDonate?.root?.visibility = View.GONE
         binding.itemSwitchUseApi?.maskInactive?.visibility = View.GONE
     }
 }
