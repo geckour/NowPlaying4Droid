@@ -16,8 +16,8 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 6
-        versionName "1.0.3"
+        versionCode 7
+        versionName "1.0.4"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
     }
