@@ -58,4 +58,6 @@
     <string name="action_open_pref">設定</string>
 
     <string name="widget_desc">NowPlayingを共有…</string>
+
+    <string name="easter_egg_icon_url">https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600</string>
 </resources>
