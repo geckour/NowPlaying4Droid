@@ -5,9 +5,10 @@ import android.content.DialogInterface
 import android.view.View
 import com.geckour.nowplaying4gpm.R
 import kotlinx.coroutines.experimental.Job
+import timber.log.Timber
 
 fun String.getSharingText(title: String, artist: String, album: String): String =
-        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL")
+        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
                 .let { splitList ->
                     val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }.apply { if (lastIndex < 0) return@let splitList }
                     return@let ArrayList<String>().apply {
@@ -34,6 +35,7 @@ fun String.getSharingText(title: String, artist: String, album: String): String 
                             "TI" -> title
                             "AR" -> artist
                             "AL" -> album
+                            "\\n" -> "\n"
                             else -> it
                         }
                     }

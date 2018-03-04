@@ -20,6 +20,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_edit_text"
             android:hint="@{hint}"
+            android:inputType="text"
             android:lines="1"
             android:maxLines="1"
             android:paddingBottom="4dp"
