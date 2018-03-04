@@ -70,6 +70,11 @@ class SettingsActivity : Activity() {
         )
     }
 
+    private data class EasterEggTag(
+            val count: Int,
+            val time: Long
+    )
+
     private lateinit var analytics: FirebaseAnalytics
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
     private lateinit var binding: ActivitySettingsBinding
@@ -82,11 +87,27 @@ class SettingsActivity : Activity() {
 
         analytics = FirebaseAnalytics.getInstance(this)
 
-        val donationState = sharedPreferences.getDonateBillingState()
-
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
-        binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
+        binding.toolbar.apply {
+            tag = EasterEggTag(0, -1L)
+            title = "設定 - ${getString(R.string.app_name)}"
+
+            setOnClickListener {
+                val countLimit = 7
+                val timeLimit = 300L
+                val count = (tag as? EasterEggTag)?.count?.inc() ?: 1
+                val time = (tag as? EasterEggTag)?.time ?: -1L
+                val now = System.currentTimeMillis()
+                tag = if (count < countLimit) {
+                    if (time < 0 || now - time < timeLimit) EasterEggTag(count, now)
+                    else EasterEggTag(0, -1L)
+                } else {
+                    startActivity(LicensesActivity.getIntent(this@SettingsActivity))
+                    EasterEggTag(0, -1L)
+                }
+            }
+        }
 
         binding.summaryPattern = sharedPreferences.getFormatPattern(this)
         binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndex()])
@@ -105,7 +126,7 @@ class SettingsActivity : Activity() {
         }
 
         binding.itemSwitchUseApi?.apply {
-            maskInactive.visibility = if (donationState) View.GONE else View.VISIBLE
+            maskInactive.visibility = if (sharedPreferences.getDonateBillingState()) View.GONE else View.VISIBLE
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
@@ -153,7 +174,7 @@ class SettingsActivity : Activity() {
         }
 
         binding.itemDonate?.apply {
-            if (donationState) root.visibility = View.GONE
+            if (sharedPreferences.getDonateBillingState()) root.visibility = View.GONE
             else root.setOnClickListener {
                 ui(jobs) { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
             }
@@ -177,6 +198,12 @@ class SettingsActivity : Activity() {
         )
 
         requestStoragePermission { startNotificationService() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        reflectDonation()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
@@ -211,7 +238,7 @@ class SettingsActivity : Activity() {
                                 val purchaseResult = Gson().fromJson(this, PurchaseResult::class.java)
                                 if (purchaseResult.purchaseState == 0) {
                                     success = true
-                                    reflectDonation()
+                                    reflectDonation(true)
                                 }
                             } catch (e: Exception) {
                                 Timber.e(e)
@@ -262,7 +289,7 @@ class SettingsActivity : Activity() {
                 }
                 if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
                     showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_already_purchase)
-                    reflectDonation()
+                    reflectDonation(true)
                     return
                 }
             }
@@ -391,9 +418,15 @@ class SettingsActivity : Activity() {
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
                     .show()
 
-    private fun reflectDonation() {
-        sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, true).apply()
-        binding.itemDonate?.root?.visibility = View.GONE
-        binding.itemSwitchUseApi?.maskInactive?.visibility = View.GONE
+    private fun reflectDonation(state: Boolean? = null) {
+        state?.apply {
+            sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, this).apply()
+            binding.itemDonate?.root?.visibility = if (state) View.GONE else View.VISIBLE
+            binding.itemSwitchUseApi?.maskInactive?.visibility = if (state) View.GONE else View.VISIBLE
+        } ?: run {
+            val s = sharedPreferences.getDonateBillingState()
+            binding.itemDonate?.root?.visibility = if (s) View.GONE else View.VISIBLE
+            binding.itemSwitchUseApi?.maskInactive?.visibility = if (s) View.GONE else View.VISIBLE
+        }
     }
 }

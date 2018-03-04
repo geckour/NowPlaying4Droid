@@ -22,8 +22,11 @@
             android:id="@+id/name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="?android:attr/selectableItemBackground"
-            android:elevation="3dp"
+            android:background="@android:color/white"
+            android:elevation="2dp"
+            android:ellipsize="end"
+            android:lines="1"
+            android:maxLines="1"
             android:paddingBottom="16dp"
             android:paddingEnd="12dp"
             android:paddingStart="12dp"
@@ -61,6 +64,7 @@
             android:background="@color/colorDividerLicense"
             app:layout_constraintBottom_toBottomOf="@id/text"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+            app:layout_constraintStart_toStartOf="parent"
+            android:elevation="2dp"/>
     </android.support.constraint.ConstraintLayout>
 </layout>

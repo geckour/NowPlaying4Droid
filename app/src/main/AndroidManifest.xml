@@ -17,8 +17,7 @@
         android:theme="@style/AppTheme">
 
         <activity android:name=".activity.SettingsActivity"
-            android:launchMode="singleTop"
-            android:noHistory="true">
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -29,6 +28,10 @@
             android:theme="@android:style/Theme.NoDisplay"
             android:launchMode="singleTask"
             android:noHistory="true" />
+
+        <activity android:name=".activity.LicensesActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme.Dark"/>
 
         <service android:name=".service.NotifyMediaMetaDataService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
