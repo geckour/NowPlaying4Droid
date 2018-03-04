@@ -1,11 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.geckour.nowplaying4gpm">
+<manifest package="com.geckour.nowplaying4gpm"
+          xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="com.android.vending.BILLING" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="com.android.vending.BILLING"/>
 
     <application
         android:name=".App"
@@ -16,38 +16,44 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name=".activity.SettingsActivity"
-            android:launchMode="singleTop">
+        <activity
+            android:name=".activity.SettingsActivity"
+            android:launchMode="singleTop"
+            android:noHistory="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <activity android:name=".activity.SharingActivity"
-            android:theme="@android:style/Theme.NoDisplay"
+        <activity
+            android:name=".activity.SharingActivity"
             android:launchMode="singleTask"
-            android:noHistory="true" />
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay"/>
 
-        <activity android:name=".activity.LicensesActivity"
+        <activity
+            android:name=".activity.LicensesActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.Dark"/>
 
-        <service android:name=".service.NotifyMediaMetaDataService"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
+        <service
+            android:name=".service.NotifyMediaMetaDataService"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"/>
 
         <receiver android:name=".receiver.LaunchReceiver">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
 
         <receiver android:name=".receiver.ShareWidgetProvider">
-            <meta-data android:name="android.appwidget.provider"
-                android:resource="@xml/widget_provider" />
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_provider"/>
 
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
             </intent-filter>
         </receiver>
 
