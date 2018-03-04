@@ -58,13 +58,12 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                         val playStart = hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true)
 
                         onReceiveMetadata(title, artist, album, playStart)
-                        updateNotification(title, artist, album, playStart)
-                        updateWidget(title, artist, album, playStart)
+                        onUpdate(title, artist, album, playStart)
                     }
 
                     ACTION_DESTROY_NOTIFICATION -> destroyNotification()
 
-                    ACTION_SHOW_NOTIFICATION -> updateNotification()
+                    ACTION_SHOW_NOTIFICATION -> onUpdate()
                 }
             }
         }
@@ -92,7 +91,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        updateNotification()
+        onUpdate()
 
         return Service.START_STICKY
     }
@@ -131,7 +130,12 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     private fun updateSharedPreference(title: String?, artist: String?, album: String?) =
             sharedPreferences.refreshCurrentMetadata(title, artist, album)
 
-    private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean) =
+    private fun onUpdate(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) {
+        updateNotification(title, artist, album, playStart)
+        updateWidget(title, artist, album, playStart)
+    }
+
+    private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) =
             AppWidgetManager.getInstance(this).apply {
                 val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java))
                 updateAppWidget(

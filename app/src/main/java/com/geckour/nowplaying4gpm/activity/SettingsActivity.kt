@@ -220,8 +220,7 @@ class SettingsActivity : Activity() {
                             if (success.not()) {
                                 showErrorDialog(
                                         R.string.dialog_title_alert_failure_purchase,
-                                        R.string.dialog_message_alert_failure_purchase
-                                )
+                                        R.string.dialog_message_alert_failure_purchase)
                             }
                         }
                     }
@@ -283,8 +282,7 @@ class SettingsActivity : Activity() {
         if (text == null) {
             showErrorDialog(
                     R.string.dialog_title_alert_no_for_share,
-                    R.string.dialog_message_alert_no_metadata
-            )
+                    R.string.dialog_message_alert_no_metadata)
         } else {
             ui(jobs) {
                 val intent =
