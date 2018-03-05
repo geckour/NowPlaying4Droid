@@ -39,15 +39,15 @@ class LicensesActivity: Activity() {
             layoutManager = LinearLayoutManager(this@LicensesActivity, LinearLayoutManager.VERTICAL, false)
             this@LicensesActivity.adapter = LicenseListAdapter(
                     listOf(
-                            Pair(getString(R.string.library_coroutines), getString(R.string.license_coroutines)),
-                            Pair(getString(R.string.library_android_support), getString(R.string.license_android_support)),
-                            Pair(getString(R.string.library_databinding), getString(R.string.license_databinding)),
-                            Pair(getString(R.string.library_timber), getString(R.string.license_timber)),
-                            Pair(getString(R.string.library_stetho), getString(R.string.license_stetho)),
-                            Pair(getString(R.string.library_retrofit), getString(R.string.license_retrofit)),
-                            Pair(getString(R.string.library_okhttp), getString(R.string.license_okhttp)),
-                            Pair(getString(R.string.library_coroutines4retrofit), getString(R.string.license_coroutines4retrofit)),
-                            Pair(getString(R.string.library_glide), getString(R.string.license_glide))
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_coroutines), getString(R.string.license_coroutines), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_android_support), getString(R.string.license_android_support), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_databinding), getString(R.string.license_databinding), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_timber), getString(R.string.license_timber), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_stetho), getString(R.string.license_stetho), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_retrofit), getString(R.string.license_retrofit), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_okhttp), getString(R.string.license_okhttp), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_coroutines4retrofit), getString(R.string.license_coroutines4retrofit), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_glide), getString(R.string.license_glide), false)
                     )
             )
             adapter = this@LicensesActivity.adapter

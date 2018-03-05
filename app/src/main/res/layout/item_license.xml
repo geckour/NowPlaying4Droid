@@ -6,16 +6,8 @@
     <data>
 
         <variable
-            name="name"
-            type="String"/>
-
-        <variable
-            name="text"
-            type="String" />
-
-        <variable
-            name="state_open"
-            type="Boolean" />
+            name="item"
+            type="com.geckour.nowplaying4gpm.activity.adapter.LicenseListAdapter.LicenseItem"/>
 
         <import type="android.view.View" />
     </data>
@@ -37,7 +29,7 @@
             android:paddingEnd="12dp"
             android:paddingStart="12dp"
             android:paddingTop="16dp"
-            android:text="@{name}"
+            android:text="@{item.name}"
             android:textAlignment="center"
             android:textColor="@color/colorAccent"
             android:textSize="14sp"
@@ -65,10 +57,10 @@
             android:paddingEnd="12dp"
             android:paddingStart="12dp"
             android:paddingTop="8dp"
-            android:text="@{text}"
+            android:text="@{item.text}"
             android:textColor="@color/colorTextWeak"
             android:textSize="12sp"
-            android:visibility="@{(state_open != null &amp;&amp; state_open) ? View.VISIBLE : View.GONE}"
+            android:visibility="@{item.stateOpen ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
