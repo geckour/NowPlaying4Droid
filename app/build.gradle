@@ -6,6 +6,8 @@ apply plugin: 'kotlin-android-extensions'
 
 apply plugin: 'kotlin-kapt'
 
+apply plugin: 'io.fabric'
+
 kotlin.experimental.coroutines 'enable'
 
 kapt.mapDiagnosticLocations = true
@@ -16,8 +18,8 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 11
-        versionName "1.0.8"
+        versionCode 13
+        versionName "1.0.10"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
     }
@@ -48,7 +50,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
@@ -68,6 +70,7 @@ dependencies {
     def retrofit2_version = '2.2.0'
     def okhttp_version = '3.7.0'
     def glide_version = '4.3.0'
+    def firebase_version = '11.8.0'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
@@ -76,7 +79,8 @@ dependencies {
     implementation "com.android.support:support-v4:$android_support_version"
     implementation "com.android.support:recyclerview-v7:$android_support_version"
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    implementation 'com.google.firebase:firebase-core:11.8.0'
+    implementation "com.google.firebase:firebase-core:$firebase_version"
+    implementation "com.google.firebase:firebase-crash:$firebase_version"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
@@ -90,6 +94,9 @@ dependencies {
 
     // Logging
     implementation 'com.jakewharton.timber:timber:4.6.0'
+
+    // Fabric (Crashlytics)
+    implementation('com.crashlytics.sdk.android:crashlytics:2.9.1@aar') { transitive = true }
 
     // Inspect
     compile "com.facebook.stetho:stetho:$stetho_version"

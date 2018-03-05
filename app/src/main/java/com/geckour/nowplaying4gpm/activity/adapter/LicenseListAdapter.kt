@@ -15,12 +15,18 @@ import com.geckour.nowplaying4gpm.util.ui
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
-class LicenseListAdapter(private val items: List<Pair<String, String>>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     enum class ViewType {
         NORMAL,
         FOOTER
     }
+
+    data class LicenseItem(
+            val name: String,
+            val text: String,
+            var stateOpen: Boolean
+    )
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
             when (viewType) {
@@ -45,7 +51,7 @@ class LicenseListAdapter(private val items: List<Pair<String, String>>) : Recycl
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is NormalItemViewHolder -> holder.bind(items[position].first, items[position].second)
+            is NormalItemViewHolder -> holder.bind(items[holder.adapterPosition])
             is FooterItemViewHolder -> holder.bind()
         }
     }
@@ -54,13 +60,12 @@ class LicenseListAdapter(private val items: List<Pair<String, String>>) : Recycl
 
     class NormalItemViewHolder(val binding: ItemLicenseBinding): RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(name: String, text: String) {
-            binding.setName(name)
-            binding.setText(text)
-            binding.name.setOnClickListener {
-                binding.text.apply {
-                    visibility = if (visibility == View.VISIBLE) View.GONE else View.VISIBLE
-                }
+        fun bind(item: LicenseItem) {
+            binding.item = item
+            binding.executePendingBindings()
+            binding.nameCover.setOnClickListener {
+                item.stateOpen = item.stateOpen.not()
+                binding.item = item
             }
         }
     }
