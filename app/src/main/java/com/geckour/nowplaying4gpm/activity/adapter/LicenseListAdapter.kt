@@ -57,11 +57,7 @@ class LicenseListAdapter(private val items: List<Pair<String, String>>) : Recycl
         fun bind(name: String, text: String) {
             binding.setName(name)
             binding.setText(text)
-            binding.name.setOnClickListener {
-                binding.text.apply {
-                    visibility = if (visibility == View.VISIBLE) View.GONE else View.VISIBLE
-                }
-            }
+            binding.nameCover.setOnClickListener { binding.stateOpen = binding.stateOpen?.not() ?: true }
         }
     }
 
