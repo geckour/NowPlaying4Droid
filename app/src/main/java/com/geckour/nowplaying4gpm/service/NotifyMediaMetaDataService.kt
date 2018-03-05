@@ -16,12 +16,15 @@ import android.support.annotation.RequiresApi
 import android.support.v4.content.ContextCompat
 import android.support.v7.graphics.Palette
 import android.widget.RemoteViews
+import com.crashlytics.android.Crashlytics
+import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
+import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -73,6 +76,8 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
     override fun onCreate() {
         super.onCreate()
+
+        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
 
         if (Build.VERSION.SDK_INT >= 26) {
             createDefaultChannel()

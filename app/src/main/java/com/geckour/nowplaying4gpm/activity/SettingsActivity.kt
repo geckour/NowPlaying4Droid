@@ -19,6 +19,7 @@ import android.widget.FrameLayout
 import android.widget.Switch
 import android.widget.TextView
 import com.android.vending.billing.IInAppBillingService
+import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
@@ -30,6 +31,7 @@ import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
+import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -85,6 +87,7 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
         analytics = FirebaseAnalytics.getInstance(this)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)

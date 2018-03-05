@@ -38,3 +38,4 @@ secret.properties
 app/release/
 *.jks
 google-services.json
+fabric.properties
