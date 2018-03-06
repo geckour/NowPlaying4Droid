@@ -92,9 +92,10 @@ class SettingsActivity : Activity() {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
-        binding.toolbar.apply {
+        binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
+
+        binding.toolbarCover.apply {
             tag = EasterEggTag(0, -1L)
-            title = "設定 - ${getString(R.string.app_name)}"
 
             setOnClickListener {
                 val countLimit = 7
