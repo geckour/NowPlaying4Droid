@@ -1,9 +1,14 @@
 package com.geckour.nowplaying4gpm.util
 
+import android.Manifest
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
+import android.content.pm.PackageManager
+import android.support.v4.content.ContextCompat
 import android.view.View
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -61,3 +66,12 @@ fun AlertDialog.Builder.generate(
 }
 
 fun List<Job>.cancelAll() = forEach { it.cancel() }
+
+fun Context.checkStoragePermission(onAlreadyGrant: ((context: Context) -> Unit)? = null, onGrant: (context: Context) -> Unit = {}) {
+    if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        onAlreadyGrant?.invoke(this)
+                ?: SettingsActivity.getIntent(this).apply { this@checkStoragePermission.startActivity(this) }
+    } else onGrant(this)
+}

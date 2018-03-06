@@ -28,6 +28,7 @@ import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
+import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService.Companion.launchService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
@@ -201,7 +202,7 @@ class SettingsActivity : Activity() {
                 Context.BIND_AUTO_CREATE
         )
 
-        requestStoragePermission { startNotificationService() }
+        requestStoragePermission { launchService(this) }
     }
 
     override fun onResume() {
@@ -216,8 +217,8 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    startNotificationService()
-                } else requestStoragePermission { startNotificationService() }
+                    launchService(this)
+                } else requestStoragePermission { launchService(this) }
             }
         }
     }
@@ -265,10 +266,6 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private fun startNotificationService() =
-            if (Build.VERSION.SDK_INT >= 26) startForegroundService(NotifyMediaMetaDataService.getIntent(this))
-            else startService(NotifyMediaMetaDataService.getIntent(this))
-
     private fun updateNotification() =
             requestStoragePermission {
                 sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_SHOW_NOTIFICATION })
@@ -278,10 +275,11 @@ class SettingsActivity : Activity() {
             sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_DESTROY_NOTIFICATION })
 
     private fun requestStoragePermission(onPermit: () -> Unit = {}) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            onPermit()
-        } else requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
+        checkStoragePermission({ onPermit() }) {
+            requestPermissions(
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
+        }
     }
 
     private suspend fun startBillingTransaction(skuName: String) {

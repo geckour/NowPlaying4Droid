@@ -43,7 +43,14 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         const val EXTRA_GPM_TRACK: String = "track"
         const val EXTRA_GPM_PLAYING: String = "playing"
 
-        fun getIntent(context: Context): Intent = Intent(context, NotifyMediaMetaDataService::class.java)
+        private fun getIntent(context: Context): Intent = Intent(context, NotifyMediaMetaDataService::class.java)
+
+        fun launchService(context: Context?) {
+            context?.checkStoragePermission {
+                if (Build.VERSION.SDK_INT >= 26) it.startForegroundService(getIntent(it))
+                else it.startService(getIntent(it))
+            }
+        }
     }
 
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
@@ -175,11 +182,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     }
 
     private fun showNotification(title: String, artist: String, album: String) {
-        if (ContextCompat.checkSelfPermission(
-                        this@NotifyMediaMetaDataService,
-                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            SettingsActivity.getIntent(this@NotifyMediaMetaDataService).apply { startActivity(this) }
-        } else {
+        checkStoragePermission {
             ui(jobs) {
                 val albumArt = getArtworkBitmap(this@NotifyMediaMetaDataService, title, artist, album)
 
