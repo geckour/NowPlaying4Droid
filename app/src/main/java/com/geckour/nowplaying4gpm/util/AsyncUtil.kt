@@ -96,7 +96,7 @@ suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
             }
         }.await() }
 
-suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, album: String?, artist: String?, size: Image.Size = Image.Size.EX_LARGE): String? =
+suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, album: String?, artist: String?, size: Image.Size = Image.Size.MEGA): String? =
         client.searchAlbum(album, artist)?.artworks?.let { it.find { it.size == size.rawStr } ?: it.lastOrNull() }?.url
 
 suspend fun getArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
@@ -118,10 +118,10 @@ suspend fun getArtworkBitmap(context: Context, title: String, artist: String, al
             }
         } ?: run {
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            if (sharedPreferences.getWhetherUseApi().not()) null
-            else getBitmapFromUrl(
-                    context, getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist, Image.Size.MEDIUM)
-            )
+            if (sharedPreferences.getWhetherUseApi()) {
+                getBitmapFromUrl(context,
+                        getArtworkUrlFromLastFmApi(LastFmApiClient(), album, artist, Image.Size.MEDIUM))
+            } else null
         }
 
 
