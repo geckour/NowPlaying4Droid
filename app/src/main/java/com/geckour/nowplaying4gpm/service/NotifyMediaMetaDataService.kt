@@ -35,11 +35,11 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     companion object {
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
-        const val ACTION_GPM_PLAY_STATE_CHANGED: String = "com.android.music.playstatechanged"
-        const val EXTRA_GPM_ARTIST: String = "artist"
-        const val EXTRA_GPM_ALBUM: String = "album"
-        const val EXTRA_GPM_TRACK: String = "track"
-        const val EXTRA_GPM_PLAYING: String = "playing"
+        private const val ACTION_GPM_PLAY_STATE_CHANGED: String = "com.android.music.playstatechanged"
+        private const val EXTRA_GPM_ARTIST: String = "artist"
+        private const val EXTRA_GPM_ALBUM: String = "album"
+        private const val EXTRA_GPM_TRACK: String = "track"
+        private const val EXTRA_GPM_PLAYING: String = "playing"
 
         private fun getIntent(context: Context): Intent = Intent(context, NotifyMediaMetaDataService::class.java)
 
@@ -70,13 +70,13 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
                         val playStart = hasExtra(EXTRA_GPM_PLAYING).not() || getBooleanExtra(EXTRA_GPM_PLAYING, true)
 
-                        onReceiveMetadata(title, artist, album, playStart)
-                        onUpdate(title, artist, album, playStart)
+                        onReceiveMetadata(playStart, title, artist, album)
+                        onUpdate(playStart, title, artist, album)
                     }
 
                     ACTION_DESTROY_NOTIFICATION -> destroyNotification()
 
-                    ACTION_SHOW_NOTIFICATION -> onUpdate()
+                    ACTION_SHOW_NOTIFICATION -> onUpdate(true)
                 }
             }
         }
@@ -106,7 +106,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        onUpdate()
+        onUpdate(true)
 
         return Service.START_STICKY
     }
@@ -119,7 +119,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         } catch (e: IllegalArgumentException) {
             Timber.e(e)
         }
-        onReceiveMetadata(null, null, null)
+        onReceiveMetadata(false, null, null, null)
         destroyNotification()
         jobs.cancelAll()
     }
@@ -137,11 +137,11 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun onReceiveMetadata(title: String?, artist: String?, album: String?, playStart: Boolean = true) {
-        updateSharedPreference(title, artist, album, playStart)
+    private fun onReceiveMetadata(playStart: Boolean, title: String?, artist: String?, album: String?) {
+        updateSharedPreference(playStart, title, artist, album)
     }
 
-    private fun updateSharedPreference(title: String?, artist: String?, album: String?, playStart: Boolean = true) {
+    private fun updateSharedPreference(playStart: Boolean, title: String?, artist: String?, album: String?) {
         val metaChanged = playStart && (title != lastTitle || artist != lastArtist || album != lastAlbum)
         sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_WHETHER_SONG_CHANGED.name, metaChanged).apply()
 
@@ -154,12 +154,23 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         sharedPreferences.refreshCurrentMetadata(title, artist, album)
     }
 
-    private fun onUpdate(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) {
-        updateNotification(title, artist, album, playStart)
-        updateWidget(title, artist, album, playStart)
+    private fun onUpdate(playStart: Boolean, title: String? = null, artist: String? = null, album: String? = null) {
+        updateNotification(playStart, title, artist, album)
+        updateWidget(playStart, title, artist, album)
     }
 
-    private fun updateWidget(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) =
+    private fun updateNotification(playStart: Boolean, title: String? = null, artist: String? = null, album: String? = null) {
+        sharedPreferences.apply {
+            val ti = if (playStart) title ?: getCurrentTitle() else null
+            val ar = if (playStart) artist ?: getCurrentArtist() else null
+            val al = if (playStart) album ?: getCurrentAlbum() else null
+
+            if (playStart && getWhetherReside() && ti != null && ar != null && al != null) showNotification(ti, ar, al)
+            else destroyNotification()
+        }
+    }
+
+    private fun updateWidget(playStart: Boolean, title: String? = null, artist: String? = null, album: String? = null) =
             AppWidgetManager.getInstance(this).apply {
                 val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java))
                 updateAppWidget(
@@ -182,17 +193,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                         }
                 )
             }
-
-    private fun updateNotification(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) {
-        sharedPreferences.apply {
-            val ti = if (playStart) title ?: getCurrentTitle() else null
-            val ar = if (playStart) artist ?: getCurrentArtist() else null
-            val al = if (playStart) album ?: getCurrentAlbum() else null
-
-            if (getWhetherReside() && ti != null && ar != null && al != null) showNotification(ti, ar, al)
-            else destroyNotification()
-        }
-    }
 
     private fun showNotification(title: String, artist: String, album: String) {
         checkStoragePermission {
