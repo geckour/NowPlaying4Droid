@@ -79,7 +79,7 @@ class SettingsActivity : Activity() {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
-        binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
+        binding.toolbar.title = "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
 
         binding.toolbarCover.apply {
             tag = EasterEggTag(0, -1L)
