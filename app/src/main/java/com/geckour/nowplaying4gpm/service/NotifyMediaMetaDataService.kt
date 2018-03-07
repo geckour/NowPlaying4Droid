@@ -1,10 +1,8 @@
 package com.geckour.nowplaying4gpm.service
 
-import android.Manifest
 import android.app.*
 import android.appwidget.AppWidgetManager
 import android.content.*
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.Icon
@@ -13,7 +11,6 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.support.annotation.RequiresApi
-import android.support.v4.content.ContextCompat
 import android.support.v7.graphics.Palette
 import android.widget.RemoteViews
 import com.crashlytics.android.Crashlytics
@@ -22,6 +19,7 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import io.fabric.sdk.android.Fabric
@@ -54,7 +52,12 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     }
 
     private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
+    private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val jobs: ArrayList<Job> = ArrayList()
+    private var notificationBitmap: Bitmap? = null
+    private var lastTitle: String? = null
+    private var lastArtist: String? = null
+    private var lastAlbum: String? = null
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -135,12 +138,21 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     }
 
     private fun onReceiveMetadata(title: String?, artist: String?, album: String?, playStart: Boolean = true) {
-        if (playStart) updateSharedPreference(title, artist, album)
-        else updateSharedPreference(null, null, null)
+        updateSharedPreference(title, artist, album, playStart)
     }
 
-    private fun updateSharedPreference(title: String?, artist: String?, album: String?) =
-            sharedPreferences.refreshCurrentMetadata(title, artist, album)
+    private fun updateSharedPreference(title: String?, artist: String?, album: String?, playStart: Boolean = true) {
+        val metaChanged = playStart && (title != lastTitle || artist != lastArtist || album != lastAlbum)
+        sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_WHETHER_SONG_CHANGED.name, metaChanged).apply()
+
+        if (playStart) {
+            lastTitle = title
+            lastArtist = artist
+            lastAlbum = album
+        }
+
+        sharedPreferences.refreshCurrentMetadata(title, artist, album)
+    }
 
     private fun onUpdate(title: String? = null, artist: String? = null, album: String? = null, playStart: Boolean = true) {
         updateNotification(title, artist, album, playStart)
@@ -162,7 +174,8 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                                         }
                                     } else null
 
-                            setTextViewText(R.id.widget_summary_share, summary ?: this@NotifyMediaMetaDataService.getString(R.string.dialog_message_alert_no_metadata))
+                            setTextViewText(R.id.widget_summary_share, summary
+                                    ?: this@NotifyMediaMetaDataService.getString(R.string.dialog_message_alert_no_metadata))
 
                             setOnClickPendingIntent(R.id.widget_share_root, ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService, ShareWidgetProvider.Action.SHARE))
                             setOnClickPendingIntent(R.id.widget_button_setting, ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService, ShareWidgetProvider.Action.OPEN_SETTING))
@@ -184,7 +197,12 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     private fun showNotification(title: String, artist: String, album: String) {
         checkStoragePermission {
             ui(jobs) {
-                val albumArt = getArtworkBitmap(this@NotifyMediaMetaDataService, title, artist, album)
+                val albumArt =
+                        if (sharedPreferences.getWhetherSongChanged())
+                            getArtworkBitmap(this@NotifyMediaMetaDataService, lastFmApiClient, title, artist, album).apply { notificationBitmap = this }
+                        else
+                            notificationBitmap
+                                    ?: getArtworkBitmap(this@NotifyMediaMetaDataService, lastFmApiClient, title, artist, album).apply { notificationBitmap = this }
 
                 getNotification(albumArt, title, artist, album).apply {
                     startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
@@ -220,9 +238,16 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                     }
             val notificationText =
                     sharedPreferences.getString(
-                            SettingsActivity.PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
+                            PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
                             getString(R.string.default_sharing_text_pattern))
                             .getSharingText(title, artist, album)
+
+            val uri =
+                    if (sharedPreferences.getWhetherSongChanged())
+                        getArtworkUri(this@NotifyMediaMetaDataService, lastFmApiClient, title, artist, album).apply { sharedPreferences.setTempArtUriString(this) }
+                    else
+                        sharedPreferences.getTempArtUri()
+                                ?: getArtworkUri(this@NotifyMediaMetaDataService, lastFmApiClient, title, artist, album).apply { sharedPreferences.setTempArtUriString(this) }
 
             setSmallIcon(R.drawable.ic_notification)
             setLargeIcon(thumb)
@@ -234,7 +259,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                             0,
                             SharingActivity.getIntent(this@NotifyMediaMetaDataService,
                                     sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService)
-                                            .getSharingText(title, artist, album), getArtworkUri(this@NotifyMediaMetaDataService, title, artist, album)),
+                                            .getSharingText(title, artist, album), uri),
                             PendingIntent.FLAG_CANCEL_CURRENT
                     )
             )

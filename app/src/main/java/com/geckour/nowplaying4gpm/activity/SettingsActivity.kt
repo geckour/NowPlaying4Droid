@@ -22,6 +22,7 @@ import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
@@ -36,20 +37,6 @@ import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
 class SettingsActivity : Activity() {
-
-    enum class PrefKey {
-        PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
-        PREF_KEY_CHOSEN_COLOR_INDEX,
-        PREF_KEY_WHETHER_RESIDE,
-        PREF_KEY_WHETHER_USE_API,
-        PREF_KEY_WHETHER_BUNDLE_ARTWORK,
-        PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG,
-        PREF_KEY_CURRENT_TITLE,
-        PREF_KEY_CURRENT_ARTIST,
-        PREF_KEY_CURRENT_ALBUM,
-        PREF_KEY_TEMP_ALBUM_ART_URI,
-        PREF_KEY_BILLING_DONATE
-    }
 
     enum class PermissionRequestCode {
         EXTERNAL_STORAGE
@@ -317,6 +304,7 @@ class SettingsActivity : Activity() {
                         SharingActivity.getIntent(this@SettingsActivity,
                                 text,
                                 getArtworkUri(this@SettingsActivity,
+                                        LastFmApiClient(),
                                         sharedPreferences.getCurrentTitle(),
                                         sharedPreferences.getCurrentArtist(),
                                         sharedPreferences.getCurrentAlbum()))
