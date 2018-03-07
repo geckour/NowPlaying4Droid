@@ -10,6 +10,7 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseBinding
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
+import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 import com.geckour.nowplaying4gpm.util.ui
 import kotlinx.coroutines.experimental.Job
@@ -81,7 +82,7 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(binding.root.context)
 
             sharedPreferences.edit().putBoolean(
-                    SettingsActivity.PrefKey.PREF_KEY_BILLING_DONATE.name,
+                    PrefKey.PREF_KEY_BILLING_DONATE.name,
                     sharedPreferences.getDonateBillingState().not()
             ).apply()
         }
