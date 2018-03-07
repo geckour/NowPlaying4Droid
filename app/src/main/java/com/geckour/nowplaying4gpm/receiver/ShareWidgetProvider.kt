@@ -11,6 +11,7 @@ import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 
@@ -23,7 +24,11 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
     companion object {
         fun getPendingIntent(context: Context, action: Action): PendingIntent =
-                PendingIntent.getBroadcast(context, 0, Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) }, PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntent.getBroadcast(
+                        context,
+                        0,
+                        Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) },
+                        PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     private val jobs: ArrayList<Job> = ArrayList()
@@ -47,12 +52,21 @@ class ShareWidgetProvider : AppWidgetProvider() {
                 ui(jobs) {
                     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                     val summary = sharedPreferences.getSharingText(context) ?: return@ui
-                    val artworkUri = async {
-                        getArtworkUri(context,
-                                sharedPreferences.getCurrentTitle(),
-                                sharedPreferences.getCurrentArtist(),
-                                sharedPreferences.getCurrentAlbum())
-                    }.await()
+                    val artworkUri =
+                            if (sharedPreferences.getWhetherSongChanged())
+                                getArtworkUri(context,
+                                        LastFmApiClient(),
+                                        sharedPreferences.getCurrentTitle(),
+                                        sharedPreferences.getCurrentArtist(),
+                                        sharedPreferences.getCurrentAlbum())
+                            else
+                                sharedPreferences.getTempArtUri()
+                                        ?: getArtworkUri(context,
+                                                LastFmApiClient(),
+                                                sharedPreferences.getCurrentTitle(),
+                                                sharedPreferences.getCurrentArtist(),
+                                                sharedPreferences.getCurrentAlbum())
+
                     context.startActivity(SharingActivity.getIntent(context, summary, artworkUri))
                 }
             }
@@ -72,8 +86,12 @@ class ShareWidgetProvider : AppWidgetProvider() {
                             setTextViewText(R.id.widget_summary_share, summary
                                     ?: context.getString(R.string.dialog_message_alert_no_metadata))
 
-                            setOnClickPendingIntent(R.id.widget_share_root, ShareWidgetProvider.getPendingIntent(context, ShareWidgetProvider.Action.SHARE))
-                            setOnClickPendingIntent(R.id.widget_button_setting, ShareWidgetProvider.getPendingIntent(context, ShareWidgetProvider.Action.OPEN_SETTING))
+                            setOnClickPendingIntent(
+                                    R.id.widget_share_root,
+                                    ShareWidgetProvider.getPendingIntent(context, ShareWidgetProvider.Action.SHARE))
+                            setOnClickPendingIntent(
+                                    R.id.widget_button_setting,
+                                    ShareWidgetProvider.getPendingIntent(context, ShareWidgetProvider.Action.OPEN_SETTING))
                         }
                 )
             }

@@ -5,4 +5,5 @@
     android:minResizeWidth="40dp"
     android:minResizeHeight="40dp"
     android:initialLayout="@layout/widget_share"
-    android:resizeMode="horizontal" />
+    android:resizeMode="horizontal"
+    android:updatePeriodMillis="0" />

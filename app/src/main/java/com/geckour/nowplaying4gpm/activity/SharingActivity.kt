@@ -62,7 +62,8 @@ class SharingActivity: Activity() {
     private fun startShare(text: String, stream: Uri?) =
             ShareCompat.IntentBuilder.from(this@SharingActivity)
                     .setChooserTitle(R.string.share_title)
-                    .setText(text).also { stream?.apply { it.setStream(this).setType("image/jpeg") } ?: it.setType("text/plain") }
+                    .setText(text)
+                    .also { stream?.apply { it.setStream(this).setType("image/jpeg") } ?: it.setType("text/plain") }
                     .createChooserIntent()
                     .apply {
                         PendingIntent.getActivity(
