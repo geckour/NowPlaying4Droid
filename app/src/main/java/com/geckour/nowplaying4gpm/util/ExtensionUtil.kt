@@ -10,7 +10,6 @@ import android.view.View
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import kotlinx.coroutines.experimental.Job
-import timber.log.Timber
 
 fun String.getSharingText(title: String, artist: String, album: String): String =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
@@ -67,11 +66,11 @@ fun AlertDialog.Builder.generate(
 
 fun List<Job>.cancelAll() = forEach { it.cancel() }
 
-fun Context.checkStoragePermission(onAlreadyGrant: ((context: Context) -> Unit)? = null, onGrant: (context: Context) -> Unit = {}) {
-    if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        onAlreadyGrant?.invoke(this)
-                ?: SettingsActivity.getIntent(this).apply { this@checkStoragePermission.startActivity(this) }
-    } else onGrant(this)
+fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}) {
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+        onGranted(this)
+    else {
+        onNotGranted?.invoke(this)
+                ?: this@checkStoragePermission.startActivity(SettingsActivity.getIntent(this))
+    }
 }

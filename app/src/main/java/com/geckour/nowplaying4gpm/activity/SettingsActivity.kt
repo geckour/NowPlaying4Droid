@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
-import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -274,12 +273,12 @@ class SettingsActivity : Activity() {
     private fun destroyNotification() =
             sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_DESTROY_NOTIFICATION })
 
-    private fun requestStoragePermission(onPermit: () -> Unit = {}) {
-        checkStoragePermission({ onPermit() }) {
+    private fun requestStoragePermission(onGranted: () -> Unit = {}) {
+        checkStoragePermission({
             requestPermissions(
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
-        }
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
+        }) { onGranted() }
     }
 
     private suspend fun startBillingTransaction(skuName: String) {
