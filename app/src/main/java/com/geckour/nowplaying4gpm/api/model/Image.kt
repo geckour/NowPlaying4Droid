@@ -12,6 +12,7 @@ data class Image(
         SMALL("small"),
         MEDIUM("medium"),
         LARGE("large"),
-        EX_LARGE("extralarge")
+        EX_LARGE("extralarge"),
+        MEGA("mega")
     }
 }

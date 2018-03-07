@@ -6,6 +6,7 @@ data class Album(
         @SerializedName("mbid")
         val id: String,
 
+        @SerializedName("name")
         val title: String,
 
         val artist: String,
