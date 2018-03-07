@@ -21,3 +21,7 @@
 #-renamesourcefileattribute SourceFile
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 -keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
+
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
