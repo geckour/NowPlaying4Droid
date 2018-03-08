@@ -26,7 +26,7 @@
     <string name="pref_item_desc_pattern">Track name: TI, Artist name: AR, Album name: AL</string>
     <string name="pref_item_desc_choose_color">Choose from color palette which is based on the artwork</string>
     <string name="pref_item_desc_switch_reside_notification">Show notification when you play music with Google Play Music app</string>
-    <string name="pref_item_desc_switch_use_api">Access to external service for auxiliary mean of fetch the artwork</string>
+    <string name="pref_item_desc_switch_use_api">Access to external service for auxiliary mean of fetching the artwork</string>
     <string name="pref_item_desc_switch_bundle_artwork">Attach album artwork on sharing</string>
     <string name="pref_item_desc_switch_colorize_notification_bg">Set background color to sharing notification</string>
     <string name="pref_item_desc_donate">To donate (Unlock some features)</string>
