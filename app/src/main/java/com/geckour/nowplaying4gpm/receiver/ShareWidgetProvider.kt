@@ -13,6 +13,7 @@ import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import kotlinx.coroutines.experimental.Job
 
 class ShareWidgetProvider : AppWidgetProvider() {
@@ -53,19 +54,9 @@ class ShareWidgetProvider : AppWidgetProvider() {
                     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                     val summary = sharedPreferences.getSharingText(context) ?: return@ui
                     val artworkUri =
-                            if (sharedPreferences.getWhetherSongChanged())
-                                getArtworkUri(context,
-                                        LastFmApiClient(),
-                                        sharedPreferences.getCurrentTitle(),
-                                        sharedPreferences.getCurrentArtist(),
-                                        sharedPreferences.getCurrentAlbum())
-                            else
-                                sharedPreferences.getTempArtUri()
-                                        ?: getArtworkUri(context,
-                                                LastFmApiClient(),
-                                                sharedPreferences.getCurrentTitle(),
-                                                sharedPreferences.getCurrentArtist(),
-                                                sharedPreferences.getCurrentAlbum())
+                            if (sharedPreferences.getWhetherBundleArtwork())
+                                getArtworkUri(context, LastFmApiClient())
+                            else null
 
                     context.startActivity(SharingActivity.getIntent(context, summary, artworkUri))
                 }
