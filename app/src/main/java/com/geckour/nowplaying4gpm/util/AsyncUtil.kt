@@ -11,6 +11,8 @@ import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
+import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
+import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Job
@@ -32,105 +34,130 @@ fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: su
             }
         }.apply { managerList.add(this) }
 
-fun defLaunch(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
-        launch {
-            try {
-                block()
-            } catch (e: Exception) {
-                Timber.e(e)
-                onError(e)
-            }
-        }.apply { managerList.add(this) }
-
-suspend fun getAlbumIdFromDevice(context: Context, title: String, artist: String, album: String): Long? =
-        async {
-            val cursor = context.contentResolver.query(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    arrayOf(MediaStore.Audio.Media.ALBUM_ID),
-                    getContentQuerySelection(title, artist, album),
-                    null,
-                    null
-            )
-
-            return@async (if (cursor.moveToNext()) {
-                cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-            } else null).apply { cursor.close() }
-        }.await()
-
-suspend fun getArtworkUri(context: Context, client: LastFmApiClient, track: String?, artist: String?, album: String?): Uri? {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-    return if (sharedPreferences.getWhetherBundleArtwork() && track != null && artist != null && album != null) {
-        getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, track, artist, album))
-                ?: run {
-                    if (sharedPreferences.getWhetherUseApi()) {
-                        getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, album, artist))?.let {
-                            try {
-                                sharedPreferences.deleteTempArt(context)
-                            } catch (e: Exception) {
-                                Timber.e(e)
-                            }
-
-                            getArtworkUriFromBitmap(context, it)?.apply {
-                                sharedPreferences.setTempArtUriString(this)
-                            }
-                        }
-                    } else null
-                }
-    } else null
-}
-
-suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
-        albumId?.let {
+object AsyncUtil {
+    private suspend fun getAlbumIdFromDevice(context: Context, trackInfo: TrackInfo): Long? =
             async {
-                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it).let {
-                    try {
-                        context.contentResolver.openInputStream(it).close()
-                        it
-                    } catch (e: Throwable) {
-                        Timber.e(e)
+                if (trackInfo.coreElement.isIncomplete) return@async null
+
+                val cursor = context.contentResolver.query(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        arrayOf(MediaStore.Audio.Media.ALBUM_ID),
+                        getContentQuerySelection(
+                                requireNotNull(trackInfo.coreElement.title),
+                                requireNotNull(trackInfo.coreElement.artist),
+                                requireNotNull(trackInfo.coreElement.album)),
+                        null,
                         null
-                    }
-                }
+                )
+
+                return@async (if (cursor.moveToNext()) {
+                    cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                } else null).apply { cursor.close() }
             }.await()
-        }
 
-suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, album: String?, artist: String?, size: Image.Size = Image.Size.MEGA): String? =
-        client.searchAlbum(album, artist)?.artworks?.let {
-            it.find { it.size == size.rawStr } ?: it.lastOrNull()
-        }?.url
+    suspend fun getArtworkUri(context: Context, client: LastFmApiClient, trackInfo: TrackInfo? = null): Uri? {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val info =
+                if (trackInfo == null || trackInfo.coreElement.isIncomplete)
+                    sharedPreferences.getCurrentTrackInfo()
+                else trackInfo
 
-suspend fun getArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
-        Uri.parse(async {
-            MediaStore.Images.Media.insertImage(
-                    context.contentResolver,
-                    bitmap,
-                    "${context.getString(R.string.app_name)}_temp",
-                    null
-            )
-        }.await())
+        return if (info == null) null
+        else getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, info))
+                ?: if (sharedPreferences.getWhetherUseApi()) {
+                    if (info.artwork.artworkUriString == null || info.isArtworkIncompatible) {
+                        getArtworkUriFromLastFmApi(context, client, info)
+                    } else {
+                        try {
+                            Uri.parse(info.artwork.artworkUriString)
+                        } catch (e: Exception) {
+                            Timber.e(e)
+                            getArtworkUriFromLastFmApi(context, client, info)
+                        }
+                    }
+                } else null
+    }
 
-suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, title: String, artist: String, album: String): Bitmap? =
-        getArtworkUriFromDevice(
-                context, getAlbumIdFromDevice(context, title, artist, album)
-        )?.let {
+    private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
+            albumId?.let {
+                async {
+                    ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it).let {
+                        try {
+                            context.contentResolver.openInputStream(it).close()
+                            it
+                        } catch (e: Throwable) {
+                            Timber.e(e)
+                            null
+                        }
+                    }
+                }.await()
+            }
+
+    private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackInfo: TrackInfo, size: Image.Size = Image.Size.MEGA): String? =
+            if (trackInfo.coreElement.album == null && trackInfo.coreElement.artist == null) null
+            else client.searchAlbum(
+                    trackInfo.coreElement.album,
+                    trackInfo.coreElement.artist)?.artworks?.let {
+                it.find { it.size == size.rawStr } ?: it.lastOrNull()
+            }?.url
+
+    private suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient, trackInfo: TrackInfo): Uri? =
+            getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackInfo))?.let {
+                val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+                try {
+                    sharedPreferences.deleteTempArt(context)
+                } catch (e: Exception) {
+                    Timber.e(e)
+                }
+
+                getArtworkUriFromBitmap(context, it)?.apply {
+                    sharedPreferences.setCurrentArtWorkInfo(
+                            ArtworkInfo(
+                                    this.toString(),
+                                    trackInfo.coreElement
+                            ))
+                }
+            }
+
+    private suspend fun getArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
+            Uri.parse(async {
+                MediaStore.Images.Media.insertImage(
+                        context.contentResolver,
+                        bitmap,
+                        "${context.getString(R.string.app_name)}_temp",
+                        null
+                )
+            }.await())
+
+    suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, trackInfo: TrackInfo): Bitmap? {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val info = (if (trackInfo.coreElement.isIncomplete) sharedPreferences.getCurrentTrackInfo() else trackInfo)
+                ?: return null
+
+        return getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, info))?.let {
             context.contentResolver.openInputStream(it).let {
                 BitmapFactory.decodeStream(it, null, null).apply { it.close() }
             }
         } ?: run {
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             if (sharedPreferences.getWhetherUseApi()) {
-                getBitmapFromUrl(context,
-                        getArtworkUrlFromLastFmApi(client, album, artist, Image.Size.MEDIUM))
+                getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackInfo, Image.Size.MEDIUM))
             } else null
         }
+    }
 
 
-suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
-        url?.let {
-            try {
-                async { Glide.with(context).asBitmap().load(it).submit().get() }.await()
-            } catch (e: Throwable) {
-                Timber.e(e)
-                null
+    private suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
+            url?.let {
+                try {
+                    async {
+                        Glide.with(context)
+                                .asBitmap().load(it)
+                                .submit().get()
+                    }.await()
+                } catch (e: Throwable) {
+                    Timber.e(e)
+                    null
+                }
             }
-        }
+}

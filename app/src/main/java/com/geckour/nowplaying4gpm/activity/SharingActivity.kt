@@ -42,8 +42,12 @@ class SharingActivity: Activity() {
         super.onNewIntent(intent)
 
         intent?.apply {
-            val sharingText: String = (if (hasExtra(ArgKey.TEXT.name)) getStringExtra(ArgKey.TEXT.name) else null) ?: return
-            val artworkUri: Uri? = if (hasExtra(ArgKey.ARTWORK_URI.name)) getParcelableExtra(ArgKey.ARTWORK_URI.name) else null
+            val sharingText: String =
+                    if (hasExtra(ArgKey.TEXT.name)) getStringExtra(ArgKey.TEXT.name)
+                    else return
+            val artworkUri: Uri? =
+                    if (hasExtra(ArgKey.ARTWORK_URI.name)) getParcelableExtra(ArgKey.ARTWORK_URI.name)
+                    else null
 
             ui(jobs) { startShare(sharingText, artworkUri) }
         }
@@ -55,6 +59,7 @@ class SharingActivity: Activity() {
         if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
         analytics = FirebaseAnalytics.getInstance(this)
 
+
         onNewIntent(intent)
         finish()
     }
@@ -63,7 +68,10 @@ class SharingActivity: Activity() {
             ShareCompat.IntentBuilder.from(this@SharingActivity)
                     .setChooserTitle(R.string.share_title)
                     .setText(text)
-                    .also { stream?.apply { it.setStream(this).setType("image/jpeg") } ?: it.setType("text/plain") }
+                    .also {
+                        stream?.apply { it.setStream(this).setType("image/jpeg") }
+                                ?: it.setType("text/plain")
+                    }
                     .createChooserIntent()
                     .apply {
                         PendingIntent.getActivity(

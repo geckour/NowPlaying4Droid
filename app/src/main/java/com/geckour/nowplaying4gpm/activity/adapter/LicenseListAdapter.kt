@@ -33,11 +33,17 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
             when (viewType) {
                 ViewType.NORMAL.ordinal -> {
                     NormalItemViewHolder(
-                            ItemLicenseBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+                            ItemLicenseBinding.inflate(
+                                    LayoutInflater.from(parent.context),
+                                    parent,
+                                    false))
                 }
                 ViewType.FOOTER.ordinal -> {
                     FooterItemViewHolder(
-                            ItemLicenseFooterBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+                            ItemLicenseFooterBinding.inflate(
+                                    LayoutInflater.from(parent.context),
+                                    parent,
+                                    false))
                 }
                 else -> throw IllegalArgumentException()
             }
@@ -59,7 +65,7 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
 
     private val jobs: ArrayList<Job> = ArrayList()
 
-    class NormalItemViewHolder(val binding: ItemLicenseBinding): RecyclerView.ViewHolder(binding.root) {
+    class NormalItemViewHolder(val binding: ItemLicenseBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: LicenseItem) {
             binding.item = item
@@ -71,10 +77,14 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
         }
     }
 
-    inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding): RecyclerView.ViewHolder(binding.root) {
+    inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind() {
-            ui(jobs) { Glide.with(binding.button).load(binding.button.context.getString(R.string.easter_egg_icon_url)).into(binding.button) }
+            ui(jobs) {
+                Glide.with(binding.button)
+                        .load(binding.button.context.getString(R.string.easter_egg_icon_url))
+                        .into(binding.button)
+            }
             binding.buttonCover.setOnClickListener { toggleDonateState() }
         }
 

@@ -33,7 +33,7 @@ class LicensesActivity: Activity() {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_licenses)
 
-        binding.toolbar.title = "OSSライセンス - ${getString(R.string.app_name)}"
+        binding.toolbar.title = "${getString(R.string.activity_title_licenses)} - ${getString(R.string.app_name)}"
 
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@LicensesActivity, LinearLayoutManager.VERTICAL, false)

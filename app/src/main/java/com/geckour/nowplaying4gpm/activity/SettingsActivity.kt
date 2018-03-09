@@ -30,6 +30,7 @@ import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService.Companion.launchService
 import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
@@ -47,7 +48,8 @@ class SettingsActivity : Activity() {
     }
 
     companion object {
-        fun getIntent(context: Context): Intent = Intent(context, SettingsActivity::class.java)
+        fun getIntent(context: Context): Intent =
+                Intent(context, SettingsActivity::class.java)
 
         val paletteArray: Array<Int> = arrayOf(
                 R.string.palette_light_vibrant,
@@ -65,7 +67,9 @@ class SettingsActivity : Activity() {
     )
 
     private lateinit var analytics: FirebaseAnalytics
-    private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
+    private val sharedPreferences: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+    }
     private lateinit var binding: ActivitySettingsBinding
     private val jobs: ArrayList<Job> = ArrayList()
     private lateinit var serviceConnection: ServiceConnection
@@ -77,9 +81,10 @@ class SettingsActivity : Activity() {
         if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
         analytics = FirebaseAnalytics.getInstance(this)
 
+
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
-        binding.toolbar.title = "設定 - ${getString(R.string.app_name)}"
+        binding.toolbar.title = "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
 
         binding.toolbarCover.apply {
             tag = EasterEggTag(0, -1L)
@@ -111,14 +116,22 @@ class SettingsActivity : Activity() {
 
         binding.scrollView.apply {
             setOnScrollChangeListener { _, _, y, _, oldY ->
-                if (y > oldY && getChildAt(0).measuredHeight <= measuredHeight + y) binding.fab.hide()
-                if (y < oldY && binding.fab.isShown.not()) binding.fab.show()
+                if (y > oldY
+                        && getChildAt(0).measuredHeight <= measuredHeight + y)
+                    binding.fab.hide()
+                if (y < oldY && binding.fab.isShown.not())
+                    binding.fab.show()
             }
         }
 
         binding.itemSwitchUseApi?.apply {
-            maskInactive.visibility = if (sharedPreferences.getDonateBillingState()) View.GONE else View.VISIBLE
+            maskInactive.visibility =
+                    if (sharedPreferences.getDonateBillingState())
+                        View.GONE
+                    else View.VISIBLE
+
             root.setOnClickListener { onClickItemWithSwitch(extra) }
+
             extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
@@ -149,7 +162,9 @@ class SettingsActivity : Activity() {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary -> binding.summarySwitchBundleArtwork = summary })
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
+                    binding.summarySwitchBundleArtwork = summary
+                })
             }
         }
 
@@ -159,7 +174,9 @@ class SettingsActivity : Activity() {
                 root.setOnClickListener { onClickItemWithSwitch(extra) }
                 extra.apply {
                     visibility = View.VISIBLE
-                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary -> binding.summarySwitchColorizeNotificationBg = summary })
+                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
+                        binding.summarySwitchColorizeNotificationBg = summary
+                    })
                 }
             }
         }
@@ -226,7 +243,11 @@ class SettingsActivity : Activity() {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
                             var success = false
                             try {
-                                val purchaseResult = Gson().fromJson(this, PurchaseResult::class.java)
+                                val purchaseResult =
+                                        Gson().fromJson(
+                                                this,
+                                                PurchaseResult::class.java)
+
                                 if (purchaseResult.purchaseState == 0) {
                                     success = true
                                     reflectDonation(true)
@@ -242,6 +263,7 @@ class SettingsActivity : Activity() {
                             }
                         }
                     }
+
                     Activity.RESULT_CANCELED -> {
                         showErrorDialog(
                                 R.string.dialog_title_alert_failure_purchase,
@@ -263,24 +285,28 @@ class SettingsActivity : Activity() {
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
             requestPermissions(
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
         }) { onGranted() }
     }
 
     private suspend fun startBillingTransaction(skuName: String) {
         billingService?.let {
             BillingApiClient(it).apply {
-                val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
-                    showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
-                    return
-                }
+                val sku =
+                        getSkuDetails(this@SettingsActivity, skuName).firstOrNull()
+                                ?: run {
+                                    showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
+                                    return
+                                }
+
                 if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
                     showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_already_purchase)
                     reflectDonation(true)
                     return
                 }
             }
+
             startIntentSenderForResult(
                     BillingApiClient(it)
                             .getBuyIntent(this@SettingsActivity, skuName)
@@ -300,15 +326,14 @@ class SettingsActivity : Activity() {
                     R.string.dialog_message_alert_no_metadata)
         } else {
             ui(jobs) {
-                val intent =
-                        SharingActivity.getIntent(this@SettingsActivity,
-                                text,
-                                getArtworkUri(this@SettingsActivity,
-                                        LastFmApiClient(),
-                                        sharedPreferences.getCurrentTitle(),
-                                        sharedPreferences.getCurrentArtist(),
-                                        sharedPreferences.getCurrentAlbum()))
-                startActivity(intent)
+                val artworkUri =
+                        if (sharedPreferences.getWhetherBundleArtwork())
+                            getArtworkUri(this@SettingsActivity,
+                                    LastFmApiClient(),
+                                    sharedPreferences.getCurrentTrackInfo())
+                        else null
+
+                startActivity(SharingActivity.getIntent(this@SettingsActivity, text, artworkUri))
             }
         }
     }

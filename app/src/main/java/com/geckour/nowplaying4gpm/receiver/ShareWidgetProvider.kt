@@ -13,6 +13,7 @@ import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import kotlinx.coroutines.experimental.Job
 
 class ShareWidgetProvider : AppWidgetProvider() {
@@ -38,8 +39,9 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
         if (context == null) return
 
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val summary = sharedPreferences.getSharingText(context)
+        val summary =
+                PreferenceManager.getDefaultSharedPreferences(context)
+                        .getSharingText(context)
         updateWidget(context, summary)
     }
 
@@ -47,25 +49,20 @@ class ShareWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
 
         if (context == null || intent == null) return
+
         when (intent.action) {
             Action.SHARE.name -> {
                 ui(jobs) {
-                    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-                    val summary = sharedPreferences.getSharingText(context) ?: return@ui
+                    val sharedPreferences =
+                            PreferenceManager.getDefaultSharedPreferences(context)
+
+                    val summary =
+                            sharedPreferences.getSharingText(context)
+                                    ?: return@ui
                     val artworkUri =
-                            if (sharedPreferences.getWhetherSongChanged())
-                                getArtworkUri(context,
-                                        LastFmApiClient(),
-                                        sharedPreferences.getCurrentTitle(),
-                                        sharedPreferences.getCurrentArtist(),
-                                        sharedPreferences.getCurrentAlbum())
-                            else
-                                sharedPreferences.getTempArtUri()
-                                        ?: getArtworkUri(context,
-                                                LastFmApiClient(),
-                                                sharedPreferences.getCurrentTitle(),
-                                                sharedPreferences.getCurrentArtist(),
-                                                sharedPreferences.getCurrentAlbum())
+                            if (sharedPreferences.getWhetherBundleArtwork())
+                                getArtworkUri(context, LastFmApiClient())
+                            else null
 
                     context.startActivity(SharingActivity.getIntent(context, summary, artworkUri))
                 }
@@ -77,8 +74,9 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
     private fun updateWidget(context: Context, summary: String?) =
             AppWidgetManager.getInstance(context).apply {
-                val ids = getAppWidgetIds(ComponentName(context, ShareWidgetProvider::class.java)).firstOrNull()
-                        ?: return@apply
+                val ids =
+                        getAppWidgetIds(ComponentName(context, ShareWidgetProvider::class.java))
+                                .firstOrNull() ?: return@apply
 
                 updateAppWidget(
                         ids,
@@ -88,10 +86,12 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
                             setOnClickPendingIntent(
                                     R.id.widget_share_root,
-                                    ShareWidgetProvider.getPendingIntent(context, ShareWidgetProvider.Action.SHARE))
+                                    ShareWidgetProvider.getPendingIntent(context,
+                                            ShareWidgetProvider.Action.SHARE))
                             setOnClickPendingIntent(
                                     R.id.widget_button_setting,
-                                    ShareWidgetProvider.getPendingIntent(context, ShareWidgetProvider.Action.OPEN_SETTING))
+                                    ShareWidgetProvider.getPendingIntent(context,
+                                            ShareWidgetProvider.Action.OPEN_SETTING))
                         }
                 )
             }
