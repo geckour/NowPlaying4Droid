@@ -108,7 +108,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        onUpdate(true)
 
         return Service.START_STICKY
     }
@@ -141,7 +140,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
     private fun onReceiveMetadata(playStart: Boolean, title: String?, artist: String?, album: String?) {
         onUpdate(playStart, title, artist, album)
-        updateSharedPreference(TrackCoreElement(title, artist, album))
     }
 
     private fun updateSharedPreference(trackCoreElement: TrackCoreElement) {
@@ -149,13 +147,18 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     }
 
     private fun onUpdate(playStart: Boolean, title: String? = null, artist: String? = null, album: String? = null) {
-        updateNotification(playStart, title, artist, album)
-        updateWidget(playStart, title, artist, album)
+        ui(jobs) {
+            async {
+                updateWidget(playStart, title, artist, album)
+                updateNotification(playStart, title, artist, album)
+            }.await()
 
-        if (playStart) this.trackInfo = TrackInfo(TrackCoreElement(title, artist, album))
+            if (playStart) this@NotifyMediaMetaDataService.trackInfo = TrackInfo(TrackCoreElement(title, artist, album))
+            updateSharedPreference(TrackCoreElement(title, artist, album))
+        }
     }
 
-    private fun updateNotification(playStart: Boolean, title: String? = null, artist: String? = null, album: String? = null) {
+    private suspend fun updateNotification(playStart: Boolean, title: String? = null, artist: String? = null, album: String? = null) {
         sharedPreferences.apply {
             if (playStart && getWhetherReside()) {
                 var trackInfo = TrackInfo(TrackCoreElement(title, artist, album))
@@ -191,9 +194,10 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                 )
             }
 
-    private fun showNotification(trackInfo: TrackInfo) {
+    private suspend fun showNotification(trackInfo: TrackInfo) {
         checkStoragePermission {
-            ui(jobs) {
+            async {
+                Timber.d("caching track meta: ${this@NotifyMediaMetaDataService.trackInfo.coreElement}\n\treceived track meta: ${trackInfo.coreElement}\n\tcached == received: ${this@NotifyMediaMetaDataService.trackInfo.coreElement == trackInfo.coreElement}")
                 val albumArt =
                         if (this@NotifyMediaMetaDataService.trackInfo.coreElement == trackInfo.coreElement && trackInfo.coreElement.isIncomplete.not())
                             notificationBitmap
