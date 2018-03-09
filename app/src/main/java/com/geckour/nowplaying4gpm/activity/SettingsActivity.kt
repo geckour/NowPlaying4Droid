@@ -30,6 +30,7 @@ import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
 import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService.Companion.launchService
 import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
@@ -300,15 +301,14 @@ class SettingsActivity : Activity() {
                     R.string.dialog_message_alert_no_metadata)
         } else {
             ui(jobs) {
-                val intent =
-                        SharingActivity.getIntent(this@SettingsActivity,
-                                text,
-                                getArtworkUri(this@SettingsActivity,
-                                        LastFmApiClient(),
-                                        sharedPreferences.getCurrentTitle(),
-                                        sharedPreferences.getCurrentArtist(),
-                                        sharedPreferences.getCurrentAlbum()))
-                startActivity(intent)
+                val artworkUri =
+                        if (sharedPreferences.getWhetherBundleArtwork())
+                            getArtworkUri(this@SettingsActivity,
+                                    LastFmApiClient(),
+                                    sharedPreferences.getCurrentTrackInfo())
+                        else null
+
+                startActivity(SharingActivity.getIntent(this@SettingsActivity, text, artworkUri))
             }
         }
     }
