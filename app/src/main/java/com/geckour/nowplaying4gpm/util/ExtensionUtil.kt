@@ -15,21 +15,31 @@ import kotlinx.coroutines.experimental.Job
 fun String.getSharingText(trackInfo: TrackInfo): String =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
                 .let { splitList ->
-                    val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }.apply { if (lastIndex < 0) return@let splitList }
+                    val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
+                            .filter { it.second == "'" }
+                            .apply { if (lastIndex < 0) return@let splitList }
+
                     return@let ArrayList<String>().apply {
                         for (i in 0 until escapes.lastIndex step 2) {
-                            this.addAll(splitList.subList(
-                                    if (i == 0) 0 else escapes[i - 1].first + 1,
-                                    escapes[i].first))
+                            this.addAll(
+                                    splitList.subList(
+                                            if (i == 0) 0 else escapes[i - 1].first + 1,
+                                            escapes[i].first))
 
-                            this.add(splitList.subList(
-                                    escapes[i].first,
-                                    escapes[i + 1].first + 1).joinToString(""))
+                            this.add(
+                                    splitList.subList(
+                                            escapes[i].first,
+                                            escapes[i + 1].first + 1
+                                    ).joinToString(""))
                         }
 
-                        this.addAll(splitList.subList(
-                                if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex) escapes[escapes.lastIndex].first + 1 else splitList.lastIndex,
-                                splitList.size))
+                        this.addAll(
+                                splitList.subList(
+                                        if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex)
+                                            escapes[escapes.lastIndex].first + 1
+                                        else splitList.lastIndex,
+                                        splitList.size
+                                ))
                     }
                 }.joinToString("") {
                     return@joinToString Regex("^'(.+)'$").let { regex ->
@@ -47,7 +57,10 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                 }
 
 fun String.splitIncludeDelimiter(vararg delimiters: String) =
-        delimiters.joinToString("|").let { pattern -> this.split(Regex("(?<=$pattern)|(?=$pattern)")) }
+        delimiters.joinToString("|")
+                .let { pattern ->
+                    this.split(Regex("(?<=$pattern)|(?=$pattern)"))
+                }
 
 fun String.escapeSql(): String = replace("'", "''")
 

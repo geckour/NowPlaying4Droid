@@ -44,7 +44,9 @@ fun SharedPreferences.init(context: Context) {
 fun SharedPreferences.refreshCurrentTrackCoreElement(trackCoreElement: TrackCoreElement) =
         edit().apply {
             val trackInfo = getCurrentTrackInfo() ?: TrackInfo(trackCoreElement)
-            putString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, Gson().toJson(trackInfo.copy(coreElement = trackCoreElement)))
+            putString(
+                    PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
+                    Gson().toJson(trackInfo.copy(coreElement = trackCoreElement)))
         }.apply()
 
 fun SharedPreferences.getFormatPattern(context: Context): String =
@@ -63,7 +65,9 @@ fun SharedPreferences.getCurrentArtworkUri(): Uri? =
 fun SharedPreferences.setCurrentArtWorkInfo(artworkInfo: ArtworkInfo) {
     val trackInfo = getCurrentTrackInfo()?.copy(artwork = artworkInfo) ?: return
 
-    edit().putString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, Gson().toJson(trackInfo)).apply()
+    edit().putString(
+            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
+            Gson().toJson(trackInfo)).apply()
 }
 
 fun SharedPreferences.deleteTempArt(context: Context) {
@@ -80,11 +84,15 @@ fun SharedPreferences.getSharingText(context: Context): String? {
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
-            Gson().fromJson(getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null), TrackInfo::class.java)
+            Gson().fromJson(
+                    getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
+                    TrackInfo::class.java)
         else null
 
 fun SharedPreferences.getChoseColorIndex(): Int =
-        getInt(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, SettingsActivity.paletteArray.indexOf(R.string.palette_light_vibrant))
+        getInt(
+                PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name,
+                SettingsActivity.paletteArray.indexOf(R.string.palette_light_vibrant))
 
 fun SharedPreferences.getWhetherResideSummaryResId(): Int =
         if (getWhetherReside()) R.string.pref_item_summary_switch_on

@@ -10,7 +10,9 @@ object OkHttpProvider {
     val client: OkHttpClient = OkHttpClient.Builder()
             .apply {
                 if (BuildConfig.DEBUG) {
-                    addNetworkInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                    addNetworkInterceptor(
+                            HttpLoggingInterceptor()
+                                    .setLevel(HttpLoggingInterceptor.Level.BODY))
                     addNetworkInterceptor(StethoInterceptor())
                 }
             }.build()

@@ -9,9 +9,11 @@ import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArr
 import com.geckour.nowplaying4gpm.util.init
 import timber.log.Timber
 
-class App: Application() {
+class App : Application() {
 
-    private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
+    private val sharedPreferences: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+    }
 
     override fun onCreate() {
         super.onCreate()

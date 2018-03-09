@@ -48,7 +48,8 @@ class SettingsActivity : Activity() {
     }
 
     companion object {
-        fun getIntent(context: Context): Intent = Intent(context, SettingsActivity::class.java)
+        fun getIntent(context: Context): Intent =
+                Intent(context, SettingsActivity::class.java)
 
         val paletteArray: Array<Int> = arrayOf(
                 R.string.palette_light_vibrant,
@@ -66,7 +67,9 @@ class SettingsActivity : Activity() {
     )
 
     private lateinit var analytics: FirebaseAnalytics
-    private val sharedPreferences: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(applicationContext) }
+    private val sharedPreferences: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+    }
     private lateinit var binding: ActivitySettingsBinding
     private val jobs: ArrayList<Job> = ArrayList()
     private lateinit var serviceConnection: ServiceConnection
@@ -77,6 +80,7 @@ class SettingsActivity : Activity() {
 
         if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
         analytics = FirebaseAnalytics.getInstance(this)
+
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
@@ -112,14 +116,22 @@ class SettingsActivity : Activity() {
 
         binding.scrollView.apply {
             setOnScrollChangeListener { _, _, y, _, oldY ->
-                if (y > oldY && getChildAt(0).measuredHeight <= measuredHeight + y) binding.fab.hide()
-                if (y < oldY && binding.fab.isShown.not()) binding.fab.show()
+                if (y > oldY
+                        && getChildAt(0).measuredHeight <= measuredHeight + y)
+                    binding.fab.hide()
+                if (y < oldY && binding.fab.isShown.not())
+                    binding.fab.show()
             }
         }
 
         binding.itemSwitchUseApi?.apply {
-            maskInactive.visibility = if (sharedPreferences.getDonateBillingState()) View.GONE else View.VISIBLE
+            maskInactive.visibility =
+                    if (sharedPreferences.getDonateBillingState())
+                        View.GONE
+                    else View.VISIBLE
+
             root.setOnClickListener { onClickItemWithSwitch(extra) }
+
             extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
@@ -150,7 +162,9 @@ class SettingsActivity : Activity() {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary -> binding.summarySwitchBundleArtwork = summary })
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
+                    binding.summarySwitchBundleArtwork = summary
+                })
             }
         }
 
@@ -160,7 +174,9 @@ class SettingsActivity : Activity() {
                 root.setOnClickListener { onClickItemWithSwitch(extra) }
                 extra.apply {
                     visibility = View.VISIBLE
-                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary -> binding.summarySwitchColorizeNotificationBg = summary })
+                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
+                        binding.summarySwitchColorizeNotificationBg = summary
+                    })
                 }
             }
         }
@@ -227,7 +243,11 @@ class SettingsActivity : Activity() {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
                             var success = false
                             try {
-                                val purchaseResult = Gson().fromJson(this, PurchaseResult::class.java)
+                                val purchaseResult =
+                                        Gson().fromJson(
+                                                this,
+                                                PurchaseResult::class.java)
+
                                 if (purchaseResult.purchaseState == 0) {
                                     success = true
                                     reflectDonation(true)
@@ -243,6 +263,7 @@ class SettingsActivity : Activity() {
                             }
                         }
                     }
+
                     Activity.RESULT_CANCELED -> {
                         showErrorDialog(
                                 R.string.dialog_title_alert_failure_purchase,
@@ -264,24 +285,28 @@ class SettingsActivity : Activity() {
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
             requestPermissions(
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
         }) { onGranted() }
     }
 
     private suspend fun startBillingTransaction(skuName: String) {
         billingService?.let {
             BillingApiClient(it).apply {
-                val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
-                    showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
-                    return
-                }
+                val sku =
+                        getSkuDetails(this@SettingsActivity, skuName).firstOrNull()
+                                ?: run {
+                                    showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_on_start_purchase)
+                                    return
+                                }
+
                 if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
                     showErrorDialog(R.string.dialog_title_alert_failure_purchase, R.string.dialog_message_alert_already_purchase)
                     reflectDonation(true)
                     return
                 }
             }
+
             startIntentSenderForResult(
                     BillingApiClient(it)
                             .getBuyIntent(this@SettingsActivity, skuName)
