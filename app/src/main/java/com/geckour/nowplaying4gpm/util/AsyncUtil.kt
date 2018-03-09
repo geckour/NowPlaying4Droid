@@ -7,11 +7,13 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
+import android.support.compat.R.id.info
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
+import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.CoroutineScope
@@ -35,17 +37,17 @@ fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: su
         }.apply { managerList.add(this) }
 
 object AsyncUtil {
-    private suspend fun getAlbumIdFromDevice(context: Context, trackInfo: TrackInfo): Long? =
+    private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackCoreElement): Long? =
             async {
-                if (trackInfo.coreElement.isIncomplete) return@async null
+                if (trackCoreElement.isComplete.not()) return@async null
 
                 val cursor = context.contentResolver.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                         arrayOf(MediaStore.Audio.Media.ALBUM_ID),
                         getContentQuerySelection(
-                                requireNotNull(trackInfo.coreElement.title),
-                                requireNotNull(trackInfo.coreElement.artist),
-                                requireNotNull(trackInfo.coreElement.album)),
+                                requireNotNull(trackCoreElement.title),
+                                requireNotNull(trackCoreElement.artist),
+                                requireNotNull(trackCoreElement.album)),
                         null,
                         null
                 )
@@ -57,25 +59,29 @@ object AsyncUtil {
 
     suspend fun getArtworkUri(context: Context, client: LastFmApiClient, trackInfo: TrackInfo? = null): Uri? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val info =
-                if (trackInfo == null || trackInfo.coreElement.isIncomplete)
-                    sharedPreferences.getCurrentTrackInfo()
-                else trackInfo
+        val cacheInfo = sharedPreferences.getCurrentTrackInfo()
 
-        return if (info == null) null
-        else getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, info))
-                ?: if (sharedPreferences.getWhetherUseApi()) {
-                    if (info.artwork.artworkUriString == null || info.isArtworkIncompatible) {
-                        getArtworkUriFromLastFmApi(context, client, info)
-                    } else {
-                        try {
-                            Uri.parse(info.artwork.artworkUriString)
-                        } catch (e: Exception) {
-                            Timber.e(e)
-                            getArtworkUriFromLastFmApi(context, client, info)
-                        }
-                    }
-                } else null
+        try {
+            if (trackInfo?.artwork?.artworkUriString != null)
+                return Uri.parse(trackInfo.artwork.artworkUriString)
+            else if (trackInfo?.coreElement?.isComplete == true
+                    && trackInfo.coreElement == cacheInfo?.coreElement)
+                return Uri.parse(cacheInfo.artwork.artworkUriString)
+        } catch (e: Exception) {
+            Timber.e(e)
+        }
+
+        val coreElement =
+                when {
+                    trackInfo?.coreElement?.isComplete == true -> trackInfo.coreElement
+                    cacheInfo?.coreElement?.isComplete == true -> cacheInfo.coreElement
+                    else -> null
+                } ?: return null
+
+        return getArtworkUriFromDevice(context, coreElement)
+                ?: if (sharedPreferences.getWhetherUseApi())
+                    getArtworkUriFromLastFmApi(context, client, coreElement)
+                else null
     }
 
     private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
@@ -93,16 +99,19 @@ object AsyncUtil {
                 }.await()
             }
 
-    private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackInfo: TrackInfo, size: Image.Size = Image.Size.MEGA): String? =
-            if (trackInfo.coreElement.album == null && trackInfo.coreElement.artist == null) null
+    private suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackCoreElement): Uri? =
+            getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackCoreElement))
+
+    private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackCoreElement: TrackCoreElement, size: Image.Size = Image.Size.MEGA): String? =
+            if (trackCoreElement.album == null && trackCoreElement.artist == null) null
             else client.searchAlbum(
-                    trackInfo.coreElement.album,
-                    trackInfo.coreElement.artist)?.artworks?.let {
+                    trackCoreElement.album,
+                    trackCoreElement.artist)?.artworks?.let {
                 it.find { it.size == size.rawStr } ?: it.lastOrNull()
             }?.url
 
-    private suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient, trackInfo: TrackInfo): Uri? =
-            getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackInfo))?.let {
+    private suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Uri? =
+            getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackCoreElement))?.let {
                 val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
                 try {
@@ -115,7 +124,7 @@ object AsyncUtil {
                     sharedPreferences.setCurrentArtWorkInfo(
                             ArtworkInfo(
                                     this.toString(),
-                                    trackInfo.coreElement
+                                    trackCoreElement
                             ))
                 }
             }
@@ -130,18 +139,20 @@ object AsyncUtil {
                 )
             }.await())
 
-    suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, trackInfo: TrackInfo): Bitmap? {
+    suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Bitmap? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val info = (if (trackInfo.coreElement.isIncomplete) sharedPreferences.getCurrentTrackInfo() else trackInfo)
-                ?: return null
+        val coreElement =
+                (if (trackCoreElement.isComplete.not()) sharedPreferences.getCurrentTrackInfo()?.coreElement
+                else trackCoreElement)
+                        ?: return null
 
-        return getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, info))?.let {
+        return getArtworkUriFromDevice(context, coreElement)?.let {
             context.contentResolver.openInputStream(it).let {
                 BitmapFactory.decodeStream(it, null, null).apply { it.close() }
             }
         } ?: run {
             if (sharedPreferences.getWhetherUseApi()) {
-                getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackInfo, Image.Size.MEDIUM))
+                getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, coreElement, Image.Size.MEDIUM))
             } else null
         }
     }

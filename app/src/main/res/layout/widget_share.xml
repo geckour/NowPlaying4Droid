@@ -13,9 +13,9 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
-        android:layout_toStartOf="@+id/widget_button_setting"
-        android:layout_marginStart="4dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_toStartOf="@+id/widget_button_setting"
         android:orientation="vertical">
 
         <TextView
@@ -26,10 +26,10 @@
             android:lines="1"
             android:maxLines="1"
             android:shadowColor="@color/colorShadowTextLight"
-            android:shadowRadius="3"
+            android:shadowRadius="5"
             android:text="@string/widget_desc"
             android:textColor="@color/colorPrimary"
-            android:textSize="12sp"/>
+            android:textSize="18sp"/>
 
         <TextView
             android:id="@+id/widget_summary_share"
@@ -40,11 +40,11 @@
             android:lines="1"
             android:maxLines="1"
             android:shadowColor="@color/colorShadowTextDark"
-            android:shadowRadius="3"
+            android:shadowRadius="5"
             android:text="@string/dialog_message_alert_no_metadata"
             android:textColor="@android:color/white"
-            android:textSize="10sp"
-            tools:text="#NowPlaying Title - Artist (Album)" />
+            android:textSize="14sp"
+            tools:text="#NowPlaying Title - Artist (Album)"/>
     </LinearLayout>
 
     <ImageView
