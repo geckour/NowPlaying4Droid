@@ -9,10 +9,10 @@ import android.support.v4.content.ContextCompat
 import android.view.View
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
-import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import kotlinx.coroutines.experimental.Job
 
-fun String.getSharingText(trackInfo: TrackInfo): String =
+fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
                 .let { splitList ->
                     val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
@@ -47,9 +47,9 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                         else when (it) {
                             "'" -> ""
                             "''" -> "'"
-                            "TI" -> requireNotNull(trackInfo.coreElement.title)
-                            "AR" -> requireNotNull(trackInfo.coreElement.artist)
-                            "AL" -> requireNotNull(trackInfo.coreElement.album)
+                            "TI" -> requireNotNull(trackCoreElement.title)
+                            "AR" -> requireNotNull(trackCoreElement.artist)
+                            "AL" -> requireNotNull(trackCoreElement.album)
                             "\\n" -> "\n"
                             else -> it
                         }

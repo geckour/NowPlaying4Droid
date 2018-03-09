@@ -7,8 +7,8 @@ data class TrackInfo(
                         null,
                         TrackCoreElement(null, null, null))
 ) {
-    val isArtworkIncompatible: Boolean =
-            coreElement != artwork.trackCoreElement
+    val isArtworkCompatible: Boolean =
+            coreElement == artwork.trackCoreElement
 }
 
 data class TrackCoreElement(
@@ -16,8 +16,8 @@ data class TrackCoreElement(
         val artist: String?,
         val album: String?
 ) {
-    val isIncomplete: Boolean =
-            title == null || artist == null || album == null
+    val isComplete: Boolean =
+            title != null && artist != null && album != null
 }
 
 data class ArtworkInfo(
