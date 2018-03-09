@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
+import android.support.compat.R.id.info
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
@@ -37,7 +38,7 @@ fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: su
 object AsyncUtil {
     private suspend fun getAlbumIdFromDevice(context: Context, trackInfo: TrackInfo): Long? =
             async {
-                if (trackInfo.coreElement.isIncomplete) return@async null
+                if (trackInfo.coreElement.isComplete.not()) return@async null
 
                 val cursor = context.contentResolver.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -57,25 +58,28 @@ object AsyncUtil {
 
     suspend fun getArtworkUri(context: Context, client: LastFmApiClient, trackInfo: TrackInfo? = null): Uri? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val info =
-                if (trackInfo == null || trackInfo.coreElement.isIncomplete)
-                    sharedPreferences.getCurrentTrackInfo()
-                else trackInfo
+        val cacheInfo = sharedPreferences.getCurrentTrackInfo()
 
-        return if (info == null) null
-        else getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, info))
-                ?: if (sharedPreferences.getWhetherUseApi()) {
-                    if (info.artwork.artworkUriString == null || info.isArtworkIncompatible) {
-                        getArtworkUriFromLastFmApi(context, client, info)
-                    } else {
-                        try {
-                            Uri.parse(info.artwork.artworkUriString)
-                        } catch (e: Exception) {
-                            Timber.e(e)
-                            getArtworkUriFromLastFmApi(context, client, info)
-                        }
-                    }
-                } else null
+        try {
+            if (trackInfo?.isArtworkCompatible == true)
+                return Uri.parse(trackInfo.artwork.artworkUriString)
+            else if (trackInfo?.coreElement?.isComplete?.not() != false && cacheInfo?.isArtworkCompatible == true)
+                return Uri.parse(cacheInfo.artwork.artworkUriString)
+        } catch (e: Exception) {
+            Timber.e(e)
+        }
+
+        val info =
+                when {
+                    trackInfo?.coreElement?.isComplete == true -> trackInfo
+                    cacheInfo?.coreElement?.isComplete == true -> cacheInfo
+                    else -> null
+                } ?: return null
+
+        return getArtworkUriFromDevice(context, info)
+                ?: if (sharedPreferences.getWhetherUseApi())
+                    getArtworkUriFromLastFmApi(context, client, info)
+                else null
     }
 
     private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
@@ -92,6 +96,9 @@ object AsyncUtil {
                     }
                 }.await()
             }
+
+    private suspend fun getArtworkUriFromDevice(context: Context, trackInfo: TrackInfo): Uri? =
+            getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackInfo))
 
     private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackInfo: TrackInfo, size: Image.Size = Image.Size.MEGA): String? =
             if (trackInfo.coreElement.album == null && trackInfo.coreElement.artist == null) null
@@ -132,10 +139,12 @@ object AsyncUtil {
 
     suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, trackInfo: TrackInfo): Bitmap? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val info = (if (trackInfo.coreElement.isIncomplete) sharedPreferences.getCurrentTrackInfo() else trackInfo)
-                ?: return null
+        val info =
+                (if (trackInfo.coreElement.isComplete.not()) sharedPreferences.getCurrentTrackInfo()
+                else trackInfo)
+                        ?: return null
 
-        return getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, info))?.let {
+        return getArtworkUriFromDevice(context, info)?.let {
             context.contentResolver.openInputStream(it).let {
                 BitmapFactory.decodeStream(it, null, null).apply { it.close() }
             }
