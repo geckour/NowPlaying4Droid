@@ -64,8 +64,8 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val jobs: ArrayList<Job> = ArrayList()
     private var notificationBitmap: Bitmap? = null
-    private var trackInfo: TrackInfo =
-            TrackInfo(TrackCoreElement(null, null, null))
+    private var trackCoreElement: TrackCoreElement =
+            TrackCoreElement(null, null, null)
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -89,7 +89,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                                 hasExtra(EXTRA_GPM_PLAYING).not()
                                         || getBooleanExtra(EXTRA_GPM_PLAYING, true)
 
-                        onReceiveMetadata(playStart, TrackCoreElement(title, artist, album))
+                        onUpdate(playStart, TrackCoreElement(title, artist, album))
                     }
 
                     ACTION_DESTROY_NOTIFICATION -> destroyNotification()
@@ -166,10 +166,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun onReceiveMetadata(playStart: Boolean, trackCoreElement: TrackCoreElement) {
-        onUpdate(playStart, trackCoreElement)
-    }
-
     private fun updateSharedPreference(trackCoreElement: TrackCoreElement) {
         sharedPreferences.refreshCurrentTrackCoreElement(trackCoreElement)
     }
@@ -180,11 +176,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                 updateWidget(playStart, trackCoreElement)
                 updateNotification(playStart, trackCoreElement)
             }.await()
-
-            if (playStart) {
-                this@NotifyMediaMetaDataService.trackInfo =
-                        TrackInfo(trackCoreElement)
-            }
 
             updateSharedPreference(trackCoreElement)
         }
@@ -232,21 +223,20 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     private suspend fun showNotification(trackCoreElement: TrackCoreElement) {
         checkStoragePermission {
             async {
-                val trackInfo = TrackInfo(trackCoreElement)
                 val albumArt =
-                        if (this@NotifyMediaMetaDataService.trackInfo.coreElement == trackCoreElement
-                                && trackCoreElement.isComplete) {
+                        if (this@NotifyMediaMetaDataService.trackCoreElement == trackCoreElement) {
                             notificationBitmap
                                     ?: getArtworkBitmap(
                                             this@NotifyMediaMetaDataService,
                                             lastFmApiClient,
-                                            trackInfo)
+                                            trackCoreElement)
                         } else getArtworkBitmap(
                                 this@NotifyMediaMetaDataService,
                                 lastFmApiClient,
-                                trackInfo)
+                                trackCoreElement)
 
                 notificationBitmap = albumArt
+                this@NotifyMediaMetaDataService.trackCoreElement = trackCoreElement
 
                 getNotification(albumArt, trackCoreElement).apply {
                     startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
@@ -293,7 +283,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
             val uri =
                     getArtworkUri(this@NotifyMediaMetaDataService,
                             lastFmApiClient,
-                            trackInfo)
+                            TrackInfo(this@NotifyMediaMetaDataService.trackCoreElement))
             sharedPreferences.setCurrentArtWorkInfo(ArtworkInfo(uri?.toString(), trackCoreElement))
 
             setSmallIcon(R.drawable.ic_notification)
