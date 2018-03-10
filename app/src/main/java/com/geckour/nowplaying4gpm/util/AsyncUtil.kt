@@ -60,8 +60,6 @@ object AsyncUtil {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val cacheInfo = sharedPreferences.getCurrentTrackInfo()
 
-        Timber.d("trackInfo: $trackInfo, cacheInfo: $cacheInfo")
-
         try {
             if (trackInfo?.artwork?.artworkUriString != null)
                 return Uri.parse(trackInfo.artwork.artworkUriString)
@@ -88,7 +86,7 @@ object AsyncUtil {
             sharedPreferences.setCurrentArtworkInfo(
                     ArtworkInfo(
                             this?.toString(),
-                            requireNotNull(trackInfo?.coreElement),
+                            coreElement,
                             fromContentResolver)
             )
         }
