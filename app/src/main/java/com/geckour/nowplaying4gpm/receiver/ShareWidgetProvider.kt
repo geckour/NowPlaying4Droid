@@ -56,12 +56,14 @@ class ShareWidgetProvider : AppWidgetProvider() {
                     val sharedPreferences =
                             PreferenceManager.getDefaultSharedPreferences(context)
 
-                    val summary =
-                            sharedPreferences.getSharingText(context)
-                                    ?: return@ui
+                    val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return@ui
+
+                    val summary = sharedPreferences.getFormatPattern(context)
+                            .getSharingText(trackInfo.coreElement)
+
                     val artworkUri =
                             if (sharedPreferences.getWhetherBundleArtwork())
-                                getArtworkUri(context, LastFmApiClient())
+                                getArtworkUri(context, LastFmApiClient(), trackInfo)
                             else null
 
                     context.startActivity(SharingActivity.getIntent(context, summary, artworkUri))
