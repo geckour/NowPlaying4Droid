@@ -6,8 +6,8 @@
 
     <color name="colorTextMiddle">#c0000000</color>
     <color name="colorTextWeak">#80000000</color>
-    <color name="colorShadowTextDark">#80000000</color>
-    <color name="colorShadowTextLight">#50ffffff</color>
+    <color name="colorShadowTextDark">#40000000</color>
+    <color name="colorShadowTextLight">#60ffffff</color>
     <color name="colorMaskInactive">#e0ffffff</color>
     <color name="colorDividerLicense">#5001579b</color>
 </resources>

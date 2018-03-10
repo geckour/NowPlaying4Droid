@@ -281,10 +281,11 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
                             .getSharingText(trackCoreElement)
 
             val uri =
-                    getArtworkUri(this@NotifyMediaMetaDataService,
-                            lastFmApiClient,
-                            TrackInfo(this@NotifyMediaMetaDataService.trackCoreElement))
-            sharedPreferences.setCurrentArtWorkInfo(ArtworkInfo(uri?.toString(), trackCoreElement))
+                    if (sharedPreferences.getWhetherBundleArtwork())
+                        getArtworkUri(this@NotifyMediaMetaDataService,
+                                lastFmApiClient,
+                                TrackInfo(trackCoreElement))
+                    else null
 
             setSmallIcon(R.drawable.ic_notification)
             setLargeIcon(thumb)

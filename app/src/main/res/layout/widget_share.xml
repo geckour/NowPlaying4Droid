@@ -26,10 +26,10 @@
             android:lines="1"
             android:maxLines="1"
             android:shadowColor="@color/colorShadowTextLight"
-            android:shadowRadius="5"
+            android:shadowRadius="3"
             android:text="@string/widget_desc"
             android:textColor="@color/colorPrimary"
-            android:textSize="18sp"/>
+            android:textSize="13sp"/>
 
         <TextView
             android:id="@+id/widget_summary_share"
@@ -40,10 +40,10 @@
             android:lines="1"
             android:maxLines="1"
             android:shadowColor="@color/colorShadowTextDark"
-            android:shadowRadius="5"
+            android:shadowRadius="3"
             android:text="@string/dialog_message_alert_no_metadata"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="13sp"
             tools:text="#NowPlaying Title - Artist (Album)"/>
     </LinearLayout>
 

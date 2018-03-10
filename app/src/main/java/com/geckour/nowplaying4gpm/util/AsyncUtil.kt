@@ -7,7 +7,6 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
-import android.support.compat.R.id.info
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
@@ -61,11 +60,13 @@ object AsyncUtil {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val cacheInfo = sharedPreferences.getCurrentTrackInfo()
 
+        Timber.d("trackInfo: $trackInfo, cacheInfo: $cacheInfo")
+
         try {
             if (trackInfo?.artwork?.artworkUriString != null)
                 return Uri.parse(trackInfo.artwork.artworkUriString)
             else if (trackInfo?.coreElement?.isComplete == true
-                    && trackInfo.coreElement == cacheInfo?.coreElement)
+                    && trackInfo.coreElement == cacheInfo?.artwork?.trackCoreElement)
                 return Uri.parse(cacheInfo.artwork.artworkUriString)
         } catch (e: Exception) {
             Timber.e(e)
@@ -78,10 +79,19 @@ object AsyncUtil {
                     else -> null
                 } ?: return null
 
-        return getArtworkUriFromDevice(context, coreElement)
+        var fromContentResolver = false
+
+        return (getArtworkUriFromDevice(context, coreElement)?.apply { fromContentResolver = true }
                 ?: if (sharedPreferences.getWhetherUseApi())
                     getArtworkUriFromLastFmApi(context, client, coreElement)
-                else null
+                else null).apply {
+            sharedPreferences.setCurrentArtworkInfo(
+                    ArtworkInfo(
+                            this?.toString(),
+                            requireNotNull(trackInfo?.coreElement),
+                            fromContentResolver)
+            )
+        }
     }
 
     private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
@@ -112,20 +122,9 @@ object AsyncUtil {
 
     private suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Uri? =
             getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackCoreElement))?.let {
-                val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-
-                try {
-                    sharedPreferences.deleteTempArt(context)
-                } catch (e: Exception) {
-                    Timber.e(e)
-                }
-
                 getArtworkUriFromBitmap(context, it)?.apply {
-                    sharedPreferences.setCurrentArtWorkInfo(
-                            ArtworkInfo(
-                                    this.toString(),
-                                    trackCoreElement
-                            ))
+                    PreferenceManager.getDefaultSharedPreferences(context)
+                            .deleteTempArtwork(context)
                 }
             }
 

@@ -18,7 +18,7 @@
     <string name="pref_mask_desc">Please donate for unlock this feature</string>
     <string name="pref_item_title_pattern">Specify formatting pattern of a sentence to post</string>
     <string name="pref_item_title_choose_color">Select the color for colorizing notification</string>
-    <string name="pref_item_title_switch_reside_notification">Notification resident</string>
+    <string name="pref_item_title_switch_reside_notification">Resident notification</string>
     <string name="pref_item_title_switch_use_api">Access to network when fetch the artwork</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
     <string name="pref_item_title_switch_colorize_notification_bg">Colorize notification background</string>
