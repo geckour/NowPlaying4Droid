@@ -5,7 +5,8 @@ data class TrackInfo(
         val artwork: ArtworkInfo =
                 ArtworkInfo(
                         null,
-                        TrackCoreElement(null, null, null))
+                        TrackCoreElement(null, null, null),
+                        false)
 ) {
     val isArtworkCompatible: Boolean =
             coreElement == artwork.trackCoreElement
@@ -22,5 +23,6 @@ data class TrackCoreElement(
 
 data class ArtworkInfo(
         val artworkUriString: String?,
-        val trackCoreElement: TrackCoreElement
+        val trackCoreElement: TrackCoreElement,
+        val fromContentResolver: Boolean
 )

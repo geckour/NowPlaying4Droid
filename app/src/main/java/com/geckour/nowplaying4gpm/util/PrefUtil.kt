@@ -54,25 +54,43 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
 
 fun SharedPreferences.getCurrentArtworkUri(): Uri? =
         getCurrentTrackInfo()?.let {
-            try {
-                Uri.parse(it.artwork.artworkUriString)
-            } catch (e: Throwable) {
-                Timber.d(e)
-                null
-            }
+            getArtworkUri(it)
         }
 
-fun SharedPreferences.setCurrentArtWorkInfo(artworkInfo: ArtworkInfo) {
-    val trackInfo = getCurrentTrackInfo()?.copy(artwork = artworkInfo) ?: return
+private fun getArtworkUri(trackInfo: TrackInfo): Uri? =
+        try {
+            Uri.parse(trackInfo.artwork.artworkUriString)
+        } catch (e: Throwable) {
+            Timber.d(e)
+            null
+        }
+
+fun SharedPreferences.setCurrentArtworkInfo(artworkInfo: ArtworkInfo?) {
+    val trackInfo = getCurrentTrackInfo()?.copy(
+            artwork = artworkInfo
+                    ?: ArtworkInfo(
+                            null,
+                            TrackCoreElement(null, null, null),
+                            false
+                    )
+    ) ?: return
 
     edit().putString(
             PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
             Gson().toJson(trackInfo)).apply()
 }
 
-fun SharedPreferences.deleteTempArt(context: Context) {
-    val uri = getCurrentArtworkUri()
-    if (uri != null) context.contentResolver.delete(uri, null, null)
+fun SharedPreferences.deleteTempArtwork(context: Context) {
+    val trackInfo = getCurrentTrackInfo() ?: return
+
+    if (trackInfo.artwork.fromContentResolver.not()) {
+        try {
+            val uri = getArtworkUri(trackInfo) ?: return
+            context.contentResolver.delete(uri, null, null)
+        } catch (e: Exception) {
+            Timber.e(e)
+        }
+    }
 }
 
 fun SharedPreferences.getSharingText(context: Context): String? {
