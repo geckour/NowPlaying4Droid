@@ -1,6 +1,9 @@
 package com.geckour.nowplaying4gpm.service
 
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.*
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -27,7 +30,7 @@ import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
-class NotificationService: NotificationListenerService() {
+class NotificationService : NotificationListenerService() {
 
     enum class Channel(val id: Int) {
         NOTIFICATION_CHANNEL_SHARE(180)
@@ -42,11 +45,14 @@ class NotificationService: NotificationListenerService() {
                 Intent(context, NotificationService::class.java)
 
         fun sendNotification(context: Context, trackCoreElement: TrackCoreElement?) {
-            context.sendBroadcast(Intent().apply {
-                action = NotificationService.ACTION_SHOW_NOTIFICATION
-                putExtra(NotificationService.BUNDLE_KEY_TRACK_INFO,
-                        trackCoreElement ?: TrackCoreElement(null, null, null))
-            })
+            context.checkStoragePermission {
+                it.startService(getIntent(context))
+                it.sendBroadcast(Intent().apply {
+                    action = NotificationService.ACTION_SHOW_NOTIFICATION
+                    putExtra(NotificationService.BUNDLE_KEY_TRACK_INFO,
+                            trackCoreElement ?: TrackCoreElement(null, null, null))
+                })
+            }
         }
     }
 
@@ -129,26 +135,25 @@ class NotificationService: NotificationListenerService() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private suspend fun showNotification(trackCoreElement: TrackCoreElement) {
+    private fun showNotification(trackCoreElement: TrackCoreElement) {
         if (trackCoreElement.isAllNonNull) {
             checkStoragePermission {
-                async {
+                ui(jobs) {
                     val albumArt =
-                            if (this@NotificationService.trackCoreElement == trackCoreElement) {
-                                notificationBitmap
-                                        ?: getArtworkBitmap(
-                                                this@NotificationService,
-                                                lastFmApiClient,
-                                                trackCoreElement)
-                            } else getArtworkBitmap(
-                                    this@NotificationService,
-                                    lastFmApiClient,
-                                    trackCoreElement)
+                            async {
+                                when (trackCoreElement) {
+                                    this@NotificationService.trackCoreElement -> notificationBitmap
+                                    else -> getArtworkBitmap(
+                                            this@NotificationService,
+                                            lastFmApiClient,
+                                            trackCoreElement)
+                                }
+                            }.await()
 
                     notificationBitmap = albumArt
                     this@NotificationService.trackCoreElement = trackCoreElement
 
-                    getNotification(albumArt, trackCoreElement).apply {
+                    getNotification(albumArt, trackCoreElement)?.apply {
                         startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                     }
                 }

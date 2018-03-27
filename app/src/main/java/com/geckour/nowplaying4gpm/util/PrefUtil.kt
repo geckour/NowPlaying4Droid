@@ -19,6 +19,7 @@ enum class PrefKey {
     PREF_KEY_WHETHER_BUNDLE_ARTWORK,
     PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG,
     PREF_KEY_CURRENT_TRACK_INFO,
+    PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE
 }
 
@@ -52,40 +53,23 @@ fun SharedPreferences.refreshCurrentTrackCoreElement(trackCoreElement: TrackCore
 fun SharedPreferences.getFormatPattern(context: Context): String =
         getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
 
-fun SharedPreferences.getCurrentArtworkUri(): Uri? =
-        getCurrentTrackInfo()?.let {
-            getArtworkUri(it)
-        }
-
-private fun getArtworkUri(trackInfo: TrackInfo): Uri? =
-        try {
-            Uri.parse(trackInfo.artwork.artworkUriString)
-        } catch (e: Throwable) {
-            Timber.d(e)
-            null
-        }
-
-fun SharedPreferences.setCurrentArtworkInfo(artworkInfo: ArtworkInfo?) {
-    val trackInfo = getCurrentTrackInfo()?.copy(
-            artwork = artworkInfo
-                    ?: ArtworkInfo(
-                            null,
-                            TrackCoreElement(null, null, null),
-                            false
-                    )
-    ) ?: return
-
+fun SharedPreferences.setTempArtworkInfo(artworkInfo: ArtworkInfo) {
     edit().putString(
-            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-            Gson().toJson(trackInfo)).apply()
+            PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
+            Gson().toJson(artworkInfo)).apply()
 }
 
-fun SharedPreferences.deleteTempArtwork(context: Context) {
-    val trackInfo = getCurrentTrackInfo() ?: return
+fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
+        if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name))
+            Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
+        else null
 
-    if (trackInfo.artwork.fromContentResolver.not()) {
+fun SharedPreferences.deleteTempArtwork(context: Context) {
+    val artworkInfo = getTempArtworkInfo() ?: return
+
+    if (artworkInfo.fromContentResolver.not()) {
         try {
-            val uri = getArtworkUri(trackInfo) ?: return
+            val uri = Uri.parse(artworkInfo.artworkUriString) ?: return
             context.contentResolver.delete(uri, null, null)
         } catch (e: Exception) {
             Timber.e(e)
