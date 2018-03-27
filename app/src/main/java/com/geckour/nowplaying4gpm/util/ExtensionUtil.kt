@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.support.v4.content.ContextCompat
 import android.view.View
@@ -85,6 +86,6 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
         onGranted(this)
     else {
         onNotGranted?.invoke(this)
-                ?: this@checkStoragePermission.startActivity(SettingsActivity.getIntent(this))
+                ?: this@checkStoragePermission.startActivity(SettingsActivity.getIntent(this).apply { flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK })
     }
 }

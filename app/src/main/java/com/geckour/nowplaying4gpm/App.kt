@@ -14,12 +14,6 @@ import timber.log.Timber
 
 class App : Application() {
 
-    companion object {
-        fun launchMetaDataService(context: Context?) {
-            context?.startService(MediaMetadataService.getIntent(context))
-        }
-    }
-
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -33,14 +27,5 @@ class App : Application() {
         }
 
         sharedPreferences.init(this)
-
-        launchMetaDataService(this)
-        launchNotificationService()
-    }
-
-    private fun launchNotificationService() {
-        checkStoragePermission {
-            it.startService(NotificationService.getIntent(it))
-        }
     }
 }

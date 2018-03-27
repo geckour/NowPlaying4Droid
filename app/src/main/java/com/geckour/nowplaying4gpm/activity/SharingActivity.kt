@@ -7,12 +7,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.ShareCompat
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.*
-import com.google.firebase.analytics.FirebaseAnalytics
-import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 
 class SharingActivity: Activity() {
@@ -35,7 +32,6 @@ class SharingActivity: Activity() {
                 }
     }
 
-    private lateinit var analytics: FirebaseAnalytics
     private val jobs: ArrayList<Job> = ArrayList()
 
     override fun onNewIntent(intent: Intent?) {
@@ -55,10 +51,6 @@ class SharingActivity: Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
-        analytics = FirebaseAnalytics.getInstance(this)
-
 
         onNewIntent(intent)
         finish()

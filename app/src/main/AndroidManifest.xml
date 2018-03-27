@@ -3,7 +3,6 @@
     package="com.geckour.nowplaying4gpm">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.android.vending.BILLING" />
@@ -44,15 +43,6 @@
         <service
             android:name=".service.NotificationService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
-
-        <receiver android:name=".receiver.LaunchReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.PACKAGE_ADDED" />
-
-                <data android:scheme="package" />
-            </intent-filter>
-        </receiver>
 
         <receiver android:name=".receiver.ShareWidgetProvider">
             <meta-data
