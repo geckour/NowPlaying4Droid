@@ -47,9 +47,9 @@ fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
                         else when (it) {
                             "'" -> ""
                             "''" -> "'"
-                            "TI" -> requireNotNull(trackCoreElement.title)
-                            "AR" -> requireNotNull(trackCoreElement.artist)
-                            "AL" -> requireNotNull(trackCoreElement.album)
+                            "TI" -> trackCoreElement.title ?: ""
+                            "AR" -> trackCoreElement.artist ?: ""
+                            "AL" -> trackCoreElement.album ?: ""
                             "\\n" -> "\n"
                             else -> it
                         }

@@ -56,7 +56,8 @@ class ShareWidgetProvider : AppWidgetProvider() {
                     val sharedPreferences =
                             PreferenceManager.getDefaultSharedPreferences(context)
 
-                    val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return@ui
+                    val trackInfo = sharedPreferences.getCurrentTrackInfo()
+                    if (trackInfo == null || trackInfo.coreElement.isAllNonNull.not()) return@ui
 
                     val summary = sharedPreferences.getFormatPattern(context)
                             .getSharingText(trackInfo.coreElement)
