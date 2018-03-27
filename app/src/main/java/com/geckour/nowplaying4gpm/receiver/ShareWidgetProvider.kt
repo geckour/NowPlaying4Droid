@@ -42,7 +42,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
         val summary =
                 PreferenceManager.getDefaultSharedPreferences(context)
                         .getSharingText(context)
-        updateWidget(context, summary)
+        if (summary != null) updateWidget(context, summary)
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -56,15 +56,15 @@ class ShareWidgetProvider : AppWidgetProvider() {
                     val sharedPreferences =
                             PreferenceManager.getDefaultSharedPreferences(context)
 
-                    val trackInfo = sharedPreferences.getCurrentTrackInfo()
-                    if (trackInfo == null || trackInfo.coreElement.isAllNonNull.not()) return@ui
+                    val trackCoreElement = sharedPreferences.getCurrentTrackInfo()?.coreElement
+                    if (trackCoreElement?.isAllNonNull != true) return@ui
 
                     val summary = sharedPreferences.getFormatPattern(context)
-                            .getSharingText(trackInfo.coreElement)
+                            .getSharingText(trackCoreElement)
 
                     val artworkUri =
                             if (sharedPreferences.getWhetherBundleArtwork())
-                                getArtworkUri(context, LastFmApiClient(), trackInfo)
+                                getArtworkUri(context, LastFmApiClient(), trackCoreElement)
                             else null
 
                     context.startActivity(SharingActivity.getIntent(context, summary, artworkUri))

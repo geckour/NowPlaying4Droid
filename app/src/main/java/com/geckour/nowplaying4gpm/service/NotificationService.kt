@@ -14,19 +14,15 @@ import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.support.annotation.RequiresApi
 import android.support.v7.graphics.Palette
-import com.crashlytics.android.Crashlytics
-import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
-import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.*
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkBitmap
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
-import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -89,9 +85,6 @@ class NotificationService : NotificationListenerService() {
 
     override fun onCreate() {
         super.onCreate()
-
-        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
-
 
         if (Build.VERSION.SDK_INT >= 26) {
             createDefaultChannel()
@@ -197,11 +190,9 @@ class NotificationService : NotificationListenerService() {
                             getString(R.string.default_sharing_text_pattern))
                             .getSharingText(trackCoreElement)
 
-            val uri =
+            val artworkUri =
                     if (sharedPreferences.getWhetherBundleArtwork())
-                        getArtworkUri(this@NotificationService,
-                                lastFmApiClient,
-                                TrackInfo(trackCoreElement))
+                        getArtworkUri(this@NotificationService, LastFmApiClient(), trackCoreElement)
                     else null
 
             setSmallIcon(R.drawable.ic_notification)
@@ -212,10 +203,11 @@ class NotificationService : NotificationListenerService() {
                     PendingIntent.getActivity(
                             this@NotificationService,
                             0,
-                            SharingActivity.getIntent(this@NotificationService,
+                            SharingActivity.getIntent(
+                                    this@NotificationService,
                                     sharedPreferences.getFormatPattern(this@NotificationService)
                                             .getSharingText(trackCoreElement),
-                                    uri),
+                                    artworkUri),
                             PendingIntent.FLAG_CANCEL_CURRENT
                     )
             )

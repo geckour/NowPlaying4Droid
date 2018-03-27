@@ -18,7 +18,6 @@ import android.widget.FrameLayout
 import android.widget.Switch
 import android.widget.TextView
 import com.android.vending.billing.IInAppBillingService
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
@@ -27,13 +26,11 @@ import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.geckour.nowplaying4gpm.service.MediaMetadataService
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
-import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -65,8 +62,6 @@ class SettingsActivity : Activity() {
             val count: Int,
             val time: Long
     )
-
-    private lateinit var analytics: FirebaseAnalytics
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -78,8 +73,8 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
-        analytics = FirebaseAnalytics.getInstance(this)
+        launchMetaDataService(this)
+        launchNotificationService()
 
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
@@ -279,6 +274,16 @@ class SettingsActivity : Activity() {
         }
     }
 
+    private fun launchMetaDataService(context: Context?) {
+        context?.startService(MediaMetadataService.getIntent(context))
+    }
+
+    private fun launchNotificationService() {
+        checkStoragePermission {
+            it.startService(NotificationService.getIntent(it))
+        }
+    }
+
     private fun updateNotification() =
             requestStoragePermission {
                 NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
@@ -333,9 +338,7 @@ class SettingsActivity : Activity() {
             ui(jobs) {
                 val artworkUri =
                         if (sharedPreferences.getWhetherBundleArtwork())
-                            getArtworkUri(this@SettingsActivity,
-                                    LastFmApiClient(),
-                                    sharedPreferences.getCurrentTrackInfo())
+                            getArtworkUri(this@SettingsActivity, LastFmApiClient(), null)
                         else null
 
                 startActivity(SharingActivity.getIntent(this@SettingsActivity, text, artworkUri))

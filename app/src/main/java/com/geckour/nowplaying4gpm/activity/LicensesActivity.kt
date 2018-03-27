@@ -6,13 +6,9 @@ import android.content.Intent
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
-import com.crashlytics.android.Crashlytics
-import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.adapter.LicenseListAdapter
 import com.geckour.nowplaying4gpm.databinding.ActivityLicensesBinding
-import com.google.firebase.analytics.FirebaseAnalytics
-import io.fabric.sdk.android.Fabric
 
 class LicensesActivity: Activity() {
 
@@ -22,14 +18,10 @@ class LicensesActivity: Activity() {
     }
 
     private lateinit var binding: ActivityLicensesBinding
-    private lateinit var analytics: FirebaseAnalytics
     private lateinit var adapter: LicenseListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
-        analytics = FirebaseAnalytics.getInstance(this)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_licenses)
 

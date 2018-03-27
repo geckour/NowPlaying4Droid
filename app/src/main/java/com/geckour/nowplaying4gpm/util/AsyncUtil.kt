@@ -57,15 +57,15 @@ object AsyncUtil {
                 } else null).apply { cursor.close() }
             }.await()
 
-    suspend fun getArtworkUri(context: Context, client: LastFmApiClient, trackInfo: TrackInfo? = null): Uri? {
+    suspend fun getArtworkUri(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement? = null): Uri? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-        val cacheInfo = sharedPreferences.getCurrentTrackInfo()
+        val cacheCoreElement = sharedPreferences.getCurrentTrackInfo()?.coreElement
 
         val coreElement =
                 when {
-                    trackInfo?.coreElement?.isAllNonNull == true -> trackInfo.coreElement
-                    cacheInfo?.coreElement?.isAllNonNull == true -> cacheInfo.coreElement
+                    trackCoreElement?.isAllNonNull == true -> trackCoreElement
+                    cacheCoreElement?.isAllNonNull == true -> cacheCoreElement
                     else -> null
                 } ?: return null
 

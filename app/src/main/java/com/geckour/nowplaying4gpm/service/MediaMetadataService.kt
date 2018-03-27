@@ -6,13 +6,10 @@ import android.content.*
 import android.os.IBinder
 import android.preference.PreferenceManager
 import android.widget.RemoteViews
-import com.crashlytics.android.Crashlytics
-import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
-import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -66,8 +63,6 @@ class MediaMetadataService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-
-        if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
 
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_GPM_PLAY_STATE_CHANGED)
