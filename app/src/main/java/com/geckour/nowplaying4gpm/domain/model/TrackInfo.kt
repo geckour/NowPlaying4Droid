@@ -1,5 +1,7 @@
 package com.geckour.nowplaying4gpm.domain.model
 
+import java.io.Serializable
+
 data class TrackInfo(
         val coreElement: TrackCoreElement,
         val artwork: ArtworkInfo =
@@ -8,7 +10,7 @@ data class TrackInfo(
                         TrackCoreElement(null, null, null),
                         false)
 ) {
-    val isArtworkCompatible: Boolean =
+    val isArtworkSame: Boolean =
             coreElement == artwork.trackCoreElement
 }
 
@@ -16,8 +18,8 @@ data class TrackCoreElement(
         val title: String?,
         val artist: String?,
         val album: String?
-) {
-    val isComplete: Boolean =
+): Serializable {
+    val isAllNonNull: Boolean =
             title != null && artist != null && album != null
 }
 

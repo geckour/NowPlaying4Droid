@@ -96,7 +96,7 @@ fun SharedPreferences.deleteTempArtwork(context: Context) {
 fun SharedPreferences.getSharingText(context: Context): String? {
     val trackInfo = getCurrentTrackInfo() ?: return null
 
-    if (trackInfo.coreElement.isComplete.not()) return null
+    if (trackInfo.coreElement.isAllNonNull.not()) return null
     return getFormatPattern(context).getSharingText(trackInfo.coreElement)
 }
 

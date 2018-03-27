@@ -38,7 +38,7 @@ fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: su
 object AsyncUtil {
     private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackCoreElement): Long? =
             async {
-                if (trackCoreElement.isComplete.not()) return@async null
+                if (trackCoreElement.isAllNonNull.not()) return@async null
 
                 val cursor = context.contentResolver.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -63,7 +63,7 @@ object AsyncUtil {
         try {
             if (trackInfo?.artwork?.artworkUriString != null)
                 return Uri.parse(trackInfo.artwork.artworkUriString)
-            else if (trackInfo?.coreElement?.isComplete == true
+            else if (trackInfo?.coreElement?.isAllNonNull == true
                     && trackInfo.coreElement == cacheInfo?.artwork?.trackCoreElement)
                 return Uri.parse(cacheInfo.artwork.artworkUriString)
         } catch (e: Exception) {
@@ -72,8 +72,8 @@ object AsyncUtil {
 
         val coreElement =
                 when {
-                    trackInfo?.coreElement?.isComplete == true -> trackInfo.coreElement
-                    cacheInfo?.coreElement?.isComplete == true -> cacheInfo.coreElement
+                    trackInfo?.coreElement?.isAllNonNull == true -> trackInfo.coreElement
+                    cacheInfo?.coreElement?.isAllNonNull == true -> cacheInfo.coreElement
                     else -> null
                 } ?: return null
 
@@ -139,7 +139,7 @@ object AsyncUtil {
     suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Bitmap? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val coreElement =
-                (if (trackCoreElement.isComplete.not()) sharedPreferences.getCurrentTrackInfo()?.coreElement
+                (if (trackCoreElement.isAllNonNull.not()) sharedPreferences.getCurrentTrackInfo()?.coreElement
                 else trackCoreElement)
                         ?: return null
 
