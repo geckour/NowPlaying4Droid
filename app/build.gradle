@@ -70,7 +70,7 @@ dependencies {
     def retrofit2_version = '2.2.0'
     def okhttp_version = '3.7.0'
     def glide_version = '4.3.0'
-    def firebase_version = '11.8.0'
+    def firebase_version = '12.0.0'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
@@ -90,7 +90,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
 
     // Data Binding
-    kapt 'com.android.databinding:compiler:3.0.1'
+    kapt 'com.android.databinding:compiler:3.1.0'
 
     // Logging
     implementation 'com.jakewharton.timber:timber:4.6.0'
