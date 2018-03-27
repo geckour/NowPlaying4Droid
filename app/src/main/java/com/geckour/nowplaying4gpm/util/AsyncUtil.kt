@@ -22,23 +22,24 @@ import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
 import kotlin.coroutines.experimental.CoroutineContext
 
-fun <T> async(context: CoroutineContext = CommonPool, block: suspend CoroutineScope.() -> T) =
-        kotlinx.coroutines.experimental.async(context, block = block)
-
-fun ui(managerList: ArrayList<Job>, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> Unit) =
-        launch(UI) {
+fun <T> async(context: CoroutineContext = CommonPool, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> T) =
+        kotlinx.coroutines.experimental.async(context, block = {
             try {
                 block()
             } catch (e: Exception) {
                 Timber.e(e)
                 onError(e)
+                null
             }
-        }.apply { managerList.add(this) }
+        })
+
+fun ui(managerList: ArrayList<Job>, block: suspend CoroutineScope.() -> Unit) =
+        launch(UI) { block() }.apply { managerList.add(this) }
 
 object AsyncUtil {
     private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackCoreElement): Long? =
             async {
-                if (trackCoreElement.isComplete.not()) return@async null
+                if (trackCoreElement.isAllNonNull.not()) return@async null
 
                 val cursor = context.contentResolver.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -58,38 +59,30 @@ object AsyncUtil {
 
     suspend fun getArtworkUri(context: Context, client: LastFmApiClient, trackInfo: TrackInfo? = null): Uri? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val cacheInfo = sharedPreferences.getCurrentTrackInfo()
 
-        try {
-            if (trackInfo?.artwork?.artworkUriString != null)
-                return Uri.parse(trackInfo.artwork.artworkUriString)
-            else if (trackInfo?.coreElement?.isComplete == true
-                    && trackInfo.coreElement == cacheInfo?.artwork?.trackCoreElement)
-                return Uri.parse(cacheInfo.artwork.artworkUriString)
-        } catch (e: Exception) {
-            Timber.e(e)
-        }
+        val cacheInfo = sharedPreferences.getCurrentTrackInfo()
 
         val coreElement =
                 when {
-                    trackInfo?.coreElement?.isComplete == true -> trackInfo.coreElement
-                    cacheInfo?.coreElement?.isComplete == true -> cacheInfo.coreElement
+                    trackInfo?.coreElement?.isAllNonNull == true -> trackInfo.coreElement
+                    cacheInfo?.coreElement?.isAllNonNull == true -> cacheInfo.coreElement
                     else -> null
                 } ?: return null
 
         var fromContentResolver = false
-
-        return (getArtworkUriFromDevice(context, coreElement)?.apply { fromContentResolver = true }
-                ?: if (sharedPreferences.getWhetherUseApi())
-                    getArtworkUriFromLastFmApi(context, client, coreElement)
-                else null).apply {
-            sharedPreferences.setCurrentArtworkInfo(
+        val uri =
+                getArtworkUriFromDevice(context, coreElement)?.apply { fromContentResolver = true }
+                        ?: if (sharedPreferences.getWhetherUseApi()) getArtworkUriFromLastFmApi(context, client, coreElement) else null
+        if (fromContentResolver.not()) {
+            sharedPreferences.setTempArtworkInfo(
                     ArtworkInfo(
-                            this?.toString(),
+                            uri?.toString(),
                             coreElement,
                             fromContentResolver)
             )
         }
+
+        return uri
     }
 
     private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
@@ -120,10 +113,11 @@ object AsyncUtil {
 
     private suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Uri? =
             getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackCoreElement))?.let {
-                getArtworkUriFromBitmap(context, it)?.apply {
+                async {
                     PreferenceManager.getDefaultSharedPreferences(context)
                             .deleteTempArtwork(context)
-                }
+                }.await()
+                getArtworkUriFromBitmap(context, it)
             }
 
     private suspend fun getArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
@@ -138,20 +132,18 @@ object AsyncUtil {
 
     suspend fun getArtworkBitmap(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Bitmap? {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
         val coreElement =
-                (if (trackCoreElement.isComplete.not()) sharedPreferences.getCurrentTrackInfo()?.coreElement
-                else trackCoreElement)
+                (if (trackCoreElement.isAllNonNull) trackCoreElement
+                else sharedPreferences.getCurrentTrackInfo()?.coreElement)
                         ?: return null
 
         return getArtworkUriFromDevice(context, coreElement)?.let {
-            context.contentResolver.openInputStream(it).let {
-                BitmapFactory.decodeStream(it, null, null).apply { it.close() }
-            }
-        } ?: run {
-            if (sharedPreferences.getWhetherUseApi()) {
-                getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, coreElement, Image.Size.MEDIUM))
-            } else null
-        }
+            val inputStream = context.contentResolver.openInputStream(it)
+            BitmapFactory.decodeStream(inputStream, null, null).apply { inputStream.close() }
+        } ?: if (sharedPreferences.getWhetherUseApi())
+            getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, coreElement, Image.Size.MEDIUM))
+        else null
     }
 
 

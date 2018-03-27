@@ -1,7 +1,9 @@
 package com.geckour.nowplaying4gpm.service
 
-import android.app.*
-import android.appwidget.AppWidgetManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.*
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -12,7 +14,6 @@ import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.support.annotation.RequiresApi
 import android.support.v7.graphics.Palette
-import android.widget.RemoteViews
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -20,10 +21,8 @@ import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SettingsActivity.Companion.paletteArray
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
-import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkBitmap
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
@@ -31,7 +30,7 @@ import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
-class NotifyMediaMetaDataService : NotificationListenerService() {
+class NotificationService : NotificationListenerService() {
 
     enum class Channel(val id: Int) {
         NOTIFICATION_CHANNEL_SHARE(180)
@@ -40,20 +39,39 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     companion object {
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
-        private const val ACTION_GPM_PLAY_STATE_CHANGED: String = "com.android.music.playstatechanged"
-        private const val EXTRA_GPM_ARTIST: String = "artist"
-        private const val EXTRA_GPM_ALBUM: String = "album"
-        private const val EXTRA_GPM_TRACK: String = "track"
-        private const val EXTRA_GPM_PLAYING: String = "playing"
+        const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
 
-        private fun getIntent(context: Context): Intent =
-                Intent(context, NotifyMediaMetaDataService::class.java)
+        fun getIntent(context: Context): Intent =
+                Intent(context, NotificationService::class.java)
 
-        fun launchService(context: Context?) {
-            context?.checkStoragePermission {
-                if (Build.VERSION.SDK_INT >= 26)
-                    it.startForegroundService(getIntent(it))
-                else it.startService(getIntent(it))
+        fun sendNotification(context: Context, trackCoreElement: TrackCoreElement?) {
+            context.checkStoragePermission {
+                it.startService(getIntent(context))
+                it.sendBroadcast(Intent().apply {
+                    action = NotificationService.ACTION_SHOW_NOTIFICATION
+                    putExtra(NotificationService.BUNDLE_KEY_TRACK_INFO,
+                            trackCoreElement ?: TrackCoreElement(null, null, null))
+                })
+            }
+        }
+    }
+
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            intent?.apply {
+                when (action) {
+                    ACTION_DESTROY_NOTIFICATION -> destroyNotification()
+
+                    ACTION_SHOW_NOTIFICATION -> {
+                        if (context == null) return
+
+                        val trackCoreElement =
+                                (intent.extras?.get(BUNDLE_KEY_TRACK_INFO) as TrackCoreElement?)
+                                        ?: TrackCoreElement(null, null, null)
+
+                        async { showNotification(trackCoreElement) }
+                    }
+                }
             }
         }
     }
@@ -66,47 +84,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
     private var notificationBitmap: Bitmap? = null
     private var trackCoreElement: TrackCoreElement =
             TrackCoreElement(null, null, null)
-
-    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            intent?.apply {
-                when (action) {
-                    ACTION_GPM_PLAY_STATE_CHANGED -> {
-                        val title =
-                                if (hasExtra(EXTRA_GPM_TRACK))
-                                    getStringExtra(EXTRA_GPM_TRACK)
-                                else null
-                        val artist =
-                                if (hasExtra(EXTRA_GPM_ARTIST))
-                                    getStringExtra(EXTRA_GPM_ARTIST)
-                                else null
-                        val album =
-                                if (hasExtra(EXTRA_GPM_ALBUM))
-                                    getStringExtra(EXTRA_GPM_ALBUM)
-                                else null
-
-                        val playStart: Boolean =
-                                hasExtra(EXTRA_GPM_PLAYING).not()
-                                        || getBooleanExtra(EXTRA_GPM_PLAYING, true)
-
-                        onUpdate(playStart, TrackCoreElement(title, artist, album))
-                    }
-
-                    ACTION_DESTROY_NOTIFICATION -> destroyNotification()
-
-                    ACTION_SHOW_NOTIFICATION -> {
-                        if (context == null) return
-
-                        val trackCoreElement =
-                                sharedPreferences.getCurrentTrackInfo()?.coreElement
-                                        ?: TrackCoreElement(null, null, null)
-
-                        onUpdate(trackCoreElement.isComplete, trackCoreElement)
-                    }
-                }
-            }
-        }
-    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -123,18 +100,11 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         }
 
         val intentFilter = IntentFilter().apply {
-            addAction(ACTION_GPM_PLAY_STATE_CHANGED)
             addAction(ACTION_DESTROY_NOTIFICATION)
             addAction(ACTION_SHOW_NOTIFICATION)
         }
 
         registerReceiver(receiver, intentFilter)
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-
-        return Service.START_STICKY
     }
 
     override fun onDestroy() {
@@ -146,7 +116,6 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
             Timber.e(e)
         }
 
-        updateSharedPreference(TrackCoreElement(null, null, null))
         destroyNotification()
         jobs.cancelAll()
     }
@@ -166,93 +135,41 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun updateSharedPreference(trackCoreElement: TrackCoreElement) {
-        sharedPreferences.refreshCurrentTrackCoreElement(trackCoreElement)
-    }
-
-    private fun onUpdate(playStart: Boolean, trackCoreElement: TrackCoreElement) {
-        ui(jobs) {
-            async {
-                updateWidget(playStart, trackCoreElement)
-                updateNotification(playStart, trackCoreElement)
-            }.await()
-
-            updateSharedPreference(trackCoreElement)
-        }
-    }
-
-    private suspend fun updateNotification(playStart: Boolean, trackCoreElement: TrackCoreElement) {
-        sharedPreferences.apply {
-            if (playStart && getWhetherReside() && trackCoreElement.isComplete) {
-                showNotification(trackCoreElement)
-            } else destroyNotification()
-        }
-    }
-
-    private fun updateWidget(playStart: Boolean, trackCoreElement: TrackCoreElement) =
-            AppWidgetManager.getInstance(this).apply {
-                val ids = getAppWidgetIds(ComponentName(applicationContext, ShareWidgetProvider::class.java))
-
-                updateAppWidget(
-                        ids,
-                        RemoteViews(this@NotifyMediaMetaDataService.packageName, R.layout.widget_share).apply {
-                            val summary =
-                                    if (playStart) {
-                                        if (trackCoreElement.isComplete) {
-                                            sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService)
-                                                    .getSharingText(trackCoreElement)
-                                        } else {
-                                            sharedPreferences.getSharingText(this@NotifyMediaMetaDataService)
-                                        }
-                                    } else null
-
-                            setTextViewText(R.id.widget_summary_share,
-                                    summary
-                                            ?: this@NotifyMediaMetaDataService.getString(R.string.dialog_message_alert_no_metadata))
-
-                            setOnClickPendingIntent(R.id.widget_share_root,
-                                    ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService,
-                                            ShareWidgetProvider.Action.SHARE))
-                            setOnClickPendingIntent(R.id.widget_button_setting,
-                                    ShareWidgetProvider.getPendingIntent(this@NotifyMediaMetaDataService,
-                                            ShareWidgetProvider.Action.OPEN_SETTING))
-                        }
-                )
-            }
-
-    private suspend fun showNotification(trackCoreElement: TrackCoreElement) {
-        checkStoragePermission {
-            async {
-                val albumArt =
-                        if (this@NotifyMediaMetaDataService.trackCoreElement == trackCoreElement) {
-                            notificationBitmap
-                                    ?: getArtworkBitmap(
-                                            this@NotifyMediaMetaDataService,
+    private fun showNotification(trackCoreElement: TrackCoreElement) {
+        if (trackCoreElement.isAllNonNull) {
+            checkStoragePermission {
+                ui(jobs) {
+                    val albumArt =
+                            async {
+                                when (trackCoreElement) {
+                                    this@NotificationService.trackCoreElement -> notificationBitmap
+                                    else -> getArtworkBitmap(
+                                            this@NotificationService,
                                             lastFmApiClient,
                                             trackCoreElement)
-                        } else getArtworkBitmap(
-                                this@NotifyMediaMetaDataService,
-                                lastFmApiClient,
-                                trackCoreElement)
+                                }
+                            }.await()
 
-                notificationBitmap = albumArt
-                this@NotifyMediaMetaDataService.trackCoreElement = trackCoreElement
+                    notificationBitmap = albumArt
+                    this@NotificationService.trackCoreElement = trackCoreElement
 
-                getNotification(albumArt, trackCoreElement).apply {
-                    startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                    getNotification(albumArt, trackCoreElement)?.apply {
+                        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                    }
                 }
             }
-        }
+        } else destroyNotification()
     }
 
     private fun showDummyNotification() =
             startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, getDummyNotification())
 
     private fun destroyNotification() =
-            stopForeground(true)
+            if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
+            else cancelAllNotifications()
 
     private suspend fun getNotification(thumb: Bitmap?, trackCoreElement: TrackCoreElement): Notification? {
-        if (trackCoreElement.isComplete.not()) return null
+        if (trackCoreElement.isAllNonNull.not()) return null
 
         val notificationBuilder =
                 if (Build.VERSION.SDK_INT >= 26)
@@ -262,13 +179,13 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
         return notificationBuilder.apply {
             val actionOpenSetting =
                     PendingIntent.getActivity(
-                            this@NotifyMediaMetaDataService,
+                            this@NotificationService,
                             0,
-                            SettingsActivity.getIntent(this@NotifyMediaMetaDataService),
+                            SettingsActivity.getIntent(this@NotificationService),
                             PendingIntent.FLAG_CANCEL_CURRENT
                     ).let {
                         Notification.Action.Builder(
-                                Icon.createWithResource(this@NotifyMediaMetaDataService,
+                                Icon.createWithResource(this@NotificationService,
                                         R.drawable.ic_settings_black_24px),
                                 getString(R.string.action_open_pref),
                                 it
@@ -282,7 +199,7 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
 
             val uri =
                     if (sharedPreferences.getWhetherBundleArtwork())
-                        getArtworkUri(this@NotifyMediaMetaDataService,
+                        getArtworkUri(this@NotificationService,
                                 lastFmApiClient,
                                 TrackInfo(trackCoreElement))
                     else null
@@ -293,10 +210,10 @@ class NotifyMediaMetaDataService : NotificationListenerService() {
             setContentText(notificationText)
             setContentIntent(
                     PendingIntent.getActivity(
-                            this@NotifyMediaMetaDataService,
+                            this@NotificationService,
                             0,
-                            SharingActivity.getIntent(this@NotifyMediaMetaDataService,
-                                    sharedPreferences.getFormatPattern(this@NotifyMediaMetaDataService)
+                            SharingActivity.getIntent(this@NotificationService,
+                                    sharedPreferences.getFormatPattern(this@NotificationService)
                                             .getSharingText(trackCoreElement),
                                     uri),
                             PendingIntent.FLAG_CANCEL_CURRENT

@@ -1,28 +1,22 @@
 package com.geckour.nowplaying4gpm.domain.model
 
-data class TrackInfo(
-        val coreElement: TrackCoreElement,
-        val artwork: ArtworkInfo =
-                ArtworkInfo(
-                        null,
-                        TrackCoreElement(null, null, null),
-                        false)
-) {
-    val isArtworkCompatible: Boolean =
-            coreElement == artwork.trackCoreElement
-}
+import java.io.Serializable
 
-data class TrackCoreElement(
-        val title: String?,
-        val artist: String?,
-        val album: String?
-) {
-    val isComplete: Boolean =
-            title != null && artist != null && album != null
-}
+data class TrackInfo(
+        val coreElement: TrackCoreElement
+)
 
 data class ArtworkInfo(
         val artworkUriString: String?,
         val trackCoreElement: TrackCoreElement,
         val fromContentResolver: Boolean
 )
+
+data class TrackCoreElement(
+        val title: String?,
+        val artist: String?,
+        val album: String?
+): Serializable {
+    val isAllNonNull: Boolean =
+            title != null && artist != null && album != null
+}

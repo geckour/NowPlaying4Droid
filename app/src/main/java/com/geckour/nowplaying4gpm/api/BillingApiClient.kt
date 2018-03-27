@@ -33,7 +33,7 @@ class BillingApiClient(private val service: IInAppBillingService) {
                 BILLING_TYPE,
                 null
         ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
-    }.await()
+    }.await() ?: listOf()
 
     suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = async {
         service.getSkuDetails(
@@ -52,7 +52,7 @@ class BillingApiClient(private val service: IInAppBillingService) {
                 }
             } else listOf()
         }
-    }.await()
+    }.await() ?: listOf()
 
     fun getBuyIntent(context: Context, sku: String): PendingIntent? =
             service.getBuyIntent(API_VERSION, context.packageName, sku, BILLING_TYPE, null)?.let {

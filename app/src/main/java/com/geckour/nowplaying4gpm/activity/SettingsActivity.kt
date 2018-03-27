@@ -27,8 +27,8 @@ import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
-import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService
-import com.geckour.nowplaying4gpm.service.NotifyMediaMetaDataService.Companion.launchService
+import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -149,11 +149,10 @@ class SettingsActivity : Activity() {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { checkState, summary ->
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { _, summary ->
                     binding.summarySwitchReside = summary
 
-                    if (checkState) updateNotification()
-                    else destroyNotification()
+                    updateNotification()
                 })
             }
         }
@@ -164,6 +163,8 @@ class SettingsActivity : Activity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
                     binding.summarySwitchBundleArtwork = summary
+
+                    updateNotification()
                 })
             }
         }
@@ -176,6 +177,8 @@ class SettingsActivity : Activity() {
                     visibility = View.VISIBLE
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
                         binding.summarySwitchColorizeNotificationBg = summary
+
+                        updateNotification()
                     })
                 }
             }
@@ -205,7 +208,7 @@ class SettingsActivity : Activity() {
                 Context.BIND_AUTO_CREATE
         )
 
-        requestStoragePermission { launchService(this) }
+        requestStoragePermission { NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement) }
     }
 
     override fun onResume() {
@@ -220,8 +223,10 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    launchService(this)
-                } else requestStoragePermission { launchService(this) }
+                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                } else requestStoragePermission {
+                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                }
             }
         }
     }
@@ -276,11 +281,11 @@ class SettingsActivity : Activity() {
 
     private fun updateNotification() =
             requestStoragePermission {
-                sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_SHOW_NOTIFICATION })
+                NotificationService.sendNotification(this, null)
             }
 
     private fun destroyNotification() =
-            sendBroadcast(Intent().apply { action = NotifyMediaMetaDataService.ACTION_DESTROY_NOTIFICATION })
+            sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
 
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
