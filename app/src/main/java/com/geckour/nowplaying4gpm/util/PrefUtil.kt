@@ -42,12 +42,11 @@ fun SharedPreferences.init(context: Context) {
     }.apply()
 }
 
-fun SharedPreferences.refreshCurrentTrackCoreElement(trackCoreElement: TrackCoreElement) =
+fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
         edit().apply {
-            val trackInfo = getCurrentTrackInfo() ?: TrackInfo(trackCoreElement)
             putString(
                     PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-                    Gson().toJson(trackInfo.copy(coreElement = trackCoreElement)))
+                    Gson().toJson(trackInfo))
         }.apply()
 
 fun SharedPreferences.getFormatPattern(context: Context): String =

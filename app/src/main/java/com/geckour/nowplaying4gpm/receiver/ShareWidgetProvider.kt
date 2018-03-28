@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.preference.PreferenceManager
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
@@ -34,15 +35,14 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
     private val jobs: ArrayList<Job> = ArrayList()
 
-    override fun onEnabled(context: Context?) {
-        super.onEnabled(context)
-
+    override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
         if (context == null) return
 
         val summary =
                 PreferenceManager.getDefaultSharedPreferences(context)
                         .getSharingText(context)
-        if (summary != null) updateWidget(context, summary)
+        updateWidget(context, summary)
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {

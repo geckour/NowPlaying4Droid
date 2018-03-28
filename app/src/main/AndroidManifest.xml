@@ -38,11 +38,12 @@
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.Dark" />
 
-        <service android:name=".service.MediaMetadataService" />
-
-        <service
-            android:name=".service.NotificationService"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
+        <service android:name=".service.GPMNotificationListenerService"
+                 android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <receiver android:name=".receiver.ShareWidgetProvider">
             <meta-data

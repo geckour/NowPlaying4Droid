@@ -26,8 +26,7 @@ import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
-import com.geckour.nowplaying4gpm.service.MediaMetadataService
-import com.geckour.nowplaying4gpm.service.NotificationService
+import com.geckour.nowplaying4gpm.service.GPMNotificationListenerService
 import com.geckour.nowplaying4gpm.util.*
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import com.google.gson.Gson
@@ -72,10 +71,6 @@ class SettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        launchMetaDataService(this)
-        launchNotificationService()
-
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
@@ -203,7 +198,7 @@ class SettingsActivity : Activity() {
                 Context.BIND_AUTO_CREATE
         )
 
-        requestStoragePermission { NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement) }
+        requestStoragePermission { GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()) }
     }
 
     override fun onResume() {
@@ -218,9 +213,9 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                    GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
                 } else requestStoragePermission {
-                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                    GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
                 }
             }
         }
@@ -274,23 +269,13 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private fun launchMetaDataService(context: Context?) {
-        context?.startService(MediaMetadataService.getIntent(context))
-    }
-
-    private fun launchNotificationService() {
-        checkStoragePermission {
-            it.startService(NotificationService.getIntent(it))
-        }
-    }
-
     private fun updateNotification() =
             requestStoragePermission {
-                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
             }
 
     private fun destroyNotification() =
-            sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
+            sendBroadcast(Intent().apply { action = GPMNotificationListenerService.ACTION_DESTROY_NOTIFICATION })
 
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
