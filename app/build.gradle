@@ -112,5 +112,4 @@ dependencies {
     kapt "com.github.bumptech.glide:compiler:$glide_version"
 }
 
-
 apply plugin: 'com.google.gms.google-services'

@@ -4,7 +4,7 @@ import java.io.Serializable
 
 data class TrackInfo(
         val coreElement: TrackCoreElement,
-        val artworkUriString: String?
+        val base64Artwork: String?
 ): Serializable
 
 data class ArtworkInfo(

@@ -7,18 +7,18 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.*
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
-import android.os.IBinder
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
 import android.support.v7.graphics.Palette
+import android.util.Base64
 import android.widget.RemoteViews
-import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
@@ -29,6 +29,7 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 
 class GPMNotificationListenerService : NotificationListenerService() {
 
@@ -81,8 +82,6 @@ class GPMNotificationListenerService : NotificationListenerService() {
     private var notificationBitmap: Bitmap? = null
     private var trackCoreElement: TrackCoreElement =
             TrackCoreElement(null, null, null)
-
-    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -141,10 +140,19 @@ class GPMNotificationListenerService : NotificationListenerService() {
             val track: String = notification.extras.getString(Notification.EXTRA_TITLE)
             val artist: String = notification.extras.getString(Notification.EXTRA_TEXT)
             val album: String = notification.extras.getString(Notification.EXTRA_INFO_TEXT)
-            val artworkUri: Uri = notification.extras.getParcelable(Notification.EXTRA_BACKGROUND_IMAGE_URI)
-            Timber.d("track: $track, artist: $artist, album: $album, artworkUri: $artworkUri")
+            val artwork: Bitmap = (notification.getLargeIcon().loadDrawable(this@GPMNotificationListenerService) as BitmapDrawable).bitmap
+            Timber.d("track: $track, artist: $artist, album: $album, artwork: $artwork")
 
-            val info = TrackInfo(TrackCoreElement(track, artist, album), artworkUri.toString())
+            val info =
+                    TrackInfo(
+                            TrackCoreElement(track, artist, album),
+                            Base64.encodeToString(
+                                    ByteArrayOutputStream().apply {
+                                        artwork.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                                    }.toByteArray(),
+                                    Base64.DEFAULT
+                            )
+                    )
 
             updateSharedPreference(info)
             updateWidget(trackCoreElement)
@@ -212,12 +220,9 @@ class GPMNotificationListenerService : NotificationListenerService() {
                     val albumArt =
                             async {
                                 when {
-                                    trackInfo.artworkUriString != null -> {
-                                        Glide.with(this@GPMNotificationListenerService)
-                                                .asBitmap()
-                                                .load(Uri.parse(trackInfo.artworkUriString))
-                                                .submit()
-                                                .get()
+                                    trackInfo.base64Artwork != null -> {
+                                        val byteArray = Base64.decode(trackInfo.base64Artwork, Base64.DEFAULT)
+                                        BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
                                     }
 
                                     trackInfo.coreElement == this@GPMNotificationListenerService.trackCoreElement -> notificationBitmap
