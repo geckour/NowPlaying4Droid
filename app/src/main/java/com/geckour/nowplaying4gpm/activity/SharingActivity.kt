@@ -6,9 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.getTempArtworkUri
+import com.geckour.nowplaying4gpm.util.getWhetherBundleArtwork
+import com.geckour.nowplaying4gpm.util.ui
 import kotlinx.coroutines.experimental.Job
 
 class SharingActivity: Activity() {
@@ -19,15 +22,13 @@ class SharingActivity: Activity() {
     }
 
     enum class ArgKey {
-        TEXT,
-        ARTWORK_URI
+        TEXT
     }
 
     companion object {
-        fun getIntent(context: Context, text: String, artworkUri: Uri?): Intent =
+        fun getIntent(context: Context, text: String): Intent =
                 Intent(context, SharingActivity::class.java).apply {
                     putExtra(ArgKey.TEXT.name, text)
-                    if (artworkUri != null) putExtra(ArgKey.ARTWORK_URI.name, artworkUri)
                 }
     }
 
@@ -37,11 +38,14 @@ class SharingActivity: Activity() {
         super.onNewIntent(intent)
 
         intent?.apply {
+            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@SharingActivity)
+
             val sharingText: String =
                     if (hasExtra(ArgKey.TEXT.name)) getStringExtra(ArgKey.TEXT.name)
                     else return
-            val artworkUri: Uri? =
-                    if (hasExtra(ArgKey.ARTWORK_URI.name)) getParcelableExtra(ArgKey.ARTWORK_URI.name)
+            val artworkUri =
+                    if (sharedPreferences.getWhetherBundleArtwork())
+                        sharedPreferences.getTempArtworkUri()
                     else null
 
             ui(jobs) { startShare(sharingText, artworkUri) }

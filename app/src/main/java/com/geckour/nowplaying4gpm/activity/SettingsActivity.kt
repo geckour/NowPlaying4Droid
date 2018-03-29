@@ -21,14 +21,12 @@ import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
-import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
-import com.geckour.nowplaying4gpm.service.GPMNotificationListenerService
+import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
@@ -198,7 +196,7 @@ class SettingsActivity : Activity() {
                 Context.BIND_AUTO_CREATE
         )
 
-        requestStoragePermission { GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()) }
+        requestStoragePermission { NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()) }
     }
 
     override fun onResume() {
@@ -213,9 +211,9 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
                 } else requestStoragePermission {
-                    GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
                 }
             }
         }
@@ -271,11 +269,11 @@ class SettingsActivity : Activity() {
 
     private fun updateNotification() =
             requestStoragePermission {
-                GPMNotificationListenerService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
             }
 
     private fun destroyNotification() =
-            sendBroadcast(Intent().apply { action = GPMNotificationListenerService.ACTION_DESTROY_NOTIFICATION })
+            sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
 
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
@@ -319,16 +317,7 @@ class SettingsActivity : Activity() {
             showErrorDialog(
                     R.string.dialog_title_alert_no_for_share,
                     R.string.dialog_message_alert_no_metadata)
-        } else {
-            ui(jobs) {
-                val artworkUri =
-                        if (sharedPreferences.getWhetherBundleArtwork())
-                            getArtworkUri(this@SettingsActivity, LastFmApiClient(), null)
-                        else null
-
-                startActivity(SharingActivity.getIntent(this@SettingsActivity, text, artworkUri))
-            }
-        }
+        } else startActivity(SharingActivity.getIntent(this@SettingsActivity, text))
     }
 
     private fun onClickItemPatternFormat() {

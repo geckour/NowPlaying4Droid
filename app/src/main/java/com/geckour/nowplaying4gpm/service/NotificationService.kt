@@ -7,17 +7,16 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.*
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Build
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
 import android.support.v7.graphics.Palette
-import android.util.Base64
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
@@ -27,11 +26,13 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromLastFmApi
+import com.geckour.nowplaying4gpm.util.AsyncUtil.getBitmapFromUriString
+import com.geckour.nowplaying4gpm.util.AsyncUtil.refreshArtworkUriFromBitmap
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
-import java.io.ByteArrayOutputStream
 
-class GPMNotificationListenerService : NotificationListenerService() {
+class NotificationService : NotificationListenerService() {
 
     enum class Channel(val id: Int) {
         NOTIFICATION_CHANNEL_SHARE(180)
@@ -127,8 +128,6 @@ class GPMNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-
-        Timber.d("SBN package name: ${sbn?.packageName}")
         if (sbn == null) return
 
         if (sbn.packageName == PACKAGE_NAME_GPM)
@@ -137,26 +136,29 @@ class GPMNotificationListenerService : NotificationListenerService() {
 
     private fun onUpdate(notification: Notification) {
         async {
-            val track: String = notification.extras.getString(Notification.EXTRA_TITLE)
-            val artist: String = notification.extras.getString(Notification.EXTRA_TEXT)
-            val album: String = notification.extras.getString(Notification.EXTRA_INFO_TEXT)
-            val artwork: Bitmap = (notification.getLargeIcon().loadDrawable(this@GPMNotificationListenerService) as BitmapDrawable).bitmap
-            Timber.d("track: $track, artist: $artist, album: $album, artwork: $artwork")
+            notification.extras.apply {
+                val track: String? = if (containsKey(Notification.EXTRA_TITLE)) getString(Notification.EXTRA_TITLE) else null
+                val artist: String? = if (containsKey(Notification.EXTRA_TEXT)) getString(Notification.EXTRA_TEXT) else null
+                val album: String? = if (containsKey(Notification.EXTRA_INFO_TEXT)) getString(Notification.EXTRA_SUB_TEXT) else null
+                val coreElement = TrackCoreElement(track, artist, album)
+                val artworkUri: Uri? =
+                        (notification.getLargeIcon()
+                                ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap?.let {
+                            if (it.similarity(Bitmap.createScaledBitmap((getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap, 420, 420, false)) > 0.9
+                                    && sharedPreferences.getWhetherUseApi()) {
+                                getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
+                                        ?: refreshArtworkUriFromBitmap(this@NotificationService, it)
+                            } else {
+                                refreshArtworkUriFromBitmap(this@NotificationService, it)
+                            }
+                        }
 
-            val info =
-                    TrackInfo(
-                            TrackCoreElement(track, artist, album),
-                            Base64.encodeToString(
-                                    ByteArrayOutputStream().apply {
-                                        artwork.compress(Bitmap.CompressFormat.JPEG, 100, this)
-                                    }.toByteArray(),
-                                    Base64.DEFAULT
-                            )
-                    )
+                val info = TrackInfo(coreElement, artworkUri?.toString())
 
-            updateSharedPreference(info)
-            updateWidget(trackCoreElement)
-            updateNotification(info)
+                updateSharedPreference(info)
+                updateWidget(trackCoreElement)
+                updateNotification(info)
+            }
         }
     }
 
@@ -169,30 +171,30 @@ class GPMNotificationListenerService : NotificationListenerService() {
 
     private fun updateWidget(trackCoreElement: TrackCoreElement) =
             AppWidgetManager.getInstance(this).apply {
-                val ids = getAppWidgetIds(ComponentName(this@GPMNotificationListenerService, ShareWidgetProvider::class.java))
+                val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
                 updateAppWidget(
                         ids,
-                        RemoteViews(this@GPMNotificationListenerService.packageName, R.layout.widget_share).apply {
+                        RemoteViews(this@NotificationService.packageName, R.layout.widget_share).apply {
                             val summary =
                                     if (trackCoreElement.isAllNonNull) {
                                         if (trackCoreElement.isAllNonNull) {
-                                            sharedPreferences.getFormatPattern(this@GPMNotificationListenerService)
+                                            sharedPreferences.getFormatPattern(this@NotificationService)
                                                     .getSharingText(trackCoreElement)
                                         } else {
-                                            sharedPreferences.getSharingText(this@GPMNotificationListenerService)
+                                            sharedPreferences.getSharingText(this@NotificationService)
                                         }
                                     } else null
 
                             setTextViewText(R.id.widget_summary_share,
                                     summary
-                                            ?: this@GPMNotificationListenerService.getString(R.string.dialog_message_alert_no_metadata))
+                                            ?: this@NotificationService.getString(R.string.dialog_message_alert_no_metadata))
 
                             setOnClickPendingIntent(R.id.widget_share_root,
-                                    ShareWidgetProvider.getPendingIntent(this@GPMNotificationListenerService,
+                                    ShareWidgetProvider.getPendingIntent(this@NotificationService,
                                             ShareWidgetProvider.Action.SHARE))
                             setOnClickPendingIntent(R.id.widget_button_setting,
-                                    ShareWidgetProvider.getPendingIntent(this@GPMNotificationListenerService,
+                                    ShareWidgetProvider.getPendingIntent(this@NotificationService,
                                             ShareWidgetProvider.Action.OPEN_SETTING))
                         }
                 )
@@ -218,24 +220,14 @@ class GPMNotificationListenerService : NotificationListenerService() {
             checkStoragePermission {
                 ui(jobs) {
                     val albumArt =
-                            async {
-                                when {
-                                    trackInfo.base64Artwork != null -> {
-                                        val byteArray = Base64.decode(trackInfo.base64Artwork, Base64.DEFAULT)
-                                        BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
-                                    }
-
-                                    trackInfo.coreElement == this@GPMNotificationListenerService.trackCoreElement -> notificationBitmap
-
-                                    else -> AsyncUtil.getArtworkBitmap(
-                                            this@GPMNotificationListenerService,
-                                            lastFmApiClient,
-                                            trackCoreElement)
-                                }
-                            }.await()
+                            if (trackInfo.artworkUriString != null)
+                                async {
+                                    getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
+                                }.await()
+                            else null
 
                     notificationBitmap = albumArt
-                    this@GPMNotificationListenerService.trackCoreElement = trackInfo.coreElement
+                    this@NotificationService.trackCoreElement = trackInfo.coreElement
 
                     getNotification(albumArt, trackInfo.coreElement)?.apply {
                         startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
@@ -252,7 +244,7 @@ class GPMNotificationListenerService : NotificationListenerService() {
             if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
             else cancelAllNotifications()
 
-    private suspend fun getNotification(thumb: Bitmap?, trackCoreElement: TrackCoreElement): Notification? {
+    private fun getNotification(thumb: Bitmap?, trackCoreElement: TrackCoreElement): Notification? {
         if (trackCoreElement.isAllNonNull.not()) return null
 
         val notificationBuilder =
@@ -263,13 +255,13 @@ class GPMNotificationListenerService : NotificationListenerService() {
         return notificationBuilder.apply {
             val actionOpenSetting =
                     PendingIntent.getActivity(
-                            this@GPMNotificationListenerService,
+                            this@NotificationService,
                             0,
-                            SettingsActivity.getIntent(this@GPMNotificationListenerService),
+                            SettingsActivity.getIntent(this@NotificationService),
                             PendingIntent.FLAG_CANCEL_CURRENT
                     ).let {
                         Notification.Action.Builder(
-                                Icon.createWithResource(this@GPMNotificationListenerService,
+                                Icon.createWithResource(this@NotificationService,
                                         R.drawable.ic_settings_black_24px),
                                 getString(R.string.action_open_pref),
                                 it
@@ -281,24 +273,18 @@ class GPMNotificationListenerService : NotificationListenerService() {
                             getString(R.string.default_sharing_text_pattern))
                             .getSharingText(trackCoreElement)
 
-            val artworkUri =
-                    if (sharedPreferences.getWhetherBundleArtwork())
-                        AsyncUtil.getArtworkUri(this@GPMNotificationListenerService, LastFmApiClient(), trackCoreElement)
-                    else null
-
             setSmallIcon(R.drawable.ic_notification)
             setLargeIcon(thumb)
             setContentTitle(getString(R.string.notification_title))
             setContentText(notificationText)
             setContentIntent(
                     PendingIntent.getActivity(
-                            this@GPMNotificationListenerService,
+                            this@NotificationService,
                             0,
                             SharingActivity.getIntent(
-                                    this@GPMNotificationListenerService,
-                                    sharedPreferences.getFormatPattern(this@GPMNotificationListenerService)
-                                            .getSharingText(trackCoreElement),
-                                    artworkUri),
+                                    this@NotificationService,
+                                    sharedPreferences.getFormatPattern(this@NotificationService)
+                                            .getSharingText(trackCoreElement)),
                             PendingIntent.FLAG_CANCEL_CURRENT
                     )
             )

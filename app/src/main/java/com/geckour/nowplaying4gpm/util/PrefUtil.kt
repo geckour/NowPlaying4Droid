@@ -6,7 +6,6 @@ import android.net.Uri
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
 import timber.log.Timber
@@ -52,27 +51,38 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
 fun SharedPreferences.getFormatPattern(context: Context): String =
         getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
 
-fun SharedPreferences.setTempArtworkInfo(artworkInfo: ArtworkInfo) {
+fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri) {
+    val currentInfo = getCurrentTrackInfo() ?: return
+
     edit().putString(
             PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
-            Gson().toJson(artworkInfo)).apply()
+            Gson().toJson(ArtworkInfo(artworkUri.toString(), currentInfo.coreElement))).apply()
 }
 
-fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
+private fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
         if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name))
             Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
         else null
 
-fun SharedPreferences.deleteTempArtwork(context: Context) {
-    val artworkInfo = getTempArtworkInfo() ?: return
+fun SharedPreferences.getTempArtworkUri(): Uri? {
+    val artworkUriString = getTempArtworkInfo()?.artworkUriString ?: return null
 
-    if (artworkInfo.fromContentResolver.not()) {
-        try {
-            val uri = Uri.parse(artworkInfo.artworkUriString) ?: return
-            context.contentResolver.delete(uri, null, null)
-        } catch (e: Exception) {
-            Timber.e(e)
-        }
+    return try {
+        Uri.parse(artworkUriString)
+    } catch (e: Exception) {
+        Timber.e(e)
+        null
+    }
+}
+
+fun SharedPreferences.deleteTempArtwork(context: Context) {
+    val artworkUriString = getTempArtworkInfo()?.artworkUriString ?: return
+
+    try {
+        val uri = Uri.parse(artworkUriString) ?: return
+        context.contentResolver.delete(uri, null, null)
+    } catch (e: Exception) {
+        Timber.e(e)
     }
 }
 

@@ -6,15 +6,12 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.preference.PreferenceManager
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
-import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.util.*
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import kotlinx.coroutines.experimental.Job
 
 class ShareWidgetProvider : AppWidgetProvider() {
@@ -62,12 +59,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
                     val summary = sharedPreferences.getFormatPattern(context)
                             .getSharingText(trackCoreElement)
 
-                    val artworkUri =
-                            if (sharedPreferences.getWhetherBundleArtwork())
-                                getArtworkUri(context, LastFmApiClient(), trackCoreElement)
-                            else null
-
-                    context.startActivity(SharingActivity.getIntent(context, summary, artworkUri))
+                    context.startActivity(SharingActivity.getIntent(context, summary))
                 }
             }
 
