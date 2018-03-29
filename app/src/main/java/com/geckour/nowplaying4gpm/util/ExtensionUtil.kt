@@ -95,20 +95,23 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
 }
 
 fun Bitmap.similarity(bitmap: Bitmap): Float {
-    if (this.width != bitmap.width || this.height != bitmap.height) return 0f
+    val other =
+            if (this.width != bitmap.width || this.height != bitmap.height)
+                Bitmap.createScaledBitmap(bitmap, this.width, this.height, false)
+            else bitmap
 
     var count = 0
     for (x in 0 until this.width) {
         for (y in 0 until this.height) {
-            if (this.getPixel(x, y).colorSimilarity(bitmap.getPixel(x, y)) > 0.9) count++
+            if (this.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
         }
     }
+    other.recycle()
 
     return (count.toFloat() / (this.width * this.height)).apply { Timber.d("similarity: $this") }
 }
 
-fun Int.colorSimilarity(colorInt: Int): Float {
-    val src = Color.valueOf(this)
-    val dst = Color.valueOf(colorInt)
-    return ((255 - (src.red() - dst.red()).absoluteValue) / 255 + (255 - (src.green() - dst.green()).absoluteValue) / 255 + (255 - (src.blue() - dst.blue()).absoluteValue) / 255) / 3
-}
+fun Int.colorSimilarity(colorInt: Int): Float =
+        1f - ((Color.red(this) - Color.red(colorInt)).absoluteValue
+                + (Color.green(this) - Color.green(colorInt)).absoluteValue
+                + (Color.blue(this) - Color.blue(colorInt)).absoluteValue).toFloat() / (255 * 3)

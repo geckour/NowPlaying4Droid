@@ -144,7 +144,7 @@ class NotificationService : NotificationListenerService() {
                 val artworkUri: Uri? =
                         (notification.getLargeIcon()
                                 ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap?.let {
-                            if (it.similarity(Bitmap.createScaledBitmap((getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap, 420, 420, false)) > 0.9
+                            if (it.similarity((getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap) > 0.9
                                     && sharedPreferences.getWhetherUseApi()) {
                                 getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
                                         ?: refreshArtworkUriFromBitmap(this@NotificationService, it)
