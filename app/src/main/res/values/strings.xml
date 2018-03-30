@@ -47,6 +47,7 @@
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_title_alert_no_for_share">Failure to share</string>
     <string name="dialog_title_alert_failure_purchase">Failure to purchase</string>
+    <string name="dialog_title_alert_grant_notification_listener">Need to grant permission</string>
     <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nescape sequence: Wrap by \' \'</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_message_alert_no_metadata">Failure to get track information</string>
@@ -54,6 +55,7 @@
     <string name="dialog_message_alert_already_purchase">You already purchased this item</string>
     <string name="dialog_message_alert_on_start_purchase">Failure to start the purchase process</string>
     <string name="dialog_message_alert_on_cancel_purchase">Canceled the purchase process</string>
+    <string name="dialog_message_alert_grant_notification_listener">Open system settings to grant permission for listen notifications</string>
     <string name="dialog_hint_pattern_format">For example: TI - AR (AL)</string>
 
     <string name="share_title">Choose where to share…</string>

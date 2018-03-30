@@ -3,13 +3,13 @@ package com.geckour.nowplaying4gpm.domain.model
 import java.io.Serializable
 
 data class TrackInfo(
-        val coreElement: TrackCoreElement
-)
+        val coreElement: TrackCoreElement,
+        val artworkUriString: String?
+): Serializable
 
 data class ArtworkInfo(
         val artworkUriString: String?,
-        val trackCoreElement: TrackCoreElement,
-        val fromContentResolver: Boolean
+        val trackCoreElement: TrackCoreElement
 )
 
 data class TrackCoreElement(

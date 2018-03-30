@@ -6,12 +6,16 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.support.v4.content.ContextCompat
 import android.view.View
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import kotlinx.coroutines.experimental.Job
+import timber.log.Timber
+import kotlin.math.absoluteValue
 
 fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
@@ -89,3 +93,25 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
                 ?: this@checkStoragePermission.startActivity(SettingsActivity.getIntent(this).apply { flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK })
     }
 }
+
+fun Bitmap.similarity(bitmap: Bitmap): Float {
+    val other =
+            if (this.width != bitmap.width || this.height != bitmap.height)
+                Bitmap.createScaledBitmap(bitmap, this.width, this.height, false)
+            else bitmap
+
+    var count = 0
+    for (x in 0 until this.width) {
+        for (y in 0 until this.height) {
+            if (this.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
+        }
+    }
+    other.recycle()
+
+    return (count.toFloat() / (this.width * this.height)).apply { Timber.d("similarity: $this") }
+}
+
+fun Int.colorSimilarity(colorInt: Int): Float =
+        1f - ((Color.red(this) - Color.red(colorInt)).absoluteValue
+                + (Color.green(this) - Color.green(colorInt)).absoluteValue
+                + (Color.blue(this) - Color.blue(colorInt)).absoluteValue).toFloat() / (255 * 3)

@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
+import android.support.v4.app.NotificationManagerCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,15 +22,12 @@ import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
-import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
-import com.geckour.nowplaying4gpm.service.MediaMetadataService
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUri
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
@@ -40,7 +38,8 @@ class SettingsActivity : Activity() {
         EXTERNAL_STORAGE
     }
 
-    enum class IntentSenderRequestCode {
+    enum class RequestCode {
+        GRANT_NOTIFICATION_LISTENER,
         BILLING
     }
 
@@ -62,6 +61,7 @@ class SettingsActivity : Activity() {
             val count: Int,
             val time: Long
     )
+
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -72,10 +72,6 @@ class SettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        launchMetaDataService(this)
-        launchNotificationService()
-
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
@@ -203,7 +199,11 @@ class SettingsActivity : Activity() {
                 Context.BIND_AUTO_CREATE
         )
 
-        requestStoragePermission { NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement) }
+        requestNotificationListenerPermission {
+            requestStoragePermission {
+                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+            }
+        }
     }
 
     override fun onResume() {
@@ -218,9 +218,9 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
                 if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
                 } else requestStoragePermission {
-                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
                 }
             }
         }
@@ -237,7 +237,15 @@ class SettingsActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         when (requestCode) {
-            IntentSenderRequestCode.BILLING.ordinal -> {
+            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
+                requestNotificationListenerPermission {
+                    requestStoragePermission {
+                        NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+                    }
+                }
+            }
+
+            RequestCode.BILLING.ordinal -> {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
@@ -274,23 +282,28 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private fun launchMetaDataService(context: Context?) {
-        context?.startService(MediaMetadataService.getIntent(context))
-    }
-
-    private fun launchNotificationService() {
-        checkStoragePermission {
-            it.startService(NotificationService.getIntent(it))
-        }
-    }
-
     private fun updateNotification() =
             requestStoragePermission {
-                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()?.coreElement)
+                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
             }
 
     private fun destroyNotification() =
             sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
+
+    private fun requestNotificationListenerPermission(onGranted: () -> Unit = {}) {
+        if (NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName).not()) {
+            AlertDialog.Builder(this)
+                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
+                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                        startActivityForResult(
+                                Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
+                                RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal)
+                        dialog.dismiss()
+                    }.show()
+        } else onGranted()
+    }
 
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
@@ -321,7 +334,7 @@ class SettingsActivity : Activity() {
                     BillingApiClient(it)
                             .getBuyIntent(this@SettingsActivity, skuName)
                             ?.intentSender,
-                    IntentSenderRequestCode.BILLING.ordinal,
+                    RequestCode.BILLING.ordinal,
                     Intent(), 0, 0, 0
             )
         }
@@ -334,16 +347,7 @@ class SettingsActivity : Activity() {
             showErrorDialog(
                     R.string.dialog_title_alert_no_for_share,
                     R.string.dialog_message_alert_no_metadata)
-        } else {
-            ui(jobs) {
-                val artworkUri =
-                        if (sharedPreferences.getWhetherBundleArtwork())
-                            getArtworkUri(this@SettingsActivity, LastFmApiClient(), null)
-                        else null
-
-                startActivity(SharingActivity.getIntent(this@SettingsActivity, text, artworkUri))
-            }
-        }
+        } else startActivity(SharingActivity.getIntent(this@SettingsActivity, text))
     }
 
     private fun onClickItemPatternFormat() {
