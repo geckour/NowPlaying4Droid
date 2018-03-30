@@ -8,6 +8,7 @@ Android app for sharing #NowPlaying from Google Play Music app.
 ## Features
 - Reside notification to share #NowPlaying
 - Custom pattern of sharing text format
+- Use NotificationListenerService to get the music metadata and artwork
 - Try to fetch album art (It succeeds only when playing song is exist inside of device)
 - Try to fetch album art from Web API when failed to fetch from device
 - Change accent color of notification for shareing based on album art colors
