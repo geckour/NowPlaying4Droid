@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
+import android.support.v4.app.NotificationManagerCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,7 +38,8 @@ class SettingsActivity : Activity() {
         EXTERNAL_STORAGE
     }
 
-    enum class IntentSenderRequestCode {
+    enum class RequestCode {
+        GRANT_NOTIFICATION_LISTENER,
         BILLING
     }
 
@@ -59,6 +61,7 @@ class SettingsActivity : Activity() {
             val count: Int,
             val time: Long
     )
+
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -196,7 +199,11 @@ class SettingsActivity : Activity() {
                 Context.BIND_AUTO_CREATE
         )
 
-        requestStoragePermission { NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo()) }
+        requestNotificationListenerPermission {
+            requestStoragePermission {
+                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+            }
+        }
     }
 
     override fun onResume() {
@@ -230,7 +237,15 @@ class SettingsActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         when (requestCode) {
-            IntentSenderRequestCode.BILLING.ordinal -> {
+            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
+                requestNotificationListenerPermission {
+                    requestStoragePermission {
+                        NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+                    }
+                }
+            }
+
+            RequestCode.BILLING.ordinal -> {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
@@ -275,6 +290,21 @@ class SettingsActivity : Activity() {
     private fun destroyNotification() =
             sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
 
+    private fun requestNotificationListenerPermission(onGranted: () -> Unit = {}) {
+        if (NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName).not()) {
+            AlertDialog.Builder(this)
+                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
+                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                        startActivityForResult(
+                                Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
+                                RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal)
+                        dialog.dismiss()
+                    }.show()
+        } else onGranted()
+    }
+
     private fun requestStoragePermission(onGranted: () -> Unit = {}) {
         checkStoragePermission({
             requestPermissions(
@@ -304,7 +334,7 @@ class SettingsActivity : Activity() {
                     BillingApiClient(it)
                             .getBuyIntent(this@SettingsActivity, skuName)
                             ?.intentSender,
-                    IntentSenderRequestCode.BILLING.ordinal,
+                    RequestCode.BILLING.ordinal,
                     Intent(), 0, 0, 0
             )
         }
