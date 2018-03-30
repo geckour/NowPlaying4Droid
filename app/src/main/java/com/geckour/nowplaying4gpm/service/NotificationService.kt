@@ -244,7 +244,7 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun showNotification(trackInfo: TrackInfo) {
-        if (trackInfo.coreElement.isAllNonNull) {
+        if (sharedPreferences.getWhetherReside() && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
                 ui(jobs) {
                     val albumArt =

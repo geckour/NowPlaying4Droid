@@ -140,10 +140,12 @@ class SettingsActivity : Activity() {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { _, summary ->
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { state, summary ->
                     binding.summarySwitchReside = summary
 
-                    updateNotification()
+                    sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, state).apply()
+                    if (state) updateNotification()
+                    else destroyNotification()
                 })
             }
         }
