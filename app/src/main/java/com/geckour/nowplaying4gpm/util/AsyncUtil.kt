@@ -1,5 +1,7 @@
 package com.geckour.nowplaying4gpm.util
 
+import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
@@ -34,6 +36,44 @@ fun ui(managerList: ArrayList<Job>, block: suspend CoroutineScope.() -> Unit) =
 
 object AsyncUtil {
 
+    private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackCoreElement): Long? =
+            async {
+                if (trackCoreElement.isAllNonNull.not()) return@async null
+
+                val cursor = context.contentResolver.query(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        arrayOf(MediaStore.Audio.Media.ALBUM_ID),
+                        getContentQuerySelection(
+                                requireNotNull(trackCoreElement.title),
+                                requireNotNull(trackCoreElement.artist),
+                                requireNotNull(trackCoreElement.album)),
+                        null,
+                        null
+                )
+
+                return@async (if (cursor.moveToNext()) {
+                    cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                } else null).apply { cursor.close() }
+            }.await()
+
+    private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
+            albumId?.let {
+                async {
+                    ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it).let {
+                        try {
+                            context.contentResolver.openInputStream(it).close()
+                            it
+                        } catch (e: Throwable) {
+                            Timber.e(e)
+                            null
+                        }
+                    }
+                }.await()
+            }
+
+    suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackCoreElement): Uri? =
+            getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackCoreElement))
+
     private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackCoreElement: TrackCoreElement, size: Image.Size = Image.Size.MEGA): String? =
             if (trackCoreElement.album == null && trackCoreElement.artist == null) null
             else client.searchAlbum(
@@ -53,32 +93,24 @@ object AsyncUtil {
             }
         } else {
             getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackCoreElement))?.let {
-                refreshArtworkUriFromBitmap(context, it)
+                getArtworkUriFromBitmap(context, it)
             }
         }
     }
 
-    suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri {
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-
-        async {
-            sharedPreferences
-                    .deleteTempArtwork(context)
-        }.await()
-        return getArtworkUriFromBitmap(context, bitmap).apply {
-            sharedPreferences.setTempArtworkInfo(this)
-        }
-    }
-
-    private suspend fun getArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri =
-            Uri.parse(async {
-                MediaStore.Images.Media.insertImage(
-                        context.contentResolver,
-                        bitmap,
-                        "${context.getString(R.string.app_name)}_temp",
-                        null
-                )
-            }.await())
+    fun getArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri =
+            context.contentResolver
+                    .insert(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            ContentValues().apply {
+                                put(MediaStore.Images.Media.TITLE, "${context.getString(R.string.app_name)}_temp")
+                            }
+                    ).apply {
+                        context.contentResolver.openOutputStream(this).apply {
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                            this.close()
+                        }
+                    }
 
 
     private suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =

@@ -76,13 +76,23 @@ fun SharedPreferences.getTempArtworkUri(): Uri? {
 }
 
 fun SharedPreferences.deleteTempArtwork(context: Context) {
-    val artworkUriString = getTempArtworkInfo()?.artworkUriString ?: return
+    val artworkUriString = getTempArtworkInfo()?.artworkUriString.apply { Timber.d("uriString: $this") } ?: return
 
     try {
         val uri = Uri.parse(artworkUriString) ?: return
         context.contentResolver.delete(uri, null, null)
     } catch (e: Exception) {
         Timber.e(e)
+    }
+}
+
+fun SharedPreferences.refreshTempArtwork(context: Context, artworkUri: Uri?) {
+    artworkUri?.apply {
+        val currentUri = getTempArtworkUri()
+        if (currentUri?.toString() != this.toString()) {
+            async { deleteTempArtwork(context) }
+            setTempArtworkInfo(this)
+        }
     }
 }
 
