@@ -17,6 +17,7 @@ enum class PrefKey {
     PREF_KEY_WHETHER_USE_API,
     PREF_KEY_WHETHER_BUNDLE_ARTWORK,
     PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG,
+    PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET,
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE
@@ -36,6 +37,8 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
         if (contains(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not())
             putBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
+        if (contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not())
+            putBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
         if (contains(PrefKey.PREF_KEY_BILLING_DONATE.name).not())
             putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, false)
     }.apply()
@@ -59,24 +62,17 @@ fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri) {
             Gson().toJson(ArtworkInfo(artworkUri.toString(), currentInfo.coreElement))).apply()
 }
 
-private fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
+fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
         if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name))
             Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
         else null
 
-fun SharedPreferences.getTempArtworkUri(): Uri? {
-    val artworkUriString = getTempArtworkInfo()?.artworkUriString ?: return null
-
-    return try {
-        Uri.parse(artworkUriString)
-    } catch (e: Exception) {
-        Timber.e(e)
-        null
-    }
-}
+fun SharedPreferences.getTempArtworkUri(): Uri? =
+        getTempArtworkInfo()?.artworkUriString?.getUri()
 
 fun SharedPreferences.deleteTempArtwork(context: Context) {
-    val artworkUriString = getTempArtworkInfo()?.artworkUriString.apply { Timber.d("uriString: $this") } ?: return
+    val artworkUriString = getTempArtworkInfo()?.artworkUriString.apply { Timber.d("uriString: $this") }
+            ?: return
 
     try {
         val uri = Uri.parse(artworkUriString) ?: return
@@ -131,6 +127,10 @@ fun SharedPreferences.getWhetherColorizeNotificationBgSummaryResId(): Int =
         if (getWhetherColorizeNotificationBg()) R.string.pref_item_summary_switch_on
         else R.string.pref_item_summary_switch_off
 
+fun SharedPreferences.getWhetherShowArtworkInWidgetSummaryResId(): Int =
+        if (getWhetherShowArtworkInWidget()) R.string.pref_item_summary_switch_on
+        else R.string.pref_item_summary_switch_off
+
 fun SharedPreferences.getWhetherReside(): Boolean =
         contains(PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
                 || getBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
@@ -146,6 +146,10 @@ fun SharedPreferences.getWhetherBundleArtwork(): Boolean =
 fun SharedPreferences.getWhetherColorizeNotificationBg(): Boolean =
         contains(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not()
                 || getBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
+
+fun SharedPreferences.getWhetherShowArtworkInWidget(): Boolean =
+        contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not()
+                || getBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
 
 fun SharedPreferences.getDonateBillingState(): Boolean =
         contains(PrefKey.PREF_KEY_BILLING_DONATE.name)

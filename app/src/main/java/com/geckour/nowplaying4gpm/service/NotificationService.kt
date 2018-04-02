@@ -17,7 +17,6 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
 import android.support.v7.graphics.Palette
-import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
@@ -172,7 +171,7 @@ class NotificationService : NotificationListenerService() {
                 val info = TrackInfo(coreElement, artworkUri?.toString())
 
                 updateSharedPreference(info)
-                updateWidget(coreElement)
+                updateWidget(info)
                 updateNotification(info)
             }
         }.invokeOnCompletion {
@@ -190,41 +189,20 @@ class NotificationService : NotificationListenerService() {
     private fun updateNotification(trackInfo: TrackInfo) =
             showNotification(trackInfo)
 
-    private fun updateWidget(trackCoreElement: TrackCoreElement) =
-            AppWidgetManager.getInstance(this).apply {
-                val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
+    private fun updateWidget(trackInfo: TrackInfo) =
+                AppWidgetManager.getInstance(this).apply {
+                    val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
-                updateAppWidget(
-                        ids,
-                        RemoteViews(this@NotificationService.packageName, R.layout.widget_share).apply {
-                            val summary =
-                                    if (trackCoreElement.isAllNonNull) {
-                                        if (trackCoreElement.isAllNonNull) {
-                                            sharedPreferences.getFormatPattern(this@NotificationService)
-                                                    .getSharingText(trackCoreElement)
-                                        } else {
-                                            sharedPreferences.getSharingText(this@NotificationService)
-                                        }
-                                    } else null
-
-                            setTextViewText(R.id.widget_summary_share,
-                                    summary
-                                            ?: this@NotificationService.getString(R.string.dialog_message_alert_no_metadata))
-
-                            setOnClickPendingIntent(R.id.widget_share_root,
-                                    ShareWidgetProvider.getPendingIntent(this@NotificationService,
-                                            ShareWidgetProvider.Action.SHARE))
-                            setOnClickPendingIntent(R.id.widget_button_setting,
-                                    ShareWidgetProvider.getPendingIntent(this@NotificationService,
-                                            ShareWidgetProvider.Action.OPEN_SETTING))
-                        }
-                )
-            }
+                    updateAppWidget(
+                            ids,
+                            getShareWidgetViews(this@NotificationService, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                    )
+                }
 
     private fun onDestroyNotification() {
         val info = TrackInfo(TrackCoreElement(null, null, null), null)
         updateSharedPreference(info)
-        updateWidget(info.coreElement)
+        updateWidget(info)
         destroyNotification()
     }
 

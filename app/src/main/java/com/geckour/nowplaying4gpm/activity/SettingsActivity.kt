@@ -3,6 +3,7 @@ package com.geckour.nowplaying4gpm.activity
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.appwidget.AppWidgetManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
@@ -26,6 +27,7 @@ import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
+import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.gson.Gson
@@ -102,6 +104,7 @@ class SettingsActivity : Activity() {
         binding.summarySwitchUseApi = getString(sharedPreferences.getWhetherUseApiSummaryResId())
         binding.summarySwitchBundleArtwork = getString(sharedPreferences.getWhetherBundleArtworkSummaryResId())
         binding.summarySwitchColorizeNotificationBg = getString(sharedPreferences.getWhetherColorizeNotificationBgSummaryResId())
+        binding.summarySwitchShowArtworkInWidget = getString(sharedPreferences.getWhetherShowArtworkInWidgetSummaryResId())
 
         binding.fab.setOnClickListener { onClickFab() }
 
@@ -174,6 +177,18 @@ class SettingsActivity : Activity() {
                         updateNotification()
                     })
                 }
+            }
+        }
+
+        binding.itemSwitchShowArtworkInWidget?.apply {
+            root.setOnClickListener { onClickItemWithSwitch(extra) }
+            extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) { _, summary ->
+                    binding.summarySwitchShowArtworkInWidget = summary
+
+                    updateWidget()
+                })
             }
         }
 
@@ -291,6 +306,19 @@ class SettingsActivity : Activity() {
 
     private fun destroyNotification() =
             sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
+
+    private fun updateWidget() {
+        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
+
+        AppWidgetManager.getInstance(this).apply {
+            val ids = getAppWidgetIds(ComponentName(this@SettingsActivity, ShareWidgetProvider::class.java))
+
+            updateAppWidget(
+                    ids,
+                    getShareWidgetViews(this@SettingsActivity, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+            )
+        }
+    }
 
     private fun requestNotificationListenerPermission(onGranted: () -> Unit = {}) {
         if (NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName).not()) {
