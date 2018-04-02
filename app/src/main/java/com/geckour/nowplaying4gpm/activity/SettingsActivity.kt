@@ -5,7 +5,6 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
 import android.content.*
-import android.content.pm.PackageManager
 import android.databinding.DataBindingUtil
 import android.os.Build
 import android.os.Bundle
@@ -217,9 +216,7 @@ class SettingsActivity : Activity() {
         )
 
         requestNotificationListenerPermission {
-            requestStoragePermission {
-                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
-            }
+            updateNotification()
         }
     }
 
@@ -234,11 +231,7 @@ class SettingsActivity : Activity() {
 
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
-                if (grantResults?.all { it == PackageManager.PERMISSION_GRANTED } == true) {
-                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
-                } else requestStoragePermission {
-                    NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
-                }
+                updateNotification()
             }
         }
     }
@@ -256,9 +249,7 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
                 requestNotificationListenerPermission {
-                    requestStoragePermission {
-                        NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
-                    }
+                    updateNotification()
                 }
             }
 

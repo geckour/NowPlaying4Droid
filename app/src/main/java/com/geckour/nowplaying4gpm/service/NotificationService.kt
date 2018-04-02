@@ -30,6 +30,7 @@ import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromDevice
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromLastFmApi
 import com.geckour.nowplaying4gpm.util.AsyncUtil.getBitmapFromUriString
 import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
 
 class NotificationService : NotificationListenerService() {
@@ -100,18 +101,6 @@ class NotificationService : NotificationListenerService() {
         registerReceiver(receiver, intentFilter)
     }
 
-    override fun onListenerConnected() {
-        super.onListenerConnected()
-
-        if (Build.VERSION.SDK_INT >= 24) {
-            activeNotifications.forEach {
-                Timber.d("iterated package name: ${it.packageName}")
-                if (it.packageName == PACKAGE_NAME_GPM)
-                    onUpdate(it.notification)
-            }
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
 
@@ -138,7 +127,10 @@ class NotificationService : NotificationListenerService() {
         if (sbn == null) return
 
         if (sbn.packageName == PACKAGE_NAME_GPM)
-            onDestroyNotification()
+            async {
+                delay(100)
+                onDestroyNotification()
+            }
     }
 
     private fun onUpdate(notification: Notification) {
