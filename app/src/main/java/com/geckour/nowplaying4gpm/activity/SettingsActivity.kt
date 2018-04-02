@@ -368,7 +368,10 @@ class SettingsActivity : Activity() {
             showErrorDialog(
                     R.string.dialog_title_alert_no_for_share,
                     R.string.dialog_message_alert_no_metadata)
-        } else startActivity(SharingActivity.getIntent(this@SettingsActivity, text))
+            return
+        }
+
+        startActivity(SharingActivity.getIntent(this@SettingsActivity))
     }
 
     private fun onClickItemPatternFormat() {

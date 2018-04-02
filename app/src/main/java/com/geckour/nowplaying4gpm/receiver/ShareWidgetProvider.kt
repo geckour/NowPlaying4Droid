@@ -37,7 +37,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val summary = sharedPreferences.getSharingText(context)
-        val artworkUri = sharedPreferences.getTempArtworkUri()
+        val artworkUri = sharedPreferences.getTempArtworkUri(context)
 
         updateWidget(context, summary, artworkUri)
     }
@@ -50,16 +50,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
         when (intent.action) {
             Action.SHARE.name -> {
                 ui(jobs) {
-                    val sharedPreferences =
-                            PreferenceManager.getDefaultSharedPreferences(context)
-
-                    val trackCoreElement = sharedPreferences.getCurrentTrackInfo()?.coreElement
-                    if (trackCoreElement?.isAllNonNull != true) return@ui
-
-                    val summary = sharedPreferences.getFormatPattern(context)
-                            .getSharingText(trackCoreElement)
-
-                    context.startActivity(SharingActivity.getIntent(context, summary))
+                    context.startActivity(SharingActivity.getIntent(context))
                 }
             }
 

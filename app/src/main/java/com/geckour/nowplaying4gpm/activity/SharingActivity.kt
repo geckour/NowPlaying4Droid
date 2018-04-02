@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.getTempArtworkUri
 import com.geckour.nowplaying4gpm.util.getWhetherBundleArtwork
 import com.geckour.nowplaying4gpm.util.ui
@@ -26,10 +27,8 @@ class SharingActivity: Activity() {
     }
 
     companion object {
-        fun getIntent(context: Context, text: String): Intent =
-                Intent(context, SharingActivity::class.java).apply {
-                    putExtra(ArgKey.TEXT.name, text)
-                }
+        fun getIntent(context: Context): Intent =
+                Intent(context, SharingActivity::class.java)
     }
 
     private val jobs: ArrayList<Job> = ArrayList()
@@ -41,11 +40,10 @@ class SharingActivity: Activity() {
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@SharingActivity)
 
             val sharingText: String =
-                    if (hasExtra(ArgKey.TEXT.name)) getStringExtra(ArgKey.TEXT.name)
-                    else return
+                    sharedPreferences.getSharingText(this@SharingActivity) ?: return
             val artworkUri =
                     if (sharedPreferences.getWhetherBundleArtwork())
-                        sharedPreferences.getTempArtworkUri()
+                        sharedPreferences.getTempArtworkUri(this@SharingActivity)
                     else null
 
             ui(jobs) { startShare(sharingText, artworkUri) }
