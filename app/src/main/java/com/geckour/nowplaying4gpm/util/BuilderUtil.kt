@@ -13,7 +13,7 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-fun getShareWidgetViews(context: Context, summary: String?, artworkUri: Uri?): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, summary: String?, artworkUri: Uri?): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -22,8 +22,9 @@ fun getShareWidgetViews(context: Context, summary: String?, artworkUri: Uri?): R
                         ?: context.getString(R.string.dialog_message_alert_no_metadata))
 
         if (sharedPreferences.getWhetherShowArtworkInWidget()) {
-            if (artworkUri != null) {
-                setImageViewUri(R.id.artwork, artworkUri)
+            val artwork = getBitmapFromUri(context, artworkUri)
+            if (artwork != null) {
+                setImageViewBitmap(R.id.artwork, artwork)
             } else {
                 setImageViewResource(R.id.artwork, R.drawable.ic_notification)
             }
@@ -42,7 +43,7 @@ fun getShareWidgetViews(context: Context, summary: String?, artworkUri: Uri?): R
     }
 }
 
-fun getShareWidgetViews(context: Context, trackCoreElement: TrackCoreElement, artworkUri: Uri?): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, trackCoreElement: TrackCoreElement, artworkUri: Uri?): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     val summary =
             if (trackCoreElement.isAllNonNull) {

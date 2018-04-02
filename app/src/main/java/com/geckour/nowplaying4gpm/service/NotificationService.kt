@@ -24,9 +24,6 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromDevice
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromLastFmApi
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getBitmapFromUriString
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
@@ -170,7 +167,7 @@ class NotificationService : NotificationListenerService() {
     private fun updateNotification(trackInfo: TrackInfo) =
             showNotification(trackInfo)
 
-    private fun updateWidget(trackInfo: TrackInfo) =
+    private suspend fun updateWidget(trackInfo: TrackInfo) =
             AppWidgetManager.getInstance(this).apply {
                 val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
@@ -183,7 +180,7 @@ class NotificationService : NotificationListenerService() {
     private fun onDestroyNotification() {
         val info = TrackInfo(TrackCoreElement(null, null, null), null)
         updateSharedPreference(info)
-        updateWidget(info)
+        async { updateWidget(info) }
         destroyNotification()
     }
 

@@ -186,7 +186,7 @@ class SettingsActivity : Activity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) { _, summary ->
                     binding.summarySwitchShowArtworkInWidget = summary
 
-                    updateWidget()
+                    async { updateWidget() }
                 })
             }
         }
@@ -298,7 +298,7 @@ class SettingsActivity : Activity() {
     private fun destroyNotification() =
             sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
 
-    private fun updateWidget() {
+    private suspend fun updateWidget() {
         val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
 
         AppWidgetManager.getInstance(this).apply {
