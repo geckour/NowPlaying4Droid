@@ -135,16 +135,16 @@ private suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
 
 suspend fun getBitmapFromUri(context: Context, uri: Uri?): Bitmap? =
         try {
+            val glideOptions =
+                    RequestOptions()
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
+                            .signature { System.currentTimeMillis().toString() }
             uri?.let {
                 async {
                     Glide.with(context)
-                            .asBitmap().load(uri)
-                            .apply(
-                                    RequestOptions()
-                                            .diskCacheStrategy(DiskCacheStrategy.NONE)
-                                            .skipMemoryCache(true)
-                                            .signature { System.currentTimeMillis().toString() }
-                            ).submit().get()
+                            .asBitmap().load(uri).apply(glideOptions)
+                            .submit().get()
                 }.await()
             }
         } catch (e: Throwable) {
