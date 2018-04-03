@@ -98,7 +98,7 @@ suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient
     }
 }
 
-private suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
+suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
         async {
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val dirName = "images"

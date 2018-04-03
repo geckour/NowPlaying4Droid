@@ -25,7 +25,6 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
 
 class NotificationService : NotificationListenerService() {
@@ -78,6 +77,8 @@ class NotificationService : NotificationListenerService() {
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val jobs: ArrayList<Job> = ArrayList()
 
+    private var currentTrack = TrackCoreElement(null, null, null)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -112,8 +113,14 @@ class NotificationService : NotificationListenerService() {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
 
-        if (sbn.packageName == PACKAGE_NAME_GPM)
-            onUpdate(sbn.notification)
+        if (sbn.packageName == PACKAGE_NAME_GPM) {
+            val coreElement = getTrackCoreElement(sbn.notification)
+            val notificationBitmap = (sbn.notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+            if (currentTrack != coreElement && notificationBitmap != null) {
+                currentTrack = coreElement
+                onUpdate(sbn.notification)
+            }
+        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -121,39 +128,29 @@ class NotificationService : NotificationListenerService() {
         if (sbn == null) return
 
         if (sbn.packageName == PACKAGE_NAME_GPM)
-            async {
-                delay(100)
-                onDestroyNotification()
-            }
+            onDestroyNotification()
     }
+
+    private fun getTrackCoreElement(notification: Notification): TrackCoreElement =
+            notification.extras.let {
+                val track: String? = if (it.containsKey(Notification.EXTRA_TITLE)) it.getString(Notification.EXTRA_TITLE) else null
+                val artist: String? = if (it.containsKey(Notification.EXTRA_TEXT)) it.getString(Notification.EXTRA_TEXT) else null
+                val album: String? = if (it.containsKey(Notification.EXTRA_INFO_TEXT)) it.getString(Notification.EXTRA_SUB_TEXT) else null
+                TrackCoreElement(track, artist, album)
+            }
 
     private fun onUpdate(notification: Notification) {
         var artworkUri: Uri? = null
         async(onError = {
             sharedPreferences.refreshTempArtwork(artworkUri)
         }) {
-            notification.extras.apply {
-                val track: String? = if (containsKey(Notification.EXTRA_TITLE)) getString(Notification.EXTRA_TITLE) else null
-                val artist: String? = if (containsKey(Notification.EXTRA_TEXT)) getString(Notification.EXTRA_TEXT) else null
-                val album: String? = if (containsKey(Notification.EXTRA_INFO_TEXT)) getString(Notification.EXTRA_SUB_TEXT) else null
-                val coreElement = TrackCoreElement(track, artist, album)
-                artworkUri =
-                        getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
-                            sharedPreferences.refreshTempArtwork(this)
-                        } ?: (notification.getLargeIcon()
-                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap?.let {
-                    if (it.similarity((getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap) > 0.9
-                            && sharedPreferences.getWhetherUseApi()) {
-                        getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
-                    } else null
-                }
+            val coreElement = getTrackCoreElement(notification)
+            artworkUri = getArtworkUri(notification, coreElement)
+            val info = TrackInfo(coreElement, artworkUri?.toString())
 
-                val info = TrackInfo(coreElement, artworkUri?.toString())
-
-                updateSharedPreference(info)
-                updateWidget(info)
-                updateNotification(info)
-            }
+            updateSharedPreference(info)
+            updateWidget(info)
+            updateNotification(info)
         }.invokeOnCompletion {
             it?.apply { Timber.e(this) }
             sharedPreferences.refreshTempArtwork(artworkUri)
@@ -176,6 +173,27 @@ class NotificationService : NotificationListenerService() {
                         getShareWidgetViews(this@NotificationService, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
                 )
             }
+
+    private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
+        var artworkUri =
+                getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+                    sharedPreferences.refreshTempArtwork(this)
+                }
+
+        if (artworkUri == null) {
+            val notificationBitmap = (notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+
+            if (notificationBitmap != null) {
+                val placeholderBitmap = (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
+                artworkUri =
+                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9 && sharedPreferences.getWhetherUseApi()) {
+                            getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
+                        } else refreshArtworkUriFromBitmap(this, notificationBitmap)
+            }
+        }
+
+        return artworkUri
+    }
 
     private fun onDestroyNotification() {
         val info = TrackInfo(TrackCoreElement(null, null, null), null)
