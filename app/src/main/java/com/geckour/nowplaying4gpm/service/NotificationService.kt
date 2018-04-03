@@ -248,9 +248,9 @@ class NotificationService : NotificationListenerService() {
                             .getSharingText(trackInfo.coreElement)
 
             val thumb =
-                    if (trackInfo.artworkUriString != null)
-                        getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
-                    else null
+                    trackInfo.artworkUriString?.let {
+                        getBitmapFromUriString(this@NotificationService, it)
+                    }
 
             setSmallIcon(R.drawable.ic_notification)
             setLargeIcon(thumb)

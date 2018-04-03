@@ -1,15 +1,16 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.content.ContentUris
-import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Environment
 import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.RequestOptions
+import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
@@ -18,7 +19,6 @@ import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
-import timber.log.BuildConfig
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -101,7 +101,6 @@ suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient
 private suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
         async {
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            val authority = "${context.applicationContext.packageName}.fileprovider"
             val dirName = "images"
             val fileName = "temp_artwork.jpg"
             val dir = context.filesDir.let { File(it, dirName) }
@@ -112,9 +111,10 @@ private suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap
 
             FileOutputStream(file).use {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+                it.flush()
             }
 
-            FileProvider.getUriForFile(context, authority, file).apply {
+            FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
                 sharedPreferences.refreshTempArtwork(this)
             }
         }.await()
@@ -139,7 +139,12 @@ suspend fun getBitmapFromUri(context: Context, uri: Uri?): Bitmap? =
                 async {
                     Glide.with(context)
                             .asBitmap().load(uri)
-                            .submit().get()
+                            .apply(
+                                    RequestOptions()
+                                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                            .skipMemoryCache(true)
+                                            .signature { System.currentTimeMillis().toString() }
+                            ).submit().get()
                 }.await()
             }
         } catch (e: Throwable) {

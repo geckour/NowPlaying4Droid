@@ -20,6 +20,10 @@ android {
         versionName "1.0.23"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
+
+        def filesAuthorityValue = applicationId + ".files"
+        manifestPlaceholders = [filesAuthority: filesAuthorityValue]
+        buildConfigField "String", "FILES_AUTHORITY", "\"${filesAuthorityValue}\""
     }
 
     applicationVariants.all {
