@@ -25,6 +25,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
 
 class NotificationService : NotificationListenerService() {
@@ -77,7 +78,8 @@ class NotificationService : NotificationListenerService() {
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val jobs: ArrayList<Job> = ArrayList()
 
-    private var currentTrack = TrackCoreElement(null, null, null)
+    private var currentTrack: TrackCoreElement = TrackCoreElement(null, null, null)
+    private var resetCurrentTrackJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -117,6 +119,7 @@ class NotificationService : NotificationListenerService() {
             val coreElement = getTrackCoreElement(sbn.notification)
             val notificationBitmap = (sbn.notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
             if (currentTrack != coreElement && notificationBitmap != null) {
+                resetCurrentTrackJob?.cancel()
                 currentTrack = coreElement
                 onUpdate(sbn.notification)
             }
@@ -127,8 +130,14 @@ class NotificationService : NotificationListenerService() {
         super.onNotificationRemoved(sbn)
         if (sbn == null) return
 
-        if (sbn.packageName == PACKAGE_NAME_GPM)
+        if (sbn.packageName == PACKAGE_NAME_GPM) {
             onDestroyNotification()
+            resetCurrentTrackJob =
+                    async {
+                        delay(250)
+                        currentTrack = TrackCoreElement(null, null, null)
+                    }
+        }
     }
 
     private fun getTrackCoreElement(notification: Notification): TrackCoreElement =
