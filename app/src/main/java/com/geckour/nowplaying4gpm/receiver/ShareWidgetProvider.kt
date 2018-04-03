@@ -6,9 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.preference.PreferenceManager
-import android.widget.RemoteViews
-import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.util.*
@@ -36,10 +35,11 @@ class ShareWidgetProvider : AppWidgetProvider() {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
         if (context == null) return
 
-        val summary =
-                PreferenceManager.getDefaultSharedPreferences(context)
-                        .getSharingText(context)
-        updateWidget(context, summary)
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val summary = sharedPreferences.getSharingText(context)
+        val artworkUri = sharedPreferences.getTempArtworkUri(context)
+
+        updateWidget(context, summary, artworkUri)
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -50,16 +50,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
         when (intent.action) {
             Action.SHARE.name -> {
                 ui(jobs) {
-                    val sharedPreferences =
-                            PreferenceManager.getDefaultSharedPreferences(context)
-
-                    val trackCoreElement = sharedPreferences.getCurrentTrackInfo()?.coreElement
-                    if (trackCoreElement?.isAllNonNull != true) return@ui
-
-                    val summary = sharedPreferences.getFormatPattern(context)
-                            .getSharingText(trackCoreElement)
-
-                    context.startActivity(SharingActivity.getIntent(context, summary))
+                    context.startActivity(SharingActivity.getIntent(context))
                 }
             }
 
@@ -67,27 +58,17 @@ class ShareWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun updateWidget(context: Context, summary: String?) =
-            AppWidgetManager.getInstance(context).apply {
-                val ids =
-                        getAppWidgetIds(ComponentName(context, ShareWidgetProvider::class.java))
-                                .firstOrNull() ?: return@apply
+    private fun updateWidget(context: Context, summary: String?, artworkUri: Uri?) =
+            async {
+                AppWidgetManager.getInstance(context).apply {
+                    val ids =
+                            getAppWidgetIds(ComponentName(context, ShareWidgetProvider::class.java))
+                                    .firstOrNull() ?: return@apply
 
-                updateAppWidget(
-                        ids,
-                        RemoteViews(context.packageName, R.layout.widget_share).apply {
-                            setTextViewText(R.id.widget_summary_share, summary
-                                    ?: context.getString(R.string.dialog_message_alert_no_metadata))
-
-                            setOnClickPendingIntent(
-                                    R.id.widget_share_root,
-                                    ShareWidgetProvider.getPendingIntent(context,
-                                            ShareWidgetProvider.Action.SHARE))
-                            setOnClickPendingIntent(
-                                    R.id.widget_button_setting,
-                                    ShareWidgetProvider.getPendingIntent(context,
-                                            ShareWidgetProvider.Action.OPEN_SETTING))
-                        }
-                )
+                    updateAppWidget(
+                            ids,
+                            getShareWidgetViews(context, summary, artworkUri)
+                    )
+                }
             }
 }

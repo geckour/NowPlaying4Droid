@@ -16,10 +16,14 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 26
-        versionName "1.0.23"
+        versionCode 27
+        versionName "1.0.24"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
+
+        def filesAuthorityValue = applicationId + ".files"
+        manifestPlaceholders = [filesAuthority: filesAuthorityValue]
+        buildConfigField "String", "FILES_AUTHORITY", "\"${filesAuthorityValue}\""
     }
 
     applicationVariants.all {

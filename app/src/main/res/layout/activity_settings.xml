@@ -28,6 +28,10 @@
         <variable
             name="summary_switch_colorize_notification_bg"
             type="String" />
+
+        <variable
+            name="summary_switch_show_artwork_in_widget"
+            type="String" />
     </data>
 
     <android.support.constraint.ConstraintLayout
@@ -148,6 +152,22 @@
                     app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
                     app:summary="@{summary_switch_colorize_notification_bg}"
                     app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
+
+                <include
+                    android:id="@+id/category_widget"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_widget}"/>
+
+                <include
+                    android:id="@+id/item_switch_show_artwork_in_widget"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_show_artwork_in_widget}"
+                    app:summary="@{summary_switch_show_artwork_in_widget}"
+                    app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}"/>
 
                 <include
                     android:id="@+id/category_others"

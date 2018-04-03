@@ -17,6 +17,7 @@ enum class PrefKey {
     PREF_KEY_WHETHER_USE_API,
     PREF_KEY_WHETHER_BUNDLE_ARTWORK,
     PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG,
+    PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET,
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE
@@ -36,6 +37,8 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
         if (contains(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not())
             putBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
+        if (contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not())
+            putBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
         if (contains(PrefKey.PREF_KEY_BILLING_DONATE.name).not())
             putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, false)
     }.apply()
@@ -51,7 +54,7 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
 fun SharedPreferences.getFormatPattern(context: Context): String =
         getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
 
-fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri) {
+private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri) {
     val currentInfo = getCurrentTrackInfo() ?: return
 
     edit().putString(
@@ -59,41 +62,25 @@ fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri) {
             Gson().toJson(ArtworkInfo(artworkUri.toString(), currentInfo.coreElement))).apply()
 }
 
-private fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
+fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
         if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name))
             Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
         else null
 
-fun SharedPreferences.getTempArtworkUri(): Uri? {
-    val artworkUriString = getTempArtworkInfo()?.artworkUriString ?: return null
+fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
+    val uri = getTempArtworkInfo()?.artworkUriString?.getUri()
 
     return try {
-        Uri.parse(artworkUriString)
-    } catch (e: Exception) {
+        context.contentResolver.openInputStream(uri).close()
+        uri
+    } catch (e: Throwable) {
         Timber.e(e)
         null
     }
 }
 
-fun SharedPreferences.deleteTempArtwork(context: Context) {
-    val artworkUriString = getTempArtworkInfo()?.artworkUriString.apply { Timber.d("uriString: $this") } ?: return
-
-    try {
-        val uri = Uri.parse(artworkUriString) ?: return
-        context.contentResolver.delete(uri, null, null)
-    } catch (e: Exception) {
-        Timber.e(e)
-    }
-}
-
-fun SharedPreferences.refreshTempArtwork(context: Context, artworkUri: Uri?) {
-    artworkUri?.apply {
-        val currentUri = getTempArtworkUri()
-        if (currentUri?.toString() != this.toString()) {
-            async { deleteTempArtwork(context) }
-            setTempArtworkInfo(this)
-        }
-    }
+fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
+    artworkUri?.apply { setTempArtworkInfo(this) }
 }
 
 fun SharedPreferences.getSharingText(context: Context): String? {
@@ -131,6 +118,10 @@ fun SharedPreferences.getWhetherColorizeNotificationBgSummaryResId(): Int =
         if (getWhetherColorizeNotificationBg()) R.string.pref_item_summary_switch_on
         else R.string.pref_item_summary_switch_off
 
+fun SharedPreferences.getWhetherShowArtworkInWidgetSummaryResId(): Int =
+        if (getWhetherShowArtworkInWidget()) R.string.pref_item_summary_switch_on
+        else R.string.pref_item_summary_switch_off
+
 fun SharedPreferences.getWhetherReside(): Boolean =
         contains(PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
                 || getBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
@@ -146,6 +137,10 @@ fun SharedPreferences.getWhetherBundleArtwork(): Boolean =
 fun SharedPreferences.getWhetherColorizeNotificationBg(): Boolean =
         contains(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not()
                 || getBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
+
+fun SharedPreferences.getWhetherShowArtworkInWidget(): Boolean =
+        contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not()
+                || getBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
 
 fun SharedPreferences.getDonateBillingState(): Boolean =
         contains(PrefKey.PREF_KEY_BILLING_DONATE.name)

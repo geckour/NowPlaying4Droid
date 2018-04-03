@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import android.support.v4.content.ContextCompat
 import android.view.View
 import com.geckour.nowplaying4gpm.R
@@ -110,6 +111,14 @@ fun Bitmap.similarity(bitmap: Bitmap): Float {
 
     return (count.toFloat() / (this.width * this.height)).apply { Timber.d("similarity: $this") }
 }
+
+fun String.getUri(): Uri? =
+        try {
+            Uri.parse(this)
+        } catch (e: Exception) {
+            Timber.e(e)
+            null
+        }
 
 fun Int.colorSimilarity(colorInt: Int): Float =
         1f - ((Color.red(this) - Color.red(colorInt)).absoluteValue

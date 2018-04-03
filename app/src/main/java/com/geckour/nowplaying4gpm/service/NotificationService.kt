@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.*
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
@@ -17,7 +16,6 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
 import android.support.v7.graphics.Palette
-import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
@@ -26,10 +24,6 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromBitmap
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromDevice
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getArtworkUriFromLastFmApi
-import com.geckour.nowplaying4gpm.util.AsyncUtil.getBitmapFromUriString
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
@@ -82,7 +76,8 @@ class NotificationService : NotificationListenerService() {
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val jobs: ArrayList<Job> = ArrayList()
-    private var notificationBitmap: Bitmap? = null
+
+    private var currentTrack = TrackCoreElement(null, null, null)
 
     override fun onCreate() {
         super.onCreate()
@@ -99,18 +94,6 @@ class NotificationService : NotificationListenerService() {
         }
 
         registerReceiver(receiver, intentFilter)
-    }
-
-    override fun onListenerConnected() {
-        super.onListenerConnected()
-
-        if (Build.VERSION.SDK_INT >= 24) {
-            activeNotifications.forEach {
-                Timber.d("iterated package name: ${it.packageName}")
-                if (it.packageName == PACKAGE_NAME_GPM)
-                    onUpdate(it.notification)
-            }
-        }
     }
 
     override fun onDestroy() {
@@ -130,8 +113,14 @@ class NotificationService : NotificationListenerService() {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
 
-        if (sbn.packageName == PACKAGE_NAME_GPM)
-            onUpdate(sbn.notification)
+        if (sbn.packageName == PACKAGE_NAME_GPM) {
+            val coreElement = getTrackCoreElement(sbn.notification)
+            val notificationBitmap = (sbn.notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+            if (currentTrack != coreElement && notificationBitmap != null) {
+                currentTrack = coreElement
+                onUpdate(sbn.notification)
+            }
+        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -142,44 +131,29 @@ class NotificationService : NotificationListenerService() {
             onDestroyNotification()
     }
 
+    private fun getTrackCoreElement(notification: Notification): TrackCoreElement =
+            notification.extras.let {
+                val track: String? = if (it.containsKey(Notification.EXTRA_TITLE)) it.getString(Notification.EXTRA_TITLE) else null
+                val artist: String? = if (it.containsKey(Notification.EXTRA_TEXT)) it.getString(Notification.EXTRA_TEXT) else null
+                val album: String? = if (it.containsKey(Notification.EXTRA_INFO_TEXT)) it.getString(Notification.EXTRA_SUB_TEXT) else null
+                TrackCoreElement(track, artist, album)
+            }
+
     private fun onUpdate(notification: Notification) {
-        var fromContentResolver = false
         var artworkUri: Uri? = null
         async(onError = {
-            if (fromContentResolver.not())
-                sharedPreferences.refreshTempArtwork(this, artworkUri)
+            sharedPreferences.refreshTempArtwork(artworkUri)
         }) {
-            notification.extras.apply {
-                val track: String? = if (containsKey(Notification.EXTRA_TITLE)) getString(Notification.EXTRA_TITLE) else null
-                val artist: String? = if (containsKey(Notification.EXTRA_TEXT)) getString(Notification.EXTRA_TEXT) else null
-                val album: String? = if (containsKey(Notification.EXTRA_INFO_TEXT)) getString(Notification.EXTRA_SUB_TEXT) else null
-                val coreElement = TrackCoreElement(track, artist, album)
-                artworkUri =
-                        getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
-                            fromContentResolver = true
-                            sharedPreferences.setTempArtworkInfo(this)
-                        } ?: (notification.getLargeIcon()
-                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap?.let {
-                    if (it.similarity((getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap) > 0.9
-                            && sharedPreferences.getWhetherUseApi()) {
-                        getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
-                                ?: getArtworkUriFromBitmap(this@NotificationService, it)
-                    } else {
-                        getArtworkUriFromBitmap(this@NotificationService, it)
-                    }
-                }
+            val coreElement = getTrackCoreElement(notification)
+            artworkUri = getArtworkUri(notification, coreElement)
+            val info = TrackInfo(coreElement, artworkUri?.toString())
 
-                val info = TrackInfo(coreElement, artworkUri?.toString())
-
-                updateSharedPreference(info)
-                updateWidget(coreElement)
-                updateNotification(info)
-            }
+            updateSharedPreference(info)
+            updateWidget(info)
+            updateNotification(info)
         }.invokeOnCompletion {
             it?.apply { Timber.e(this) }
-
-            if (fromContentResolver.not())
-                sharedPreferences.refreshTempArtwork(this, artworkUri)
+            sharedPreferences.refreshTempArtwork(artworkUri)
         }
     }
 
@@ -190,41 +164,41 @@ class NotificationService : NotificationListenerService() {
     private fun updateNotification(trackInfo: TrackInfo) =
             showNotification(trackInfo)
 
-    private fun updateWidget(trackCoreElement: TrackCoreElement) =
+    private suspend fun updateWidget(trackInfo: TrackInfo) =
             AppWidgetManager.getInstance(this).apply {
                 val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
                 updateAppWidget(
                         ids,
-                        RemoteViews(this@NotificationService.packageName, R.layout.widget_share).apply {
-                            val summary =
-                                    if (trackCoreElement.isAllNonNull) {
-                                        if (trackCoreElement.isAllNonNull) {
-                                            sharedPreferences.getFormatPattern(this@NotificationService)
-                                                    .getSharingText(trackCoreElement)
-                                        } else {
-                                            sharedPreferences.getSharingText(this@NotificationService)
-                                        }
-                                    } else null
-
-                            setTextViewText(R.id.widget_summary_share,
-                                    summary
-                                            ?: this@NotificationService.getString(R.string.dialog_message_alert_no_metadata))
-
-                            setOnClickPendingIntent(R.id.widget_share_root,
-                                    ShareWidgetProvider.getPendingIntent(this@NotificationService,
-                                            ShareWidgetProvider.Action.SHARE))
-                            setOnClickPendingIntent(R.id.widget_button_setting,
-                                    ShareWidgetProvider.getPendingIntent(this@NotificationService,
-                                            ShareWidgetProvider.Action.OPEN_SETTING))
-                        }
+                        getShareWidgetViews(this@NotificationService, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
                 )
             }
+
+    private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
+        var artworkUri =
+                getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+                    sharedPreferences.refreshTempArtwork(this)
+                }
+
+        if (artworkUri == null) {
+            val notificationBitmap = (notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+
+            if (notificationBitmap != null) {
+                val placeholderBitmap = (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
+                artworkUri =
+                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9 && sharedPreferences.getWhetherUseApi()) {
+                            getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
+                        } else refreshArtworkUriFromBitmap(this, notificationBitmap)
+            }
+        }
+
+        return artworkUri
+    }
 
     private fun onDestroyNotification() {
         val info = TrackInfo(TrackCoreElement(null, null, null), null)
         updateSharedPreference(info)
-        updateWidget(info.coreElement)
+        async { updateWidget(info) }
         destroyNotification()
     }
 
@@ -247,16 +221,7 @@ class NotificationService : NotificationListenerService() {
         if (sharedPreferences.getWhetherReside() && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
                 ui(jobs) {
-                    val albumArt =
-                            if (trackInfo.artworkUriString != null)
-                                async {
-                                    getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
-                                }.await()
-                            else null
-
-                    notificationBitmap = albumArt
-
-                    getNotification(albumArt, trackInfo.coreElement)?.apply {
+                    getNotification(trackInfo)?.apply {
                         startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                     }
                 }
@@ -271,8 +236,8 @@ class NotificationService : NotificationListenerService() {
             if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
             else cancelAllNotifications()
 
-    private fun getNotification(thumb: Bitmap?, trackCoreElement: TrackCoreElement): Notification? {
-        if (trackCoreElement.isAllNonNull.not()) return null
+    private suspend fun getNotification(trackInfo: TrackInfo): Notification? {
+        if (trackInfo.coreElement.isAllNonNull.not()) return null
 
         val notificationBuilder =
                 if (Build.VERSION.SDK_INT >= 26)
@@ -298,7 +263,12 @@ class NotificationService : NotificationListenerService() {
                     sharedPreferences.getString(
                             PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
                             getString(R.string.default_sharing_text_pattern))
-                            .getSharingText(trackCoreElement)
+                            .getSharingText(trackInfo.coreElement)
+
+            val thumb =
+                    trackInfo.artworkUriString?.let {
+                        getBitmapFromUriString(this@NotificationService, it)
+                    }
 
             setSmallIcon(R.drawable.ic_notification)
             setLargeIcon(thumb)
@@ -308,10 +278,7 @@ class NotificationService : NotificationListenerService() {
                     PendingIntent.getActivity(
                             this@NotificationService,
                             0,
-                            SharingActivity.getIntent(
-                                    this@NotificationService,
-                                    sharedPreferences.getFormatPattern(this@NotificationService)
-                                            .getSharingText(trackCoreElement)),
+                            SharingActivity.getIntent(this@NotificationService),
                             PendingIntent.FLAG_CANCEL_CURRENT
                     )
             )
