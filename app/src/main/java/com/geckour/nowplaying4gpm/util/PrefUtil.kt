@@ -8,6 +8,7 @@ import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import timber.log.Timber
 
 enum class PrefKey {
@@ -20,7 +21,13 @@ enum class PrefKey {
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET,
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
-    PREF_KEY_BILLING_DONATE
+    PREF_KEY_BILLING_DONATE,
+    PREF_KEY_WIDGET_STATES
+}
+
+enum class WidgetState(val code: Int) {
+    NORMAL(0),
+    MIN(1)
 }
 
 fun SharedPreferences.init(context: Context) {
@@ -41,6 +48,10 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
         if (contains(PrefKey.PREF_KEY_BILLING_DONATE.name).not())
             putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, false)
+        if (contains(PrefKey.PREF_KEY_WIDGET_STATES.name).not()) {
+            putString(PrefKey.PREF_KEY_WIDGET_STATES.name, Gson().toJson(mapOf<Int, WidgetState>()))
+        }
+
     }.apply()
 }
 
@@ -68,7 +79,7 @@ fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
         else null
 
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
-    val uri = getTempArtworkInfo()?.artworkUriString?.getUri()
+    val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
 
     return try {
         context.contentResolver.openInputStream(uri).close()
@@ -139,8 +150,25 @@ fun SharedPreferences.getWhetherColorizeNotificationBg(): Boolean =
                 || getBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
 
 fun SharedPreferences.getWhetherShowArtworkInWidget(): Boolean =
-        contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not()
-                || getBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
+        (contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not()
+                || getBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true))
+
+fun SharedPreferences.setWidgetState(id: Int, state: WidgetState) {
+    val stateMap = getWidgetStateMap().toMutableMap().apply {
+        this[id] = state
+    }
+
+    edit().putString(PrefKey.PREF_KEY_WIDGET_STATES.name, Gson().toJson(stateMap)).apply()
+}
+
+private fun SharedPreferences.getWidgetStateMap(): Map<Int, WidgetState> =
+        if (contains(PrefKey.PREF_KEY_WIDGET_STATES.name)) {
+            val type = object : TypeToken<Map<Int, WidgetState>>() {}.type
+            Gson().fromJson(getString(PrefKey.PREF_KEY_WIDGET_STATES.name, null), type)
+        } else mapOf()
+
+fun SharedPreferences.getWidgetState(id: Int): WidgetState =
+        getWidgetStateMap()[id] ?: WidgetState.NORMAL
 
 fun SharedPreferences.getDonateBillingState(): Boolean =
         contains(PrefKey.PREF_KEY_BILLING_DONATE.name)

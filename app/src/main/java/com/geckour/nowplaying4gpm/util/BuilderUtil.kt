@@ -13,7 +13,7 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-suspend fun getShareWidgetViews(context: Context, summary: String?, artworkUri: Uri?): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, id: Int?, summary: String?, artworkUri: Uri?): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -21,7 +21,7 @@ suspend fun getShareWidgetViews(context: Context, summary: String?, artworkUri: 
                 summary
                         ?: context.getString(R.string.dialog_message_alert_no_metadata))
 
-        if (sharedPreferences.getWhetherShowArtworkInWidget()) {
+        if (sharedPreferences.getWhetherShowArtworkInWidget() && (id == null || sharedPreferences.getWidgetState(id) != WidgetState.MIN)) {
             val artwork = getBitmapFromUri(context, artworkUri)
             if (artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
@@ -43,7 +43,7 @@ suspend fun getShareWidgetViews(context: Context, summary: String?, artworkUri: 
     }
 }
 
-suspend fun getShareWidgetViews(context: Context, trackCoreElement: TrackCoreElement, artworkUri: Uri?): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, id: Int?, trackCoreElement: TrackCoreElement, artworkUri: Uri?): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     val summary =
             if (trackCoreElement.isAllNonNull) {
@@ -55,5 +55,5 @@ suspend fun getShareWidgetViews(context: Context, trackCoreElement: TrackCoreEle
                 }
             } else null
 
-    return getShareWidgetViews(context, summary, artworkUri)
+    return getShareWidgetViews(context, id, summary, artworkUri)
 }

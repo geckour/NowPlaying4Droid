@@ -111,6 +111,14 @@ class NotificationService : NotificationListenerService() {
         jobs.cancelAll()
     }
 
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+
+        activeNotifications.forEach {
+            onNotificationPosted(it)
+        }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
@@ -177,10 +185,12 @@ class NotificationService : NotificationListenerService() {
             AppWidgetManager.getInstance(this).apply {
                 val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
-                updateAppWidget(
-                        ids,
-                        getShareWidgetViews(this@NotificationService, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
-                )
+                ids.forEach {
+                    updateAppWidget(
+                            it,
+                            getShareWidgetViews(this@NotificationService, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                    )
+                }
             }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {

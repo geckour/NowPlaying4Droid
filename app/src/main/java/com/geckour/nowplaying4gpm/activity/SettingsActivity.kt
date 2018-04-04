@@ -257,22 +257,19 @@ class SettingsActivity : Activity() {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
-                            var success = false
-                            try {
-                                val purchaseResult =
+                            val purchaseResult =
+                                    try {
                                         Gson().fromJson(
                                                 this,
                                                 PurchaseResult::class.java)
+                                    } catch (e: Throwable) {
+                                        Timber.e(e)
+                                        null
+                                    }
 
-                                if (purchaseResult.purchaseState == 0) {
-                                    success = true
-                                    reflectDonation(true)
-                                }
-                            } catch (e: Exception) {
-                                Timber.e(e)
-                            }
-
-                            if (success.not()) {
+                            if (purchaseResult?.purchaseState == 0) {
+                                reflectDonation(true)
+                            } else {
                                 showErrorDialog(
                                         R.string.dialog_title_alert_failure_purchase,
                                         R.string.dialog_message_alert_failure_purchase)
@@ -304,10 +301,12 @@ class SettingsActivity : Activity() {
         AppWidgetManager.getInstance(this).apply {
             val ids = getAppWidgetIds(ComponentName(this@SettingsActivity, ShareWidgetProvider::class.java))
 
-            updateAppWidget(
-                    ids,
-                    getShareWidgetViews(this@SettingsActivity, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
-            )
+            ids.forEach {
+                updateAppWidget(
+                        it,
+                        getShareWidgetViews(this@SettingsActivity, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                )
+            }
         }
     }
 
