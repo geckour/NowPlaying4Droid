@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
@@ -13,7 +12,7 @@ import timber.log.Timber
 
 enum class PrefKey {
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
-    PREF_KEY_CHOSEN_COLOR_INDEX,
+    PREF_KEY_CHOSEN_PALETTE_COLOR,
     PREF_KEY_WHETHER_RESIDE,
     PREF_KEY_WHETHER_USE_API,
     PREF_KEY_WHETHER_BUNDLE_ARTWORK,
@@ -36,8 +35,8 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(PrefKey.PREF_KEY_WHETHER_USE_API.name, false)
         if (contains(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name).not())
             putString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
-        if (contains(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name).not())
-            putInt(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, SettingsActivity.paletteArray.indexOf(R.string.palette_light_vibrant))
+        if (contains(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name).not())
+            putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, PaletteColor.LIGHT_VIBRANT.ordinal)
         if (contains(PrefKey.PREF_KEY_WHETHER_RESIDE.name).not())
             putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
         if (contains(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not())
@@ -108,10 +107,12 @@ fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? =
                     TrackInfo::class.java)
         else null
 
-fun SharedPreferences.getChoseColorIndex(): Int =
-        getInt(
-                PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name,
-                SettingsActivity.paletteArray.indexOf(R.string.palette_light_vibrant))
+fun SharedPreferences.getChosePaletteColor(): PaletteColor =
+        PaletteColor.values().getOrNull(
+                getInt(
+                        PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name,
+                        PaletteColor.LIGHT_VIBRANT.ordinal)
+        ) ?: PaletteColor.LIGHT_VIBRANT
 
 fun SharedPreferences.getWhetherResideSummaryResId(): Int =
         if (getWhetherReside()) R.string.pref_item_summary_switch_on

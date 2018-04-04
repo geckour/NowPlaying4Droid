@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.util
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
-import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
@@ -127,17 +126,11 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 setColorized(true)
             }
 
-            val color = Palette.from(this).maximumColorCount(32).generate().let {
-                when (SettingsActivity.paletteArray[sharedPreferences.getChoseColorIndex()]) {
-                    R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
-                    R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
-                    R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)
-                    R.string.palette_light_muted -> it.getLightMutedColor(Color.WHITE)
-                    R.string.palette_muted -> it.getMutedColor(Color.WHITE)
-                    R.string.palette_dark_muted -> it.getDarkMutedColor(Color.WHITE)
-                    else -> it.getLightVibrantColor(Color.WHITE)
-                }
-            }
+            val color =
+                    Palette.from(this)
+                            .maximumColorCount(12)
+                            .generate()
+                            .getOptimizedColor(context)
             setColor(color)
         }
     }.build()

@@ -47,15 +47,6 @@ class SettingsActivity : Activity() {
     companion object {
         fun getIntent(context: Context): Intent =
                 Intent(context, SettingsActivity::class.java)
-
-        val paletteArray: Array<Int> = arrayOf(
-                R.string.palette_light_vibrant,
-                R.string.palette_vibrant,
-                R.string.palette_dark_vibrant,
-                R.string.palette_light_muted,
-                R.string.palette_muted,
-                R.string.palette_dark_muted
-        )
     }
 
     private data class EasterEggTag(
@@ -98,7 +89,7 @@ class SettingsActivity : Activity() {
         }
 
         binding.summaryPattern = sharedPreferences.getFormatPattern(this)
-        binding.summaryChooseColor = getString(paletteArray[sharedPreferences.getChoseColorIndex()])
+        binding.summaryChooseColor = getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
         binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummaryResId())
         binding.summarySwitchUseApi = getString(sharedPreferences.getWhetherUseApiSummaryResId())
         binding.summarySwitchBundleArtwork = getString(sharedPreferences.getWhetherBundleArtworkSummaryResId())
@@ -415,7 +406,7 @@ class SettingsActivity : Activity() {
                     object : ArrayAdapter<String>(
                             this@SettingsActivity,
                             android.R.layout.simple_spinner_item,
-                            paletteArray.map { getString(it) }) {
+                            PaletteColor.values().map { getString(it.getSummaryResId()) }) {
                         override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup?): View {
                             return super.getDropDownView(position, convertView, parent).apply {
                                 if (position == spinner.selectedItemPosition) (this as TextView).setTextColor(getColor(R.color.colorPrimaryDark))
@@ -424,7 +415,7 @@ class SettingsActivity : Activity() {
                     }.apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
             spinner.apply {
                 adapter = arrayAdapter
-                setSelection(sharedPreferences.getChoseColorIndex())
+                setSelection(sharedPreferences.getChosePaletteColor().ordinal)
             }
         }
 
@@ -436,9 +427,9 @@ class SettingsActivity : Activity() {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val paletteIndex = chooseColorBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
-                            .putInt(PrefKey.PREF_KEY_CHOSEN_COLOR_INDEX.name, paletteIndex)
+                            .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
                             .apply()
-                    binding.summaryChooseColor = getString(paletteArray[paletteIndex])
+                    binding.summaryChooseColor = getString(PaletteColor.getFromIndex(paletteIndex).getSummaryResId())
                     updateNotification()
                 }
             }
