@@ -3,22 +3,16 @@ package com.geckour.nowplaying4gpm.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.*
-import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
-import android.support.v7.graphics.Palette
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.activity.SettingsActivity
-import com.geckour.nowplaying4gpm.activity.SharingActivity
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
@@ -240,7 +234,7 @@ class NotificationService : NotificationListenerService() {
         if (sharedPreferences.getWhetherReside() && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
                 ui(jobs) {
-                    getNotification(trackInfo)?.apply {
+                    getNotification(this@NotificationService, trackInfo)?.apply {
                         startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                     }
                 }
@@ -254,79 +248,6 @@ class NotificationService : NotificationListenerService() {
     private fun destroyNotification() =
             if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
             else cancelAllNotifications()
-
-    private suspend fun getNotification(trackInfo: TrackInfo): Notification? {
-        if (trackInfo.coreElement.isAllNonNull.not()) return null
-
-        val notificationBuilder =
-                if (Build.VERSION.SDK_INT >= 26)
-                    Notification.Builder(this, Channel.NOTIFICATION_CHANNEL_SHARE.name)
-                else Notification.Builder(this)
-
-        return notificationBuilder.apply {
-            val actionOpenSetting =
-                    PendingIntent.getActivity(
-                            this@NotificationService,
-                            0,
-                            SettingsActivity.getIntent(this@NotificationService),
-                            PendingIntent.FLAG_CANCEL_CURRENT
-                    ).let {
-                        Notification.Action.Builder(
-                                Icon.createWithResource(this@NotificationService,
-                                        R.drawable.ic_settings_black_24px),
-                                getString(R.string.action_open_pref),
-                                it
-                        ).build()
-                    }
-            val notificationText =
-                    sharedPreferences.getString(
-                            PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
-                            getString(R.string.default_sharing_text_pattern))
-                            .getSharingText(trackInfo.coreElement)
-
-            val thumb =
-                    trackInfo.artworkUriString?.let {
-                        getBitmapFromUriString(this@NotificationService, it)
-                    }
-
-            setSmallIcon(R.drawable.ic_notification)
-            setLargeIcon(thumb)
-            setContentTitle(getString(R.string.notification_title))
-            setContentText(notificationText)
-            setContentIntent(
-                    PendingIntent.getActivity(
-                            this@NotificationService,
-                            0,
-                            SharingActivity.getIntent(this@NotificationService),
-                            PendingIntent.FLAG_CANCEL_CURRENT
-                    )
-            )
-            setOngoing(true)
-            if (Build.VERSION.SDK_INT >= 24) {
-                setStyle(Notification.DecoratedMediaCustomViewStyle())
-                addAction(actionOpenSetting)
-            }
-            thumb?.apply {
-                if (Build.VERSION.SDK_INT >= 26
-                        && sharedPreferences.getWhetherColorizeNotificationBg()) {
-                    setColorized(true)
-                }
-
-                val color = Palette.from(this).generate().let {
-                    when (SettingsActivity.paletteArray[sharedPreferences.getChoseColorIndex()]) {
-                        R.string.palette_light_vibrant -> it.getLightVibrantColor(Color.WHITE)
-                        R.string.palette_vibrant -> it.getVibrantColor(Color.WHITE)
-                        R.string.palette_dark_vibrant -> it.getDarkVibrantColor(Color.WHITE)
-                        R.string.palette_light_muted -> it.getLightMutedColor(Color.WHITE)
-                        R.string.palette_muted -> it.getMutedColor(Color.WHITE)
-                        R.string.palette_dark_muted -> it.getDarkMutedColor(Color.WHITE)
-                        else -> it.getLightVibrantColor(Color.WHITE)
-                    }
-                }
-                setColor(color)
-            }
-        }.build()
-    }
 
     private fun getDummyNotification(): Notification =
             (if (Build.VERSION.SDK_INT >= 26)

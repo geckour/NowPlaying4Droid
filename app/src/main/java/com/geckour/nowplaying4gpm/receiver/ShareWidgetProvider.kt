@@ -60,9 +60,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
         when (intent.action) {
             Action.SHARE.name -> {
-                ui(jobs) {
-                    context.startActivity(SharingActivity.getIntent(context))
-                }
+                ui(jobs) { context.startActivity(SharingActivity.getIntent(context)) }
             }
 
             Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))
