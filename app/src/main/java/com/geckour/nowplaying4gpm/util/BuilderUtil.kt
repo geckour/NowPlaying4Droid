@@ -13,7 +13,7 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-suspend fun getShareWidgetViews(context: Context, id: Int?, summary: String?, artworkUri: Uri?): RemoteViews {
+private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: String?, artworkUri: Uri?): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -23,7 +23,7 @@ suspend fun getShareWidgetViews(context: Context, id: Int?, summary: String?, ar
 
         if (sharedPreferences.getWhetherShowArtworkInWidget() && (id == null || sharedPreferences.getWidgetState(id) != WidgetState.MIN)) {
             val artwork = getBitmapFromUri(context, artworkUri)
-            if (artwork != null) {
+            if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
             } else {
                 setImageViewResource(R.id.artwork, R.drawable.ic_notification)
