@@ -73,7 +73,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
                     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                     val coreElement =
                             sharedPreferences.getCurrentTrackInfo()?.coreElement
-                                    ?: TrackCoreElement(null, null, null)
+                                    ?: TrackCoreElement.empty
                     val artworkUri = sharedPreferences.getTempArtworkUri(context)
 
                     AppWidgetManager.getInstance(context).apply {

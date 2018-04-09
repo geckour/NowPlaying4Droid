@@ -5,7 +5,11 @@ import java.io.Serializable
 data class TrackInfo(
         val coreElement: TrackCoreElement,
         val artworkUriString: String?
-): Serializable
+): Serializable {
+    companion object {
+        val empty: TrackInfo = TrackInfo(TrackCoreElement.empty, null)
+    }
+}
 
 data class ArtworkInfo(
         val artworkUriString: String?,
@@ -17,6 +21,10 @@ data class TrackCoreElement(
         val artist: String?,
         val album: String?
 ): Serializable {
+    companion object {
+        val empty: TrackCoreElement = TrackCoreElement(null, null, null)
+    }
+
     val isAllNonNull: Boolean =
             title != null && artist != null && album != null
 }

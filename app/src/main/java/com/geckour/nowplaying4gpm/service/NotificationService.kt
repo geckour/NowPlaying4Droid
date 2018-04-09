@@ -55,9 +55,8 @@ class NotificationService : NotificationListenerService() {
 
                         val trackInfo =
                                 if (this.extras != null && extras.containsKey(BUNDLE_KEY_TRACK_INFO))
-                                    extras.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo?
-                                            ?: TrackInfo(TrackCoreElement(null, null, null), null)
-                                else TrackInfo(TrackCoreElement(null, null, null), null)
+                                    extras.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo? ?: TrackInfo.empty
+                                else TrackInfo.empty
 
                         async { showNotification(trackInfo) }
                     }
@@ -72,7 +71,7 @@ class NotificationService : NotificationListenerService() {
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val jobs: ArrayList<Job> = ArrayList()
 
-    private var currentTrack: TrackCoreElement = TrackCoreElement(null, null, null)
+    private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var resetCurrentTrackJob: Job? = null
 
     override fun onCreate() {
@@ -137,7 +136,7 @@ class NotificationService : NotificationListenerService() {
             resetCurrentTrackJob =
                     async {
                         delay(250)
-                        currentTrack = TrackCoreElement(null, null, null)
+                        currentTrack = TrackCoreElement.empty
                     }
         }
     }
@@ -209,7 +208,7 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun onDestroyNotification() {
-        val info = TrackInfo(TrackCoreElement(null, null, null), null)
+        val info = TrackInfo.empty
         updateSharedPreference(info)
         async { updateWidget(info) }
         destroyNotification()
