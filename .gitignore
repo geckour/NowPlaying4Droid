@@ -38,4 +38,4 @@ secret.properties
 app/release/
 *.jks
 google-services.json
-fabric.properties
+firebase-crashreporting-key.json
