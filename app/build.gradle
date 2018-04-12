@@ -66,7 +66,7 @@ static def getKey(keyName) {
 }
 
 dependencies {
-    def android_support_version = '27.1.0'
+    def android_support_version = '27.1.1'
     def coroutines_version = '0.19.3'
     def stetho_version = '1.5.0'
     def retrofit2_version = '2.2.0'
@@ -92,7 +92,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
 
     // Data Binding
-    kapt 'com.android.databinding:compiler:3.1.0'
+    kapt 'com.android.databinding:compiler:3.1.1'
 
     // Logging
     implementation 'com.jakewharton.timber:timber:4.6.0'
