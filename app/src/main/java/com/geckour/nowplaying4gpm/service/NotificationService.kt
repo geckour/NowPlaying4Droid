@@ -198,7 +198,7 @@ class NotificationService : NotificationListenerService() {
             if (notificationBitmap != null) {
                 val placeholderBitmap = (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
                 artworkUri =
-                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9 && sharedPreferences.getWhetherUseApi()) {
+                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9 && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
                             getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
                         } else refreshArtworkUriFromBitmap(this, notificationBitmap)
             }
@@ -230,7 +230,7 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun showNotification(trackInfo: TrackInfo) {
-        if (sharedPreferences.getWhetherReside() && trackInfo.coreElement.isAllNonNull) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE) && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
                 ui(jobs) {
                     getNotification(this@NotificationService, trackInfo)?.apply {

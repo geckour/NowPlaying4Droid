@@ -50,7 +50,6 @@ fun SharedPreferences.init(context: Context) {
         if (contains(PrefKey.PREF_KEY_WIDGET_STATES.name).not()) {
             putString(PrefKey.PREF_KEY_WIDGET_STATES.name, Gson().toJson(mapOf<Int, WidgetState>()))
         }
-
     }.apply()
 }
 
@@ -114,45 +113,13 @@ fun SharedPreferences.getChosePaletteColor(): PaletteColor =
                         PaletteColor.LIGHT_VIBRANT.ordinal)
         ) ?: PaletteColor.LIGHT_VIBRANT
 
-fun SharedPreferences.getWhetherResideSummaryResId(): Int =
-        if (getWhetherReside()) R.string.pref_item_summary_switch_on
+fun SharedPreferences.getSwitchSummaryResId(key: PrefKey): Int =
+        if (getSwitchState(key)) R.string.pref_item_summary_switch_on
         else R.string.pref_item_summary_switch_off
 
-fun SharedPreferences.getWhetherUseApiSummaryResId(): Int =
-        if (getWhetherUseApi()) R.string.pref_item_summary_switch_on
-        else R.string.pref_item_summary_switch_off
-
-fun SharedPreferences.getWhetherBundleArtworkSummaryResId(): Int =
-        if (getWhetherBundleArtwork()) R.string.pref_item_summary_switch_on
-        else R.string.pref_item_summary_switch_off
-
-fun SharedPreferences.getWhetherColorizeNotificationBgSummaryResId(): Int =
-        if (getWhetherColorizeNotificationBg()) R.string.pref_item_summary_switch_on
-        else R.string.pref_item_summary_switch_off
-
-fun SharedPreferences.getWhetherShowArtworkInWidgetSummaryResId(): Int =
-        if (getWhetherShowArtworkInWidget()) R.string.pref_item_summary_switch_on
-        else R.string.pref_item_summary_switch_off
-
-fun SharedPreferences.getWhetherReside(): Boolean =
-        contains(PrefKey.PREF_KEY_WHETHER_RESIDE.name).not()
-                || getBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, true)
-
-fun SharedPreferences.getWhetherUseApi(): Boolean =
-        contains(PrefKey.PREF_KEY_WHETHER_USE_API.name)
-                && getBoolean(PrefKey.PREF_KEY_WHETHER_USE_API.name, false)
-
-fun SharedPreferences.getWhetherBundleArtwork(): Boolean =
-        contains(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name).not()
-                || getBoolean(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK.name, true)
-
-fun SharedPreferences.getWhetherColorizeNotificationBg(): Boolean =
-        contains(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name).not()
-                || getBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
-
-fun SharedPreferences.getWhetherShowArtworkInWidget(): Boolean =
-        (contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not()
-                || getBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true))
+fun SharedPreferences.getSwitchState(key: PrefKey): Boolean =
+        contains(key.name).not()
+                || getBoolean(key.name, true)
 
 fun SharedPreferences.setWidgetState(id: Int, state: WidgetState) {
     val stateMap = getWidgetStateMap().toMutableMap().apply {

@@ -90,11 +90,11 @@ class SettingsActivity : Activity() {
 
         binding.summaryPattern = sharedPreferences.getFormatPattern(this)
         binding.summaryChooseColor = getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
-        binding.summarySwitchReside = getString(sharedPreferences.getWhetherResideSummaryResId())
-        binding.summarySwitchUseApi = getString(sharedPreferences.getWhetherUseApiSummaryResId())
-        binding.summarySwitchBundleArtwork = getString(sharedPreferences.getWhetherBundleArtworkSummaryResId())
-        binding.summarySwitchColorizeNotificationBg = getString(sharedPreferences.getWhetherColorizeNotificationBgSummaryResId())
-        binding.summarySwitchShowArtworkInWidget = getString(sharedPreferences.getWhetherShowArtworkInWidgetSummaryResId())
+        binding.summarySwitchReside = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_RESIDE))
+        binding.summarySwitchUseApi = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_USE_API))
+        binding.summarySwitchBundleArtwork = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
+        binding.summarySwitchColorizeNotificationBg = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG))
+        binding.summarySwitchShowArtworkInWidget = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET))
 
         binding.fab.setOnClickListener { onClickFab() }
 

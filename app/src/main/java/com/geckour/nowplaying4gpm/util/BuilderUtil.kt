@@ -11,6 +11,7 @@ import android.provider.MediaStore
 import android.support.v7.graphics.Palette
 import android.view.View
 import android.widget.RemoteViews
+import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.activity.SharingActivity
@@ -30,7 +31,7 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
                 summary
                         ?: context.getString(R.string.dialog_message_alert_no_metadata))
 
-        if (sharedPreferences.getWhetherShowArtworkInWidget() && (id == null || sharedPreferences.getWidgetState(id) != WidgetState.MIN)) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) && (id == null || sharedPreferences.getWidgetState(id) != WidgetState.MIN)) {
             val artwork = getBitmapFromUri(context, artworkUri)
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
@@ -122,7 +123,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
         }
         thumb?.apply {
             if (Build.VERSION.SDK_INT >= 26
-                    && sharedPreferences.getWhetherColorizeNotificationBg()) {
+                    && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG)) {
                 setColorized(true)
             }
 

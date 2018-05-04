@@ -9,10 +9,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.util.getSharingText
-import com.geckour.nowplaying4gpm.util.getTempArtworkUri
-import com.geckour.nowplaying4gpm.util.getWhetherBundleArtwork
-import com.geckour.nowplaying4gpm.util.ui
+import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
 
 class SharingActivity: Activity() {
@@ -20,10 +17,6 @@ class SharingActivity: Activity() {
     enum class IntentRequestCode {
         SHARE,
         CALLBACK
-    }
-
-    enum class ArgKey {
-        TEXT
     }
 
     companion object {
@@ -42,7 +35,7 @@ class SharingActivity: Activity() {
             val sharingText: String =
                     sharedPreferences.getSharingText(this@SharingActivity) ?: return
             val artworkUri =
-                    if (sharedPreferences.getWhetherBundleArtwork())
+                    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
                         sharedPreferences.getTempArtworkUri(this@SharingActivity)
                     else null
 
