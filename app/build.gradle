@@ -14,7 +14,7 @@ android {
     compileSdkVersion 27
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 27
         versionCode 30
         versionName "1.0.27"
