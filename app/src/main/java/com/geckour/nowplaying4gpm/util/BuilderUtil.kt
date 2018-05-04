@@ -35,7 +35,7 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
             } else {
-                setImageViewResource(R.id.artwork, R.drawable.ic_notification)
+                setImageViewResource(R.id.artwork, R.drawable.ic_placeholder)
             }
             setViewVisibility(R.id.artwork, View.VISIBLE)
         } else {
