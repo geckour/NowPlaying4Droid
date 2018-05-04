@@ -104,9 +104,15 @@ fun SharedPreferences.getSharingText(context: Context): String? {
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
-            Gson().fromJson(
-                    getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
-                    TrackInfo::class.java)
+            try {
+                Gson().fromJson(
+                        getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
+                        TrackInfo::class.java)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                refreshCurrentTrackInfo(TrackInfo.empty)
+                null
+            }
         else null
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
