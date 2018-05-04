@@ -14,10 +14,10 @@ android {
     compileSdkVersion 27
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 27
-        versionCode 29
-        versionName "1.0.26"
+        versionCode 32
+        versionName "1.0.29"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -66,13 +66,13 @@ static def getKey(keyName) {
 }
 
 dependencies {
-    def android_support_version = '27.1.0'
+    def android_support_version = '27.1.1'
     def coroutines_version = '0.19.3'
     def stetho_version = '1.5.0'
     def retrofit2_version = '2.2.0'
     def okhttp_version = '3.7.0'
     def glide_version = '4.3.0'
-    def firebase_version = '12.0.0'
+    def firebase_version = '15.0.2'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
@@ -80,19 +80,19 @@ dependencies {
     implementation "com.android.support:appcompat-v7:$android_support_version"
     implementation "com.android.support:support-v4:$android_support_version"
     implementation "com.android.support:recyclerview-v7:$android_support_version"
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
     implementation "com.google.firebase:firebase-core:$firebase_version"
     implementation "com.google.firebase:firebase-crash:$firebase_version"
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
 
     // Data Binding
-    kapt 'com.android.databinding:compiler:3.1.0'
+    kapt 'com.android.databinding:compiler:3.1.2'
 
     // Logging
     implementation 'com.jakewharton.timber:timber:4.6.0'
@@ -111,9 +111,10 @@ dependencies {
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
     implementation 'ru.gildor.coroutines:kotlin-coroutines-retrofit:0.9.0'
 
-    //Image processing
+    // Image processing
     implementation "com.github.bumptech.glide:glide:$glide_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
 }
 
+// Billing
 apply plugin: 'com.google.gms.google-services'

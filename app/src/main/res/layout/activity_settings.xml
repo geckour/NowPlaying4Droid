@@ -32,6 +32,10 @@
         <variable
             name="summary_switch_show_artwork_in_widget"
             type="String" />
+
+        <variable
+            name="summary_switch_launch_gpm_on_click_widget_artwork"
+            type="String" />
     </data>
 
     <android.support.constraint.ConstraintLayout
@@ -170,6 +174,15 @@
                     app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}"/>
 
                 <include
+                    android:id="@+id/item_switch_launch_gpm_on_click_widget_artwork"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_switch_launch_gpm_on_click_widget_artwork}"
+                    app:summary="@{summary_switch_launch_gpm_on_click_widget_artwork}"
+                    app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}"/>
+
+                <include
                     android:id="@+id/category_others"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
@@ -196,7 +209,7 @@
             android:clickable="true"
             android:focusable="true"
             android:scaleType="fitCenter"
-            android:tint="@android:color/white"
+            app:tint="@android:color/white"
             app:backgroundTint="@color/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

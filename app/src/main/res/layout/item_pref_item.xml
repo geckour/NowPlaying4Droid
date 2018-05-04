@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
 
     <data>
+
         <variable
             name="title"
-            type="String" />
+            type="String"/>
 
         <variable
             name="desc"
-            type="String" />
+            type="String"/>
 
         <variable
             name="summary"
-            type="String" />
+            type="String"/>
     </data>
 
     <android.support.constraint.ConstraintLayout
@@ -37,7 +38,7 @@
             android:textColor="@color/colorPrimaryDark"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/extra"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="アイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトルアイテムタイトル"/>
@@ -50,42 +51,42 @@
             android:text="@{desc}"
             android:textColor="@color/colorTextMiddle"
             android:textSize="16sp"
-            app:layout_constraintEnd_toStartOf="@+id/extra"
-            app:layout_constraintStart_toStartOf="@+id/text_title"
-            app:layout_constraintTop_toBottomOf="@+id/text_title"
-            tools:text="アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明"/>
-
-        <FrameLayout
-            android:id="@+id/extra"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingStart="8dp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@id/text_desc"
             app:layout_constraintEnd_toEndOf="@id/text_title"
-            app:layout_constraintTop_toTopOf="@id/text_desc"/>
+            app:layout_constraintStart_toStartOf="@id/text_title"
+            app:layout_constraintTop_toBottomOf="@id/text_title"
+            tools:text="アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明アイテム説明"/>
 
         <TextView
             android:id="@+id/text_summary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
             android:layout_marginBottom="8dp"
+            android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
             android:text="@{summary}"
             android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="@+id/text_title"
-            app:layout_constraintStart_toStartOf="@+id/text_title"
-            app:layout_constraintTop_toBottomOf="@+id/text_desc"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@id/text_title"
+            app:layout_constraintStart_toStartOf="@id/text_title"
+            app:layout_constraintTop_toBottomOf="@id/text_desc"
             tools:text="アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態アイテム状態"/>
+
+        <FrameLayout
+            android:id="@+id/extra"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <FrameLayout
             android:id="@+id/mask_inactive"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:layout_marginEnd="8dp"
             android:background="@color/colorMaskInactive"
             android:clickable="true"
             android:focusable="true"
@@ -98,10 +99,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/colorShadowTextDark"
-                android:textSize="16sp"
+                android:layout_gravity="center"
                 android:text="@string/pref_mask_desc"
-                android:layout_gravity="center"/>
+                android:textColor="@color/colorShadowTextDark"
+                android:textSize="16sp"/>
         </FrameLayout>
     </android.support.constraint.ConstraintLayout>
 </layout>

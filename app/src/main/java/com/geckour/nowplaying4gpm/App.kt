@@ -9,6 +9,10 @@ import timber.log.Timber
 
 class App : Application() {
 
+    companion object {
+        const val PACKAGE_NAME_GPM: String = "com.google.android.music"
+    }
+
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }

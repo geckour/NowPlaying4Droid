@@ -9,7 +9,10 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
+import android.preference.PreferenceManager
+import android.support.annotation.ColorInt
 import android.support.v4.content.ContextCompat
+import android.support.v7.graphics.Palette
 import android.view.View
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
@@ -17,6 +20,92 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 import kotlin.math.absoluteValue
+
+enum class PaletteColor {
+    LIGHT_VIBRANT {
+        override val hierarchyList: List<PaletteColor>
+            get() = listOf(
+                    LIGHT_VIBRANT,
+                    VIBRANT,
+                    DARK_VIBRANT,
+                    LIGHT_MUTED,
+                    MUTED,
+                    DARK_MUTED
+            )
+    },
+    VIBRANT {
+        override val hierarchyList: List<PaletteColor>
+            get() = listOf(
+                    VIBRANT,
+                    LIGHT_VIBRANT,
+                    DARK_VIBRANT,
+                    MUTED,
+                    LIGHT_MUTED,
+                    DARK_MUTED
+            )
+    },
+    DARK_VIBRANT {
+        override val hierarchyList: List<PaletteColor>
+            get() = listOf(
+                    DARK_VIBRANT,
+                    VIBRANT,
+                    LIGHT_VIBRANT,
+                    DARK_MUTED,
+                    MUTED,
+                    LIGHT_MUTED
+            )
+    },
+    LIGHT_MUTED {
+        override val hierarchyList: List<PaletteColor>
+            get() = listOf(
+                    LIGHT_MUTED,
+                    MUTED,
+                    DARK_MUTED,
+                    LIGHT_VIBRANT,
+                    VIBRANT,
+                    DARK_VIBRANT
+            )
+    },
+    MUTED {
+        override val hierarchyList: List<PaletteColor>
+            get() = listOf(
+                    MUTED,
+                    LIGHT_MUTED,
+                    DARK_MUTED,
+                    VIBRANT,
+                    LIGHT_VIBRANT,
+                    DARK_VIBRANT
+            )
+    },
+    DARK_MUTED {
+        override val hierarchyList: List<PaletteColor>
+            get() = listOf(
+                    DARK_MUTED,
+                    MUTED,
+                    LIGHT_MUTED,
+                    DARK_VIBRANT,
+                    VIBRANT,
+                    LIGHT_VIBRANT
+            )
+    };
+
+    abstract val hierarchyList: List<PaletteColor>
+
+    fun getSummaryResId(): Int =
+            when(this) {
+                LIGHT_VIBRANT -> R.string.palette_light_vibrant
+                VIBRANT -> R.string.palette_vibrant
+                DARK_VIBRANT -> R.string.palette_dark_vibrant
+                LIGHT_MUTED -> R.string.palette_light_muted
+                MUTED -> R.string.palette_muted
+                DARK_MUTED -> R.string.palette_dark_muted
+            }
+
+    companion object {
+        fun getFromIndex(index: Int): PaletteColor =
+                PaletteColor.values().getOrNull(index) ?: LIGHT_VIBRANT
+    }
+}
 
 fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
@@ -124,3 +213,25 @@ fun Int.colorSimilarity(colorInt: Int): Float =
         1f - ((Color.red(this) - Color.red(colorInt)).absoluteValue
                 + (Color.green(this) - Color.green(colorInt)).absoluteValue
                 + (Color.blue(this) - Color.blue(colorInt)).absoluteValue).toFloat() / (255 * 3)
+
+private fun Palette.getColorFromPaletteColor(paletteColor: PaletteColor): Int =
+        when (paletteColor) {
+            PaletteColor.LIGHT_VIBRANT -> getLightVibrantColor(Color.TRANSPARENT)
+            PaletteColor.VIBRANT -> getVibrantColor(Color.TRANSPARENT)
+            PaletteColor.DARK_VIBRANT -> getDarkVibrantColor(Color.TRANSPARENT)
+            PaletteColor.LIGHT_MUTED -> getLightMutedColor(Color.TRANSPARENT)
+            PaletteColor.MUTED -> getMutedColor(Color.TRANSPARENT)
+            PaletteColor.DARK_MUTED -> getDarkMutedColor(Color.TRANSPARENT)
+        }
+
+@ColorInt
+fun Palette.getOptimizedColor(context: Context): Int {
+    val paletteColorHierarchies =
+            PreferenceManager.getDefaultSharedPreferences(context)
+                    .getChosePaletteColor()
+                    .hierarchyList
+
+    return paletteColorHierarchies.firstOrNull {
+        getColorFromPaletteColor(it) != Color.TRANSPARENT
+    }?.let { getColorFromPaletteColor(it) } ?: Color.WHITE
+}
