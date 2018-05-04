@@ -18,6 +18,7 @@ enum class PrefKey {
     PREF_KEY_WHETHER_BUNDLE_ARTWORK,
     PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG,
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET,
+    PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK,
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE,
@@ -45,6 +46,8 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG.name, true)
         if (contains(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name).not())
             putBoolean(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET.name, true)
+        if (contains(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK.name).not())
+            putBoolean(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK.name, true)
         if (contains(PrefKey.PREF_KEY_BILLING_DONATE.name).not())
             putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, false)
         if (contains(PrefKey.PREF_KEY_WIDGET_STATES.name).not()) {

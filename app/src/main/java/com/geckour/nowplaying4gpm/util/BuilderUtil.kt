@@ -47,6 +47,18 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
                 ShareWidgetProvider.getPendingIntent(context,
                         ShareWidgetProvider.Action.SHARE))
 
+
+        setOnClickPendingIntent(R.id.artwork,
+                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
+                    PendingIntent.getActivity(context,
+                            0,
+                            context.packageManager.getLaunchIntentForPackage(App.PACKAGE_NAME_GPM),
+                            PendingIntent.FLAG_UPDATE_CURRENT)
+                else
+                    ShareWidgetProvider.getPendingIntent(context,
+                            ShareWidgetProvider.Action.SHARE)
+        )
+
         setOnClickPendingIntent(R.id.widget_button_setting,
                 ShareWidgetProvider.getPendingIntent(context,
                         ShareWidgetProvider.Action.OPEN_SETTING))

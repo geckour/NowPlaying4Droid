@@ -95,6 +95,7 @@ class SettingsActivity : Activity() {
         binding.summarySwitchBundleArtwork = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
         binding.summarySwitchColorizeNotificationBg = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG))
         binding.summarySwitchShowArtworkInWidget = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET))
+        binding.summarySwitchLaunchGpmOnClickWidgetArtwork = getString(sharedPreferences.getSwitchSummaryResId(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
 
         binding.fab.setOnClickListener { onClickFab() }
 
@@ -176,6 +177,18 @@ class SettingsActivity : Activity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) { _, summary ->
                     binding.summarySwitchShowArtworkInWidget = summary
+
+                    async { updateWidget() }
+                })
+            }
+        }
+
+        binding.itemSwitchLaunchGpmOnClickWidgetArtwork?.apply {
+            root.setOnClickListener { onClickItemWithSwitch(extra) }
+            extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) { _, summary ->
+                    binding.summarySwitchLaunchGpmOnClickWidgetArtwork = summary
 
                     async { updateWidget() }
                 })

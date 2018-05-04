@@ -12,6 +12,7 @@ import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
+import com.geckour.nowplaying4gpm.App.Companion.PACKAGE_NAME_GPM
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
@@ -29,7 +30,6 @@ class NotificationService : NotificationListenerService() {
     }
 
     companion object {
-        private const val PACKAGE_NAME_GPM: String = "com.google.android.music"
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
         const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
