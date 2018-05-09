@@ -10,9 +10,10 @@ import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.*
+import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
 
-class SharingActivity: Activity() {
+class SharingActivity : Activity() {
 
     enum class IntentRequestCode {
         SHARE,
@@ -50,20 +51,27 @@ class SharingActivity: Activity() {
         finish()
     }
 
-    private fun startShare(text: String, stream: Uri?) =
-            ShareCompat.IntentBuilder.from(this@SharingActivity)
-                    .setChooserTitle(R.string.share_title)
-                    .setText(text)
-                    .also {
-                        stream?.apply { it.setStream(this).setType("image/jpeg") }
-                                ?: it.setType("text/plain")
-                    }
-                    .createChooserIntent()
-                    .apply {
-                        PendingIntent.getActivity(
-                                this@SharingActivity,
-                                IntentRequestCode.SHARE.ordinal,
-                                this@apply,
-                                PendingIntent.FLAG_UPDATE_CURRENT).send()
-                    }
+    private fun startShare(text: String, stream: Uri?) {
+        FirebaseAnalytics.getInstance(application)
+                .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT,
+                        Bundle().apply {
+                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
+                        })
+
+        ShareCompat.IntentBuilder.from(this@SharingActivity)
+                .setChooserTitle(R.string.share_title)
+                .setText(text)
+                .also {
+                    stream?.apply { it.setStream(this).setType("image/jpeg") }
+                            ?: it.setType("text/plain")
+                }
+                .createChooserIntent()
+                .apply {
+                    PendingIntent.getActivity(
+                            this@SharingActivity,
+                            IntentRequestCode.SHARE.ordinal,
+                            this@apply,
+                            PendingIntent.FLAG_UPDATE_CURRENT).send()
+                }
+    }
 }
