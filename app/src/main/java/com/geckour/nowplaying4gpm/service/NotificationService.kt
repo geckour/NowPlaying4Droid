@@ -55,7 +55,8 @@ class NotificationService : NotificationListenerService() {
 
                         val trackInfo =
                                 if (this.extras != null && extras.containsKey(BUNDLE_KEY_TRACK_INFO))
-                                    extras.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo? ?: TrackInfo.empty
+                                    extras.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo?
+                                            ?: TrackInfo.empty
                                 else TrackInfo.empty
 
                         async { showNotification(trackInfo) }
@@ -155,36 +156,42 @@ class NotificationService : NotificationListenerService() {
             sharedPreferences.refreshTempArtwork(artworkUri)
         }) {
             val coreElement = getTrackCoreElement(notification)
-            artworkUri = getArtworkUri(notification, coreElement)
-            val info = TrackInfo(coreElement, artworkUri?.toString())
+            reflectTrackInfo(TrackInfo(coreElement, null))
 
-            updateSharedPreference(info)
-            updateWidget(info)
-            updateNotification(info)
+            artworkUri = getArtworkUri(notification, coreElement)
+            reflectTrackInfo(TrackInfo(coreElement, artworkUri?.toString()))
         }.invokeOnCompletion {
             it?.apply { Timber.e(this) }
             sharedPreferences.refreshTempArtwork(artworkUri)
         }
     }
 
+    private suspend fun reflectTrackInfo(info: TrackInfo) {
+        updateSharedPreference(info)
+        updateWidget(info)
+        updateNotification(info)
+    }
+
     private fun updateSharedPreference(trackInfo: TrackInfo) {
         sharedPreferences.refreshCurrentTrackInfo(trackInfo)
     }
 
-    private fun updateNotification(trackInfo: TrackInfo) =
-            showNotification(trackInfo)
+    private fun updateNotification(trackInfo: TrackInfo) {
+        showNotification(trackInfo)
+    }
 
-    private suspend fun updateWidget(trackInfo: TrackInfo) =
-            AppWidgetManager.getInstance(this).apply {
-                val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
+    private suspend fun updateWidget(trackInfo: TrackInfo) {
+        AppWidgetManager.getInstance(this).apply {
+            val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
-                ids.forEach {
-                    updateAppWidget(
-                            it,
-                            getShareWidgetViews(this@NotificationService, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
-                    )
-                }
+            ids.forEach {
+                updateAppWidget(
+                        it,
+                        getShareWidgetViews(this@NotificationService, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                )
             }
+        }
+    }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
         var artworkUri =
@@ -241,12 +248,14 @@ class NotificationService : NotificationListenerService() {
         } else destroyNotification()
     }
 
-    private fun showDummyNotification() =
-            startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, getDummyNotification())
+    private fun showDummyNotification() {
+        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, getDummyNotification())
+    }
 
-    private fun destroyNotification() =
-            if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
-            else cancelAllNotifications()
+    private fun destroyNotification() {
+        if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
+        else cancelAllNotifications()
+    }
 
     private fun getDummyNotification(): Notification =
             (if (Build.VERSION.SDK_INT >= 26)
