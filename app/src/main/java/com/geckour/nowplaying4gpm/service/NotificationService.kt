@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.*
+import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
@@ -12,16 +13,22 @@ import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
+import android.util.Base64
 import com.geckour.nowplaying4gpm.App.Companion.PACKAGE_NAME_GPM
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.domain.model.WearTrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
+import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 
 class NotificationService : NotificationListenerService() {
 
@@ -32,7 +39,9 @@ class NotificationService : NotificationListenerService() {
     companion object {
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
-        const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
+        private const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
+        private const val WEAR_PATH = "/track_info"
+        private const val WEAR_KEY_TRACK_INFO = "key_track_info"
 
         fun sendNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
@@ -80,8 +89,6 @@ class NotificationService : NotificationListenerService() {
 
         if (Build.VERSION.SDK_INT >= 26) {
             createDefaultChannel()
-            showDummyNotification()
-            destroyNotification()
         }
 
         val intentFilter = IntentFilter().apply {
@@ -170,6 +177,7 @@ class NotificationService : NotificationListenerService() {
         updateSharedPreference(info)
         updateWidget(info)
         updateNotification(info)
+        updateWear(info)
     }
 
     private fun updateSharedPreference(trackInfo: TrackInfo) {
@@ -191,6 +199,36 @@ class NotificationService : NotificationListenerService() {
                 )
             }
         }
+    }
+
+    private suspend fun updateWear(trackInfo: TrackInfo) {
+        val subject =
+                if (trackInfo.coreElement.isAllNonNull)
+                    sharedPreferences.getFormatPattern(this).getSharingText(trackInfo.coreElement)
+                else null
+        val artworkString = trackInfo.artworkUriString
+                ?.getUri()
+                .let {
+                    ByteArrayOutputStream().apply {
+                        getBitmapFromUri(this@NotificationService, it)
+                                ?.compress(
+                                        Bitmap.CompressFormat.JPEG,
+                                        100,
+                                        this
+                                )
+                    }.let { Base64.encodeToString(it.toByteArray(), Base64.DEFAULT) }
+                }
+
+        val wearTrackInfo = WearTrackInfo(subject, artworkString)
+
+        Wearable.getDataClient(this)
+                .putDataItem(
+                        PutDataMapRequest.create(WEAR_PATH)
+                                .apply {
+                                    dataMap.putString(WEAR_KEY_TRACK_INFO,
+                                            Gson().toJson(wearTrackInfo, WearTrackInfo::class.java))
+                                }.asPutDataRequest()
+                )
     }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
@@ -217,7 +255,10 @@ class NotificationService : NotificationListenerService() {
     private fun onDestroyNotification() {
         val info = TrackInfo.empty
         updateSharedPreference(info)
-        async { updateWidget(info) }
+        async {
+            updateWidget(info)
+            updateWear(info)
+        }
         destroyNotification()
     }
 
@@ -248,21 +289,8 @@ class NotificationService : NotificationListenerService() {
         } else destroyNotification()
     }
 
-    private fun showDummyNotification() {
-        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, getDummyNotification())
-    }
-
     private fun destroyNotification() {
         if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
         else cancelAllNotifications()
     }
-
-    private fun getDummyNotification(): Notification =
-            (if (Build.VERSION.SDK_INT >= 26)
-                Notification.Builder(this, Channel.NOTIFICATION_CHANNEL_SHARE.name)
-            else Notification.Builder(this)).apply {
-                setSmallIcon(R.drawable.ic_notification)
-                setContentTitle(getString(R.string.notification_title))
-                setContentText(getString(R.string.notification_text_dummy))
-            }.build()
 }

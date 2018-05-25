@@ -3,8 +3,6 @@
     <string name="activity_title_licenses">OSSライセンス</string>
 
     <string name="notification_title">NowPlayingを共有…</string>
-    <string name="notification_text_dummy">ダミー通知</string>
-    <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
 
     <string name="notification_channel_name_share">共有</string>
     <string name="notification_channel_description_share">NowPlaying共有用通知</string>

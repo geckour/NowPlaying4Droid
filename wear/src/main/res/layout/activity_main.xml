@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="info"
+            type="com.geckour.nowplaying4gpm.wear.domain.model.TrackInfo" />
+    </data>
+
+    <android.support.wear.widget.BoxInsetLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimary"
+        android:padding="@dimen/box_inset_layout_padding"
+        tools:context=".MainActivity"
+        tools:deviceIds="wear">
+
+        <android.support.constraint.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="@dimen/inner_frame_layout_padding"
+            app:boxedEdges="all">
+
+            <ImageView
+                android:id="@+id/artwork"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:scaleType="fitCenter"
+                app:imageBitmap="@{info.base64Artwork}"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:src="@drawable/ic_placeholder" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="@dimen/counter_padding"
+                android:layout_marginLeft="@dimen/counter_padding"
+                android:layout_marginRight="@dimen/counter_padding"
+                android:layout_marginTop="@dimen/counter_padding"
+                android:background="@color/artwork_mask"
+                app:layout_constraintBottom_toBottomOf="@id/artwork"
+                app:layout_constraintEnd_toEndOf="@id/artwork"
+                app:layout_constraintStart_toStartOf="@id/artwork"
+                app:layout_constraintTop_toTopOf="@id/artwork" />
+
+            <TextView
+                android:id="@+id/subject_share"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="8dp"
+                android:text="@{info.subject == null ? @string/subject_placeholder : info.subject}"
+                android:textColor="@color/colorAccent"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toTopOf="@id/button_share"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="Track name - Artist name (Album name)" />
+
+            <android.support.v7.widget.AppCompatButton
+                android:id="@+id/button_share"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:backgroundTint="@color/colorPrimaryDark"
+                android:text="@string/button_share"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+        </android.support.constraint.ConstraintLayout>
+    </android.support.wear.widget.BoxInsetLayout>
+</layout>

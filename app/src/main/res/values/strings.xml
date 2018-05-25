@@ -5,8 +5,7 @@
     <string name="activity_title_licenses">OSS Licenses</string>
 
     <string name="notification_title">Share NowPlaying…</string>
-    <string name="notification_text_dummy">Dummy notification</string>
-    <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
+    <string name="default_sharing_text_pattern" translatable="false">#NowPlaying TI - AR (AL)</string>
 
     <string name="notification_channel_name_share">Share</string>
     <string name="notification_channel_description_share">Notification for sharing NowPlaying</string>

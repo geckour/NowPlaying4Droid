@@ -106,9 +106,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                     ).build()
                 }
         val notificationText =
-                sharedPreferences.getString(
-                        PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
-                        context.getString(R.string.default_sharing_text_pattern))
+                sharedPreferences.getFormatPattern(context)
                         .getSharingText(trackInfo.coreElement)
 
         val thumb =

@@ -1,0 +1,71 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+android {
+    compileSdkVersion 27
+
+    defaultConfig {
+        applicationId "com.geckour.nowplaying4gpm.wear"
+        minSdkVersion 23
+        targetSdkVersion 27
+        versionCode 1
+        versionName "1.0"
+        dataBinding.enabled = true
+    }
+
+    signingConfigs {
+        debug {
+            keyAlias 'AndroidDebugKey'
+            keyPassword 'android'
+            storeFile file("${project.rootDir}/app/signing/debug.keystore")
+            storePassword 'android'
+        }
+        release {
+            def releaseSettingGradleFile = new File("${project.rootDir}/app/signing/release.gradle")
+            if (releaseSettingGradleFile.exists()) {
+                apply from: releaseSettingGradleFile, to: android
+            } else {
+                throw new GradleException("Missing ${releaseSettingGradleFile.getAbsolutePath()} . Generate the file by copying and modifying ${project.rootDir}/app/signing/release.gradle.sample .")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+dependencies {
+    def android_support_version = '27.1.1'
+    def retrofit2_version = '2.2.0'
+    def okhttp_version = '3.7.0'
+
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'com.google.android.support:wearable:2.3.0'
+    implementation 'com.google.android.gms:play-services-wearable:15.0.1'
+    implementation "com.android.support:percent:$android_support_version"
+    implementation "com.android.support:support-v4:$android_support_version"
+    implementation "com.android.support:recyclerview-v7:$android_support_version"
+    implementation "com.android.support:appcompat-v7:$android_support_version"
+    implementation "com.android.support:wear:$android_support_version"
+    compileOnly 'com.google.android.wearable:wearable:2.3.0'
+
+    // Data Binding
+    kapt 'com.android.databinding:compiler:3.1.2'
+
+    // Logging
+    implementation 'com.jakewharton.timber:timber:4.6.0'
+
+    // Networking
+    implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
+    implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
+    implementation 'ru.gildor.coroutines:kotlin-coroutines-retrofit:0.9.0'
+}

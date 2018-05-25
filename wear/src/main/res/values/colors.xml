@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#0277bd</color>
+    <color name="colorPrimaryDark">#01579b</color>
+    <color name="colorAccent">#dd2c00</color>
+
+    <color name="colorTextMiddle">#c0000000</color>
+    <color name="colorTextWeak">#80000000</color>
+
+    <color name="artwork_mask">#80ffffff</color>
+</resources>
