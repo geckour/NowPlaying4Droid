@@ -109,7 +109,7 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemSwitchUseApi?.apply {
+        binding.itemSwitchUseApi.apply {
             maskInactive.visibility =
                     if (sharedPreferences.getDonateBillingState())
                         View.GONE
@@ -126,11 +126,11 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemPatternFormat?.root?.setOnClickListener { onClickItemPatternFormat() }
+        binding.itemPatternFormat.root.setOnClickListener { onClickItemPatternFormat() }
 
-        binding.itemChooseColor?.root?.setOnClickListener { onClickItemChooseColor() }
+        binding.itemChooseColor.root.setOnClickListener { onClickItemChooseColor() }
 
-        binding.itemSwitchReside?.apply {
+        binding.itemSwitchReside.apply {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
@@ -144,7 +144,7 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemSwitchBundleArtwork?.apply {
+        binding.itemSwitchBundleArtwork.apply {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
@@ -156,7 +156,7 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemSwitchColorizeNotificationBg?.apply {
+        binding.itemSwitchColorizeNotificationBg.apply {
             if (Build.VERSION.SDK_INT < 26) root.visibility = View.GONE
             else {
                 root.setOnClickListener { onClickItemWithSwitch(extra) }
@@ -171,7 +171,7 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemSwitchShowArtworkInWidget?.apply {
+        binding.itemSwitchShowArtworkInWidget.apply {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
@@ -183,7 +183,7 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemSwitchLaunchGpmOnClickWidgetArtwork?.apply {
+        binding.itemSwitchLaunchGpmOnClickWidgetArtwork.apply {
             root.setOnClickListener { onClickItemWithSwitch(extra) }
             extra.apply {
                 visibility = View.VISIBLE
@@ -195,7 +195,7 @@ class SettingsActivity : Activity() {
             }
         }
 
-        binding.itemDonate?.apply {
+        binding.itemDonate.apply {
             if (sharedPreferences.getDonateBillingState()) root.visibility = View.GONE
             else root.setOnClickListener {
                 ui(jobs) { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
@@ -474,12 +474,12 @@ class SettingsActivity : Activity() {
     private fun reflectDonation(state: Boolean? = null) {
         state?.apply {
             sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, this).apply()
-            binding.itemDonate?.root?.visibility = if (state) View.GONE else View.VISIBLE
-            binding.itemSwitchUseApi?.maskInactive?.visibility = if (state) View.GONE else View.VISIBLE
+            binding.itemDonate.root.visibility = if (state) View.GONE else View.VISIBLE
+            binding.itemSwitchUseApi.maskInactive?.visibility = if (state) View.GONE else View.VISIBLE
         } ?: run {
             val s = sharedPreferences.getDonateBillingState()
-            binding.itemDonate?.root?.visibility = if (s) View.GONE else View.VISIBLE
-            binding.itemSwitchUseApi?.maskInactive?.visibility = if (s) View.GONE else View.VISIBLE
+            binding.itemDonate.root.visibility = if (s) View.GONE else View.VISIBLE
+            binding.itemSwitchUseApi.maskInactive?.visibility = if (s) View.GONE else View.VISIBLE
         }
     }
 }

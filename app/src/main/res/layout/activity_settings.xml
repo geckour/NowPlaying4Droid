@@ -6,35 +6,35 @@
     <data>
 
         <variable
-            name="summary_pattern"
+            name="summaryPattern"
             type="String" />
 
         <variable
-            name="summary_choose_color"
+            name="summaryChooseColor"
             type="String" />
 
         <variable
-            name="summary_switch_reside"
+            name="summarySwitchReside"
             type="String" />
 
         <variable
-            name="summary_switch_use_api"
+            name="summarySwitchUseApi"
             type="String" />
 
         <variable
-            name="summary_switch_bundle_artwork"
+            name="summarySwitchBundleArtwork"
             type="String" />
 
         <variable
-            name="summary_switch_colorize_notification_bg"
+            name="summarySwitchColorizeNotificationBg"
             type="String" />
 
         <variable
-            name="summary_switch_show_artwork_in_widget"
+            name="summarySwitchShowArtworkInWidget"
             type="String" />
 
         <variable
-            name="summary_switch_launch_gpm_on_click_widget_artwork"
+            name="summarySwitchLaunchGpmOnClickWidgetArtwork"
             type="String" />
     </data>
 
@@ -95,7 +95,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_switch_use_api}"
-                    app:summary="@{summary_switch_use_api}"
+                    app:summary="@{summarySwitchUseApi}"
                     app:title="@{@string/pref_item_title_switch_use_api}"/>
 
                 <include
@@ -111,7 +111,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_pattern}"
-                    app:summary="@{summary_pattern}"
+                    app:summary="@{summaryPattern}"
                     app:title="@{@string/pref_item_title_pattern}"/>
 
                 <include
@@ -120,7 +120,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_switch_bundle_artwork}"
-                    app:summary="@{summary_switch_bundle_artwork}"
+                    app:summary="@{summarySwitchBundleArtwork}"
                     app:title="@{@string/pref_item_title_switch_bundle_artwork}"/>
 
                 <include
@@ -136,7 +136,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_switch_reside_notification}"
-                    app:summary="@{summary_switch_reside}"
+                    app:summary="@{summarySwitchReside}"
                     app:title="@{@string/pref_item_title_switch_reside_notification}"/>
 
                 <include
@@ -145,7 +145,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_choose_color}"
-                    app:summary="@{summary_choose_color}"
+                    app:summary="@{summaryChooseColor}"
                     app:title="@{@string/pref_item_title_choose_color}"/>
 
                 <include
@@ -154,7 +154,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
-                    app:summary="@{summary_switch_colorize_notification_bg}"
+                    app:summary="@{summarySwitchColorizeNotificationBg}"
                     app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
 
                 <include
@@ -170,7 +170,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_switch_show_artwork_in_widget}"
-                    app:summary="@{summary_switch_show_artwork_in_widget}"
+                    app:summary="@{summarySwitchShowArtworkInWidget}"
                     app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}"/>
 
                 <include
@@ -179,7 +179,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:desc="@{@string/pref_item_desc_switch_launch_gpm_on_click_widget_artwork}"
-                    app:summary="@{summary_switch_launch_gpm_on_click_widget_artwork}"
+                    app:summary="@{summarySwitchLaunchGpmOnClickWidgetArtwork}"
                     app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}"/>
 
                 <include
