@@ -13,18 +13,16 @@ import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
-import android.util.Base64
 import com.geckour.nowplaying4gpm.App.Companion.PACKAGE_NAME_GPM
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.geckour.nowplaying4gpm.domain.model.WearTrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
+import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
-import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
@@ -41,7 +39,8 @@ class NotificationService : NotificationListenerService() {
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
         private const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
         private const val WEAR_PATH = "/track_info"
-        private const val WEAR_KEY_TRACK_INFO = "key_track_info"
+        private const val WEAR_KEY_SUBJECT = "key_subject"
+        private const val WEAR_KEY_ARTWORK = "key_artwork"
 
         fun sendNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
@@ -206,9 +205,9 @@ class NotificationService : NotificationListenerService() {
                 if (trackInfo.coreElement.isAllNonNull)
                     sharedPreferences.getFormatPattern(this).getSharingText(trackInfo.coreElement)
                 else null
-        val artworkString = trackInfo.artworkUriString
+        val artwork = trackInfo.artworkUriString
                 ?.getUri()
-                .let {
+                ?.let {
                     ByteArrayOutputStream().apply {
                         getBitmapFromUri(this@NotificationService, it)
                                 ?.compress(
@@ -216,19 +215,22 @@ class NotificationService : NotificationListenerService() {
                                         100,
                                         this
                                 )
-                    }.let { Base64.encodeToString(it.toByteArray(), Base64.DEFAULT) }
+                    }
                 }
-
-        val wearTrackInfo = WearTrackInfo(subject, artworkString)
 
         Wearable.getDataClient(this)
                 .putDataItem(
                         PutDataMapRequest.create(WEAR_PATH)
                                 .apply {
-                                    dataMap.putString(WEAR_KEY_TRACK_INFO,
-                                            Gson().toJson(wearTrackInfo, WearTrackInfo::class.java))
+                                    dataMap.apply {
+                                        putString(WEAR_KEY_SUBJECT, subject)
+                                        if (artwork != null) putAsset(WEAR_KEY_ARTWORK, Asset.createFromBytes(artwork.toByteArray()))
+                                    }
                                 }.asPutDataRequest()
-                )
+                ).apply {
+                    addOnSuccessListener { Timber.d("success: $it") }
+                    addOnFailureListener { Timber.e(it) }
+                }
     }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {

@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.wear
+package com.geckour.nowplaying4gpm
 
 import android.app.Application
 import timber.log.Timber

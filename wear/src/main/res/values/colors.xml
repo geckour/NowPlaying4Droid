@@ -7,5 +7,5 @@
     <color name="colorTextMiddle">#c0000000</color>
     <color name="colorTextWeak">#80000000</color>
 
-    <color name="artwork_mask">#80ffffff</color>
+    <color name="artwork_mask">#b0ffffff</color>
 </resources>

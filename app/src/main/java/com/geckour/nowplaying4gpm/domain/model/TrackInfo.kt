@@ -28,8 +28,3 @@ data class TrackCoreElement(
     val isAllNonNull: Boolean =
             title != null && artist != null && album != null
 }
-
-data class WearTrackInfo(
-        val subject: String?,
-        val base64Artwork: String?
-)
