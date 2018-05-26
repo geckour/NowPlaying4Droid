@@ -11,7 +11,6 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.experimental.async
-import timber.log.Timber
 
 class MainActivity : WearableActivity() {
 
@@ -26,23 +25,21 @@ class MainActivity : WearableActivity() {
         it.forEach {
             when (it.type) {
                 DataEvent.TYPE_CHANGED -> {
-                    it.dataItem.apply {
-                        if (uri.path.compareTo(PATH) == 0) {
-                            DataMapItem.fromDataItem(this@apply).dataMap.let {
-                                async {
-                                    val trackInfo =
-                                            TrackInfo(
-                                                    it.getString(KEY_SUBJECT),
-                                                    if (it.containsKey(KEY_ARTWORK)) it.getAsset(KEY_ARTWORK).loadBitmap()
-                                                    else null
-                                            ).apply { Timber.d("track info: $this") }
+                    if (it.dataItem.uri.path.compareTo(PATH) == 0) {
+                        val dataMap = DataMapItem.fromDataItem(it.dataItem).dataMap
 
-                                    onUpdateTrackInfo(trackInfo)
-                                }
-                            }
+                        async {
+                            val subject = dataMap.getString(KEY_SUBJECT)
+                            val artwork =
+                                    if (dataMap.containsKey(KEY_ARTWORK))
+                                        dataMap.getAsset(KEY_ARTWORK).loadBitmap()
+                                    else null
+
+                            onUpdateTrackInfo(TrackInfo(subject, artwork))
                         }
                     }
                 }
+
                 DataEvent.TYPE_DELETED -> onUpdateTrackInfo(null)
             }
         }
