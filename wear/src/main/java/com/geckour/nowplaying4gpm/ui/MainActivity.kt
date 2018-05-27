@@ -15,26 +15,29 @@ import kotlinx.coroutines.experimental.async
 class MainActivity : WearableActivity() {
 
     companion object {
-        private const val PATH = "/track_info"
+        private const val PATH_TRACK_INFO_POST = "/track_info/post"
+        private const val PATH_TRACK_INFO_PULL = "/track_info/pull"
         private const val KEY_SUBJECT = "key_subject"
         private const val KEY_ARTWORK = "key_artwork"
     }
 
     private lateinit var binding: ActivityMainBinding
+
     private val onDataChanged: (DataEventBuffer) -> Unit = {
         it.forEach {
             when (it.type) {
                 DataEvent.TYPE_CHANGED -> {
-                    if (it.dataItem.uri.path.compareTo(PATH) == 0) {
+                    if (it.dataItem.uri.path.compareTo(PATH_TRACK_INFO_POST) == 0) {
                         val dataMap = DataMapItem.fromDataItem(it.dataItem).dataMap
 
                         async {
                             val subject = dataMap.getString(KEY_SUBJECT)
+                            onUpdateTrackInfo(TrackInfo(subject, null))
+
                             val artwork =
                                     if (dataMap.containsKey(KEY_ARTWORK))
                                         dataMap.getAsset(KEY_ARTWORK).loadBitmap()
                                     else null
-
                             onUpdateTrackInfo(TrackInfo(subject, artwork))
                         }
                     }
@@ -51,12 +54,14 @@ class MainActivity : WearableActivity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
         binding.info = TrackInfo.empty
+        binding.buttonShare.setOnClickListener { invokeShare() }
     }
 
     override fun onResume() {
         super.onResume()
 
         Wearable.getDataClient(this).addListener(onDataChanged)
+        requestTrackInfo()
     }
 
     override fun onPause() {
@@ -76,5 +81,19 @@ class MainActivity : WearableActivity() {
 
     private fun onUpdateTrackInfo(trackInfo: TrackInfo?) {
         binding.info = trackInfo
+    }
+
+    private fun requestTrackInfo() {
+        Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
+            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+                    ?: return@addOnCompleteListener
+
+            Wearable.getMessageClient(this@MainActivity)
+                    .sendMessage(node.id, PATH_TRACK_INFO_PULL, null)
+        }
+    }
+
+    private fun invokeShare() {
+        // TODO: 実装する
     }
 }

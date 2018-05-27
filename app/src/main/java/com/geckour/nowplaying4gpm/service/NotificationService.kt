@@ -21,6 +21,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
 import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.experimental.Job
@@ -38,7 +39,8 @@ class NotificationService : NotificationListenerService() {
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
         private const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
-        private const val WEAR_PATH = "/track_info"
+        private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
+        private const val WEAR_PATH_TRACK_INFO_PULL = "/track_info/pull"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
@@ -83,6 +85,12 @@ class NotificationService : NotificationListenerService() {
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var resetCurrentTrackJob: Job? = null
 
+    private val onMessageReceived: (MessageEvent) -> Unit = {
+        when (it.path) {
+            WEAR_PATH_TRACK_INFO_PULL -> onPulledFromWear()
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
 
@@ -117,6 +125,14 @@ class NotificationService : NotificationListenerService() {
         activeNotifications.forEach {
             onNotificationPosted(it)
         }
+
+        Wearable.getMessageClient(this).addListener(onMessageReceived)
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+
+        Wearable.getMessageClient(this).removeListener(onMessageReceived)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -162,7 +178,7 @@ class NotificationService : NotificationListenerService() {
             sharedPreferences.refreshTempArtwork(artworkUri)
         }) {
             val coreElement = getTrackCoreElement(notification)
-            reflectTrackInfo(TrackInfo(coreElement, null))
+            reflectTrackInfo(TrackInfo(coreElement, null), false)
 
             artworkUri = getArtworkUri(notification, coreElement)
             reflectTrackInfo(TrackInfo(coreElement, artworkUri?.toString()))
@@ -172,11 +188,11 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private suspend fun reflectTrackInfo(info: TrackInfo) {
+    private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
         updateSharedPreference(info)
         updateWidget(info)
         updateNotification(info)
-        updateWear(info)
+        if (withArtwork) updateWear(info)
     }
 
     private fun updateSharedPreference(trackInfo: TrackInfo) {
@@ -215,22 +231,24 @@ class NotificationService : NotificationListenerService() {
                                         100,
                                         this
                                 )
-                    }
+                    }.toByteArray()
                 }
 
         Wearable.getDataClient(this)
                 .putDataItem(
-                        PutDataMapRequest.create(WEAR_PATH)
+                        PutDataMapRequest.create(WEAR_PATH_TRACK_INFO_POST)
                                 .apply {
                                     dataMap.apply {
                                         putString(WEAR_KEY_SUBJECT, subject)
-                                        if (artwork != null) putAsset(WEAR_KEY_ARTWORK, Asset.createFromBytes(artwork.toByteArray()))
+                                        if (artwork != null) putAsset(WEAR_KEY_ARTWORK, Asset.createFromBytes(artwork))
                                     }
                                 }.asPutDataRequest()
-                ).apply {
-                    addOnSuccessListener { Timber.d("success: $it") }
-                    addOnFailureListener { Timber.e(it) }
-                }
+                )
+    }
+
+    private fun onPulledFromWear() {
+        val trackInfo = sharedPreferences.getCurrentTrackInfo()
+        if (trackInfo != null) async { updateWear(trackInfo) }
     }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
