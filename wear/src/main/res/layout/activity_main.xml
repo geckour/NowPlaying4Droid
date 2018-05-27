@@ -5,16 +5,20 @@
 
     <data>
 
+        <import type="android.view.View"/>
+
         <variable
             name="info"
             type="com.geckour.nowplaying4gpm.domain.model.TrackInfo"/>
     </data>
 
-    <FrameLayout
+
+    <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/colorPrimary"
-        android:padding="@dimen/box_inset_layout_padding">
+        android:background="@color/colorBackGround"
+        tools:context=".ui.MainActivity"
+        tools:deviceIds="wear">
 
         <ImageView
             android:id="@+id/artwork"
@@ -24,58 +28,59 @@
             app:imageBitmap="@{info.artwork}"
             tools:src="@drawable/ic_placeholder"/>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/artwork_mask"/>
+        <android.support.v7.widget.AppCompatTextView
+            android:id="@+id/subject_share"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@color/colorMaskArtwork"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:lines="1"
+            android:maxLines="1"
+            android:paddingBottom="4dp"
+            android:paddingEnd="8dp"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:text="@{info.subject == null ? @string/subject_placeholder : info.subject}"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeTextType="uniform"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="#NowPlaying Track name - Artist name (Album name)"/>
 
         <android.support.wear.widget.BoxInsetLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <android.support.constraint.ConstraintLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingEnd="@dimen/inner_frame_layout_horizontal_padding"
-                android:paddingStart="@dimen/inner_frame_layout_horizontal_padding"
-                app:boxedEdges="all"
-                tools:context=".ui.MainActivity"
-                tools:deviceIds="wear">
+                app:boxedEdges="all">
 
-                <TextView
-                    android:id="@+id/subject_share"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:layout_marginStart="4dp"
-                    android:text="@{info.subject == null ? @string/subject_placeholder : info.subject}"
-                    android:textColor="@color/colorAccent"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:lines="2"
-                    android:maxLines="2"
-                    android:ellipsize="end"
-                    app:layout_constraintBottom_toTopOf="@id/button_share"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:text="Track name - Artist name (Album name)"/>
-
-                <android.support.v7.widget.AppCompatButton
+                <Button
                     android:id="@+id/button_share"
-                    style="@style/Widget.AppCompat.Button.Colored"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:backgroundTint="@color/colorPrimaryDark"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_centerHorizontal="true"
+                    android:backgroundTint="@color/colorAccent"
+                    android:fitsSystemWindows="true"
+                    android:maxLines="1"
                     android:text="@string/button_share"
                     android:textColor="@color/white"
+                    android:textSize="12sp"
                     android:textStyle="bold"
-                    app:autoSizeTextType="uniform"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"/>
-
-            </android.support.constraint.ConstraintLayout>
+                    android:visibility="@{info.subject == null ? View.GONE : View.VISIBLE}"/>
+            </RelativeLayout>
         </android.support.wear.widget.BoxInsetLayout>
-    </FrameLayout>
+    </android.support.constraint.ConstraintLayout>
 </layout>

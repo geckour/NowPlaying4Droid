@@ -12,6 +12,7 @@ kapt.mapDiagnosticLocations = true
 
 android {
     compileSdkVersion 27
+
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 24

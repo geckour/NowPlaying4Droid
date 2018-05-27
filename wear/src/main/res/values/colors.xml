@@ -4,8 +4,6 @@
     <color name="colorPrimaryDark">#01579b</color>
     <color name="colorAccent">#dd2c00</color>
 
-    <color name="colorTextMiddle">#c0000000</color>
-    <color name="colorTextWeak">#80000000</color>
-
-    <color name="artwork_mask">#b0ffffff</color>
+    <color name="colorBackGround">#f0ffffff</color>
+    <color name="colorMaskArtwork">#60000000</color>
 </resources>
