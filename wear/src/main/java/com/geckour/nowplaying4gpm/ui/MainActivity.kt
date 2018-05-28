@@ -15,18 +15,16 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.experimental.async
+import timber.log.Timber
 
 class MainActivity : WearableActivity() {
-
-    enum class IntentRequestCode {
-        SHARE
-    }
 
     companion object {
         private const val PATH_TRACK_INFO_POST = "/track_info/post"
         private const val PATH_TRACK_INFO_GET = "/track_info/get"
         private const val PATH_DELEGATE_SHARE = "/share/delegate"
         private const val PATH_SUCCESS_SHARE = "/share/success"
+        private const val PATH_FAILURE_SHARE = "/share/failure"
         private const val KEY_SUBJECT = "key_subject"
         private const val KEY_ARTWORK = "key_artwork"
     }
@@ -59,8 +57,11 @@ class MainActivity : WearableActivity() {
     }
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
+        Timber.d("message event: $it")
         when (it.path) {
             PATH_SUCCESS_SHARE -> onShareSuccess()
+
+            PATH_FAILURE_SHARE -> onShareFailure()
         }
     }
 
@@ -135,5 +136,9 @@ class MainActivity : WearableActivity() {
 
     private fun onShareSuccess() {
         binding.indicatorSuccessShare.startAnimation(fadeAnimation)
+    }
+
+    private fun onShareFailure() {
+        binding.indicatorFailureShare.startAnimation(fadeAnimation)
     }
 }

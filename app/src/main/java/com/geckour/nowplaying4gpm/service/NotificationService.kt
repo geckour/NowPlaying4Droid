@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -26,6 +27,7 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
@@ -45,6 +47,7 @@ class NotificationService : NotificationListenerService() {
         private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
         private const val WEAR_PATH_DELEGATE_SHARE = "/share/delegate"
         private const val WEAR_PATH_SUCCESS_SHARE = "/share/success"
+        private const val WEAR_PATH_FAILURE_SHARE = "/share/failure"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
@@ -95,7 +98,7 @@ class NotificationService : NotificationListenerService() {
         when (it.path) {
             WEAR_PATH_TRACK_INFO_GET -> onPulledFromWear()
 
-            WEAR_PATH_DELEGATE_SHARE -> async { onShareDelegated() }
+            WEAR_PATH_DELEGATE_SHARE -> if (it.sourceNodeId != null) async { shareToTwitterSilently(it.sourceNodeId) }
         }
     }
 
@@ -274,26 +277,40 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private suspend fun onShareDelegated() {
-        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
+    private suspend fun shareToTwitterSilently(sourceNodeId: String) {
+        FirebaseAnalytics.getInstance(application)
+                .logEvent(
+                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                        Bundle().apply {
+                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked direct share to twitter")
+                        }
+                )
+
+        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: run {
+            onFailureShareToTwitter(sourceNodeId)
+            return
+        }
+
         val subject = sharedPreferences.getFormatPattern(this)
                 .getSharingText(trackInfo.coreElement)
         val artwork =
                 if (trackInfo.artworkUriString == null) null
                 else getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
 
-        val accessToken = sharedPreferences.getTwitterAccessToken()
-        if (accessToken != null) {
-            twitterApiClient.post(accessToken, subject, artwork, trackInfo.coreElement.title)
-
-            Wearable.getNodeClient(this@NotificationService).connectedNodes.addOnCompleteListener {
-                val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
-                        ?: return@addOnCompleteListener
-
-                Wearable.getMessageClient(this@NotificationService)
-                        .sendMessage(node.id, WEAR_PATH_SUCCESS_SHARE, null)
-            }
+        val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
+            onFailureShareToTwitter(sourceNodeId)
+            return
         }
+
+        twitterApiClient.post(accessToken, subject, artwork, trackInfo.coreElement.title)
+
+        Wearable.getMessageClient(this@NotificationService)
+                .sendMessage(sourceNodeId, WEAR_PATH_SUCCESS_SHARE, null)
+    }
+
+    private fun onFailureShareToTwitter(sourceNodeId: String) {
+        Wearable.getMessageClient(this@NotificationService)
+                .sendMessage(sourceNodeId, WEAR_PATH_FAILURE_SHARE, null)
     }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {

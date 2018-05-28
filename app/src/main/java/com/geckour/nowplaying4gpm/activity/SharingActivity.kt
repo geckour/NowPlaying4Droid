@@ -53,10 +53,12 @@ class SharingActivity : Activity() {
 
     private fun startShare(text: String, stream: Uri?) {
         FirebaseAnalytics.getInstance(application)
-                .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT,
+                .logEvent(
+                        FirebaseAnalytics.Event.SELECT_CONTENT,
                         Bundle().apply {
                             putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
-                        })
+                        }
+                )
 
         ShareCompat.IntentBuilder.from(this@SharingActivity)
                 .setChooserTitle(R.string.share_title)
