@@ -1,41 +1,23 @@
 apply plugin: 'com.android.application'
-
 apply plugin: 'kotlin-android'
-
 apply plugin: 'kotlin-android-extensions'
-
 apply plugin: 'kotlin-kapt'
 
 kotlin.experimental.coroutines 'enable'
-
-kapt.mapDiagnosticLocations = true
-
 android {
     compileSdkVersion 27
 
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
-        minSdkVersion 24
+        minSdkVersion 23
         targetSdkVersion 27
-        versionCode 34
-        versionName "2.0.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        versionCode 1
+        versionName "1.0"
         dataBinding.enabled = true
 
         def filesAuthorityValue = applicationId + ".files"
         manifestPlaceholders = [filesAuthority: filesAuthorityValue]
         buildConfigField "String", "FILES_AUTHORITY", "\"${filesAuthorityValue}\""
-    }
-
-    applicationVariants.all {
-        def keyNameLastFm = "LAST_FM_API_KEY"
-        it.buildConfigField "String", keyNameLastFm, getKey(keyNameLastFm)
-        def keyNameTwitterConsumerKey = "TWITTER_CONSUMER_KEY"
-        it.buildConfigField "String", keyNameTwitterConsumerKey, getKey(keyNameTwitterConsumerKey)
-        def keyNameTwitterConsumerSecret = "TWITTER_CONSUMER_SECRET"
-        it.buildConfigField "String", keyNameTwitterConsumerSecret, getKey(keyNameTwitterConsumerSecret)
-        def keyNameSkuDonate = "SKU_KEY_DONATE"
-        it.buildConfigField "String", keyNameSkuDonate, getKey(keyNameSkuDonate)
     }
 
     signingConfigs {
@@ -64,36 +46,22 @@ android {
     }
 }
 
-static def getKey(keyName) {
-    Properties props = new Properties()
-    props.load(new FileInputStream(new File('secret.properties')))
-    return '"' + props[keyName] + '"'
-}
-
 dependencies {
-    def android_support_version = '27.1.1'
     def coroutines_version = '0.19.3'
-    def stetho_version = '1.5.0'
+    def android_support_version = '27.1.1'
     def retrofit2_version = '2.2.0'
     def okhttp_version = '3.7.0'
-    def glide_version = '4.3.0'
-    def firebase_version = '16.0.0'
-
-    wearApp project(':wear')
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "com.android.support:design:$android_support_version"
-    implementation "com.android.support:appcompat-v7:$android_support_version"
+    implementation 'com.google.android.support:wearable:2.3.0'
+    implementation 'com.google.android.gms:play-services-wearable:15.0.1'
+    implementation "com.android.support:percent:$android_support_version"
     implementation "com.android.support:support-v4:$android_support_version"
     implementation "com.android.support:recyclerview-v7:$android_support_version"
-    implementation "com.android.support:customtabs:$android_support_version"
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
-    implementation "com.google.firebase:firebase-core:$firebase_version"
-    implementation "com.google.firebase:firebase-crash:$firebase_version"
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation "com.android.support:appcompat-v7:$android_support_version"
+    implementation "com.android.support:wear:$android_support_version"
+    compileOnly 'com.google.android.wearable:wearable:2.3.0'
 
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
@@ -105,28 +73,10 @@ dependencies {
     // Logging
     implementation 'com.jakewharton.timber:timber:4.6.0'
 
-    // Inspect
-    implementation "com.facebook.stetho:stetho:$stetho_version"
-    implementation "com.facebook.stetho:stetho-okhttp3:$stetho_version"
-
-    // Palette API
-    implementation "com.android.support:palette-v7:$android_support_version"
-
     // Networking
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
     implementation 'ru.gildor.coroutines:kotlin-coroutines-retrofit:0.9.0'
-
-    // Image processing
-    implementation "com.github.bumptech.glide:glide:$glide_version"
-    kapt "com.github.bumptech.glide:compiler:$glide_version"
-
-    // Wear
-    implementation 'com.google.android.gms:play-services-wearable:15.0.1'
-    implementation 'org.twitter4j:twitter4j-core:4.0.4'
 }
-
-// Billing
-apply plugin: 'com.google.gms.google-services'

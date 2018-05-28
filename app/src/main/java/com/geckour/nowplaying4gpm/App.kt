@@ -1,7 +1,6 @@
 package com.geckour.nowplaying4gpm
 
 import android.app.Application
-import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.util.init
@@ -13,10 +12,6 @@ class App : Application() {
         const val PACKAGE_NAME_GPM: String = "com.google.android.music"
     }
 
-    private val sharedPreferences: SharedPreferences by lazy {
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-    }
-
     override fun onCreate() {
         super.onCreate()
 
@@ -25,6 +20,7 @@ class App : Application() {
             Stetho.initializeWithDefaults(this)
         }
 
-        sharedPreferences.init(this)
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .init(this)
     }
 }

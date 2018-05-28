@@ -9,6 +9,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import timber.log.Timber
+import twitter4j.auth.AccessToken
 
 enum class PrefKey {
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT,
@@ -22,7 +23,8 @@ enum class PrefKey {
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE,
-    PREF_KEY_WIDGET_STATES
+    PREF_KEY_WIDGET_STATES,
+    PREF_KEY_TWITTER_ACCESS_TOKEN
 }
 
 enum class WidgetState(val code: Int) {
@@ -150,3 +152,12 @@ fun SharedPreferences.getWidgetState(id: Int): WidgetState =
 fun SharedPreferences.getDonateBillingState(): Boolean =
         contains(PrefKey.PREF_KEY_BILLING_DONATE.name)
                 && getBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, false)
+
+fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
+    edit().putString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, Gson().toJson(accessToken)).apply()
+}
+
+fun SharedPreferences.getTwitterAccessToken(): AccessToken? =
+        if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
+            Gson().fromJson(getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, null), AccessToken::class.java)
+        else null

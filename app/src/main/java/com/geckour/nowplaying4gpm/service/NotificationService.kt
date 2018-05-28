@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.*
+import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
@@ -13,15 +14,22 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
 import com.geckour.nowplaying4gpm.App.Companion.PACKAGE_NAME_GPM
+import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.util.*
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 
 class NotificationService : NotificationListenerService() {
 
@@ -32,7 +40,13 @@ class NotificationService : NotificationListenerService() {
     companion object {
         const val ACTION_DESTROY_NOTIFICATION: String = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
-        const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
+        private const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
+        private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
+        private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
+        private const val WEAR_PATH_DELEGATE_SHARE = "/share/delegate"
+        private const val WEAR_PATH_SUCCESS_SHARE = "/share/success"
+        private const val WEAR_KEY_SUBJECT = "key_subject"
+        private const val WEAR_KEY_ARTWORK = "key_artwork"
 
         fun sendNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
@@ -70,18 +84,26 @@ class NotificationService : NotificationListenerService() {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
+    private val twitterApiClient: TwitterApiClient =
+            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
     private val jobs: ArrayList<Job> = ArrayList()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var resetCurrentTrackJob: Job? = null
+
+    private val onMessageReceived: (MessageEvent) -> Unit = {
+        when (it.path) {
+            WEAR_PATH_TRACK_INFO_GET -> onPulledFromWear()
+
+            WEAR_PATH_DELEGATE_SHARE -> async { onShareDelegated() }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
 
         if (Build.VERSION.SDK_INT >= 26) {
             createDefaultChannel()
-            showDummyNotification()
-            destroyNotification()
         }
 
         val intentFilter = IntentFilter().apply {
@@ -111,6 +133,14 @@ class NotificationService : NotificationListenerService() {
         activeNotifications.forEach {
             onNotificationPosted(it)
         }
+
+        Wearable.getMessageClient(this).addListener(onMessageReceived)
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+
+        Wearable.getMessageClient(this).removeListener(onMessageReceived)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -156,7 +186,7 @@ class NotificationService : NotificationListenerService() {
             sharedPreferences.refreshTempArtwork(artworkUri)
         }) {
             val coreElement = getTrackCoreElement(notification)
-            reflectTrackInfo(TrackInfo(coreElement, null))
+            reflectTrackInfo(TrackInfo(coreElement, null), false)
 
             artworkUri = getArtworkUri(notification, coreElement)
             reflectTrackInfo(TrackInfo(coreElement, artworkUri?.toString()))
@@ -166,10 +196,11 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private suspend fun reflectTrackInfo(info: TrackInfo) {
+    private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
         updateSharedPreference(info)
         updateWidget(info)
         updateNotification(info)
+        if (withArtwork) updateWear(info)
     }
 
     private fun updateSharedPreference(trackInfo: TrackInfo) {
@@ -189,6 +220,78 @@ class NotificationService : NotificationListenerService() {
                         it,
                         getShareWidgetViews(this@NotificationService, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
                 )
+            }
+        }
+    }
+
+    private suspend fun updateWear(trackInfo: TrackInfo) {
+        val subject =
+                if (trackInfo.coreElement.isAllNonNull)
+                    sharedPreferences.getFormatPattern(this).getSharingText(trackInfo.coreElement)
+                else null
+        val artwork = trackInfo.artworkUriString
+                ?.getUri()
+                ?.let {
+                    ByteArrayOutputStream().apply {
+                        getBitmapFromUri(this@NotificationService, it)
+                                ?.compress(
+                                        Bitmap.CompressFormat.JPEG,
+                                        100,
+                                        this
+                                )
+                    }.toByteArray()
+                }
+
+        Wearable.getDataClient(this)
+                .putDataItem(
+                        PutDataMapRequest.create(WEAR_PATH_TRACK_INFO_POST)
+                                .apply {
+                                    dataMap.apply {
+                                        putString(WEAR_KEY_SUBJECT, subject)
+                                        if (artwork != null) putAsset(WEAR_KEY_ARTWORK, Asset.createFromBytes(artwork))
+                                    }
+                                }.asPutDataRequest()
+                )
+    }
+
+    private fun deleteWearTrackInfo(onComplete: () -> Unit = {}) {
+        Wearable.getDataClient(this)
+                .deleteDataItems(Uri.parse("wear://$WEAR_PATH_TRACK_INFO_POST"))
+                .addOnSuccessListener { onComplete() }
+                .addOnFailureListener {
+                    Timber.e(it)
+                    onComplete()
+                }
+                .addOnCompleteListener { onComplete() }
+    }
+
+    private fun onPulledFromWear() {
+        val trackInfo = sharedPreferences.getCurrentTrackInfo()
+        if (trackInfo != null) {
+            deleteWearTrackInfo {
+                async { updateWear(trackInfo) }
+            }
+        }
+    }
+
+    private suspend fun onShareDelegated() {
+        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
+        val subject = sharedPreferences.getFormatPattern(this)
+                .getSharingText(trackInfo.coreElement)
+        val artwork =
+                if (trackInfo.artworkUriString == null) null
+                else getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
+
+        val accessToken = sharedPreferences.getTwitterAccessToken()
+        if (accessToken != null) {
+            twitterApiClient.post(accessToken, subject, artwork, trackInfo.coreElement.title)
+
+            Wearable.getNodeClient(this@NotificationService).connectedNodes.addOnCompleteListener {
+                val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+                        ?: return@addOnCompleteListener
+
+                Wearable.getMessageClient(this@NotificationService)
+                        .sendMessage(node.id, WEAR_PATH_SUCCESS_SHARE, null)
             }
         }
     }
@@ -217,7 +320,10 @@ class NotificationService : NotificationListenerService() {
     private fun onDestroyNotification() {
         val info = TrackInfo.empty
         updateSharedPreference(info)
-        async { updateWidget(info) }
+        async {
+            updateWidget(info)
+            updateWear(info)
+        }
         destroyNotification()
     }
 
@@ -248,21 +354,8 @@ class NotificationService : NotificationListenerService() {
         } else destroyNotification()
     }
 
-    private fun showDummyNotification() {
-        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, getDummyNotification())
-    }
-
     private fun destroyNotification() {
         if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
         else cancelAllNotifications()
     }
-
-    private fun getDummyNotification(): Notification =
-            (if (Build.VERSION.SDK_INT >= 26)
-                Notification.Builder(this, Channel.NOTIFICATION_CHANNEL_SHARE.name)
-            else Notification.Builder(this)).apply {
-                setSmallIcon(R.drawable.ic_notification)
-                setContentTitle(getString(R.string.notification_title))
-                setContentText(getString(R.string.notification_text_dummy))
-            }.build()
 }
