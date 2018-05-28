@@ -44,6 +44,7 @@ class NotificationService : NotificationListenerService() {
         private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
         private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
         private const val WEAR_PATH_DELEGATE_SHARE = "/share/delegate"
+        private const val WEAR_PATH_SUCCESS_SHARE = "/share/success"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
@@ -281,9 +282,18 @@ class NotificationService : NotificationListenerService() {
                 if (trackInfo.artworkUriString == null) null
                 else getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
 
-        val accessToken = sharedPreferences.getTwitterAccessToken().apply { Timber.d("access token: $this") }
-        if (accessToken != null)
+        val accessToken = sharedPreferences.getTwitterAccessToken()
+        if (accessToken != null) {
             twitterApiClient.post(accessToken, subject, artwork, trackInfo.coreElement.title)
+
+            Wearable.getNodeClient(this@NotificationService).connectedNodes.addOnCompleteListener {
+                val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+                        ?: return@addOnCompleteListener
+
+                Wearable.getMessageClient(this@NotificationService)
+                        .sendMessage(node.id, WEAR_PATH_SUCCESS_SHARE, null)
+            }
+        }
     }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
