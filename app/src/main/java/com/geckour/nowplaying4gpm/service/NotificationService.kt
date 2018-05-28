@@ -14,8 +14,10 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
 import com.geckour.nowplaying4gpm.App.Companion.PACKAGE_NAME_GPM
+import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
@@ -40,7 +42,8 @@ class NotificationService : NotificationListenerService() {
         const val ACTION_SHOW_NOTIFICATION: String = "com.geckour.nowplaying4gpm.shownotification"
         private const val BUNDLE_KEY_TRACK_INFO: String = "bundle_key_track_info"
         private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
-        private const val WEAR_PATH_TRACK_INFO_PULL = "/track_info/pull"
+        private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
+        private const val WEAR_PATH_DELEGATE_SHARE = "/share/delegate"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
@@ -80,6 +83,8 @@ class NotificationService : NotificationListenerService() {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
+    private val twitterApiClient: TwitterApiClient =
+            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
     private val jobs: ArrayList<Job> = ArrayList()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
@@ -87,7 +92,9 @@ class NotificationService : NotificationListenerService() {
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
-            WEAR_PATH_TRACK_INFO_PULL -> onPulledFromWear()
+            WEAR_PATH_TRACK_INFO_GET -> onPulledFromWear()
+
+            WEAR_PATH_DELEGATE_SHARE -> async { onShareDelegated() }
         }
     }
 
@@ -246,9 +253,37 @@ class NotificationService : NotificationListenerService() {
                 )
     }
 
+    private fun deleteWearTrackInfo(onComplete: () -> Unit = {}) {
+        Wearable.getDataClient(this)
+                .deleteDataItems(Uri.parse("wear://$WEAR_PATH_TRACK_INFO_POST"))
+                .addOnSuccessListener { onComplete() }
+                .addOnFailureListener {
+                    Timber.e(it)
+                    onComplete()
+                }
+                .addOnCompleteListener { onComplete() }
+    }
+
     private fun onPulledFromWear() {
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
-        if (trackInfo != null) async { updateWear(trackInfo) }
+        if (trackInfo != null) {
+            deleteWearTrackInfo {
+                async { updateWear(trackInfo) }
+            }
+        }
+    }
+
+    private suspend fun onShareDelegated() {
+        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
+        val subject = sharedPreferences.getFormatPattern(this)
+                .getSharingText(trackInfo.coreElement)
+        val artwork =
+                if (trackInfo.artworkUriString == null) null
+                else getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
+
+        val accessToken = sharedPreferences.getTwitterAccessToken().apply { Timber.d("access token: $this") }
+        if (accessToken != null)
+            twitterApiClient.post(accessToken, subject, artwork, trackInfo.coreElement.title)
     }
 
     private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {

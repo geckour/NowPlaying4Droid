@@ -183,6 +183,21 @@
                     app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}"/>
 
                 <include
+                    android:id="@+id/category_wear"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_wear}" />
+
+                <include
+                    android:id="@+id/item_auth_twitter"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:desc="@{@string/pref_item_desc_auth_twitter}"
+                    app:title="@{@string/pref_item_title_auth_twitter}"/>
+
+                <include
                     android:id="@+id/category_others"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"

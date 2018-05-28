@@ -14,9 +14,14 @@ import kotlinx.coroutines.experimental.async
 
 class MainActivity : WearableActivity() {
 
+    enum class IntentRequestCode {
+        SHARE
+    }
+
     companion object {
         private const val PATH_TRACK_INFO_POST = "/track_info/post"
-        private const val PATH_TRACK_INFO_PULL = "/track_info/pull"
+        private const val PATH_TRACK_INFO_GET = "/track_info/get"
+        private const val PATH_DELEGATE_SHARE = "/share/delegate"
         private const val KEY_SUBJECT = "key_subject"
         private const val KEY_ARTWORK = "key_artwork"
     }
@@ -89,11 +94,17 @@ class MainActivity : WearableActivity() {
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(node.id, PATH_TRACK_INFO_PULL, null)
+                    .sendMessage(node.id, PATH_TRACK_INFO_GET, null)
         }
     }
 
     private fun invokeShare() {
-        // TODO: 実装する
+        Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
+            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+                    ?: return@addOnCompleteListener
+
+            Wearable.getMessageClient(this@MainActivity)
+                    .sendMessage(node.id, PATH_DELEGATE_SHARE, null)
+        }
     }
 }

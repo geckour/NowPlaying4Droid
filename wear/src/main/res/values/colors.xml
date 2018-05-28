@@ -4,6 +4,6 @@
     <color name="colorPrimaryDark">#01579b</color>
     <color name="colorAccent">#dd2c00</color>
 
-    <color name="colorBackGround">#f0ffffff</color>
+    <color name="colorBackGround">#a0ffffff</color>
     <color name="colorMaskArtwork">#60000000</color>
 </resources>

@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
+import android.support.customtabs.CustomTabsIntent
+import android.support.design.widget.Snackbar
 import android.support.v4.app.NotificationManagerCompat
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +24,7 @@ import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
+import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
@@ -61,6 +64,9 @@ class SettingsActivity : Activity() {
     private val jobs: ArrayList<Job> = ArrayList()
     private lateinit var serviceConnection: ServiceConnection
     private var billingService: IInAppBillingService? = null
+
+    private val twitterApiClient =
+            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -195,6 +201,12 @@ class SettingsActivity : Activity() {
             }
         }
 
+        binding.itemAuthTwitter.apply {
+            val accessToken = sharedPreferences.getTwitterAccessToken()
+            if (accessToken != null) summary = accessToken.screenName
+            root.setOnClickListener { onClickAuthTwitter() }
+        }
+
         binding.itemDonate.apply {
             if (sharedPreferences.getDonateBillingState()) root.visibility = View.GONE
             else root.setOnClickListener {
@@ -247,6 +259,13 @@ class SettingsActivity : Activity() {
         jobs.cancelAll()
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+
+        if (intent?.data?.toString()?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true)
+            onAuthTwitterCallback(intent)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -289,6 +308,33 @@ class SettingsActivity : Activity() {
                 }
             }
         }
+    }
+
+    private fun onAuthTwitterCallback(intent: Intent) {
+        val verifier = intent.data?.let {
+            val queryName = "oauth_verifier"
+
+            if (it.queryParameterNames.contains(queryName))
+                it.getQueryParameter(queryName)
+            else null
+        }
+
+        if (verifier == null) onAuthTwitterError()
+        else {
+            async {
+                val accessToken = twitterApiClient.getAccessToken(verifier)
+
+                if (accessToken == null) onAuthTwitterError()
+                else {
+                    sharedPreferences.storeTwitterAccessToken(accessToken)
+                    Snackbar.make(binding.root, R.string.snackbar_text_success_auth_twitter, Snackbar.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun onAuthTwitterError() {
+        showErrorDialog(R.string.dialog_title_alert_failure_auth_twitter, R.string.dialog_message_alert_failure_auth_twitter)
     }
 
     private fun updateNotification() =
@@ -335,6 +381,18 @@ class SettingsActivity : Activity() {
                     arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
                     PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
         }) { onGranted() }
+    }
+
+    private fun onClickAuthTwitter() {
+        async {
+            val uri = twitterApiClient.getRequestOAuthUri() ?: return@async
+
+            CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .setToolbarColor(getColor(R.color.colorPrimary))
+                    .build()
+                    .launchUrl(this@SettingsActivity, uri)
+        }
     }
 
     private suspend fun startBillingTransaction(skuName: String) {

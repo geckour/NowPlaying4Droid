@@ -28,6 +28,16 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="np4gpm" />
+                <data android:host="twitter" />
+                <data android:host="twitter.callback" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".activity.SharingActivity"
