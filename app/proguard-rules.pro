@@ -26,3 +26,9 @@
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable
 -keep public class * extends java.lang.Exception
+
+-keep class twitter4j.** { *; }
+-dontwarn javax.management.**
+-dontwarn org.apache.log4j.**
+-dontwarn org.slf4j.**
+-dontwarn java.lang.management.ManagementFactory
