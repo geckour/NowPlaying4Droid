@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <import type="android.view.View" />
+
+        <variable
+            name="info"
+            type="com.geckour.nowplaying4gpm.domain.model.TrackInfo" />
+    </data>
+
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorBackGround"
+        tools:context=".ui.MainActivity"
+        tools:deviceIds="wear">
+
+        <ImageView
+            android:id="@+id/artwork"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            app:imageBitmap="@{info.artwork}"
+            tools:src="@drawable/ic_placeholder" />
+
+        <android.support.v7.widget.AppCompatTextView
+            android:id="@+id/subject_share"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@color/colorMaskArtwork"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:lines="1"
+            android:maxLines="1"
+            android:paddingBottom="4dp"
+            android:paddingEnd="8dp"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:text="@{info.subject == null ? @string/subject_placeholder : info.subject}"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeTextType="uniform"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="#NowPlaying Track name - Artist name (Album name)" />
+
+        <android.support.wear.widget.BoxInsetLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:boxedEdges="all">
+
+                <Button
+                    android:id="@+id/button_share"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_centerHorizontal="true"
+                    android:backgroundTint="@color/colorAccent"
+                    android:fitsSystemWindows="true"
+                    android:maxLines="1"
+                    android:text="@string/button_share"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="@{info.subject == null ? View.GONE : View.VISIBLE}" />
+            </RelativeLayout>
+        </android.support.wear.widget.BoxInsetLayout>
+
+        <ImageView
+            android:id="@+id/indicator_success_share"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/colorBackGround"
+            android:padding="44dp"
+            android:src="@drawable/ic_baseline_send_24px"
+            android:tint="@color/colorPrimaryDark"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </android.support.constraint.ConstraintLayout>
+</layout>

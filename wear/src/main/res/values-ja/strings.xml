@@ -1,0 +1,4 @@
+<resources>
+    <string name="button_share">NowPlayingを共有</string>
+    <string name="subject_placeholder">曲情報を取得できませんでした</string>
+</resources>

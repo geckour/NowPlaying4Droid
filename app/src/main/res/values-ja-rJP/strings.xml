@@ -3,8 +3,6 @@
     <string name="activity_title_licenses">OSSライセンス</string>
 
     <string name="notification_title">NowPlayingを共有…</string>
-    <string name="notification_text_dummy">ダミー通知</string>
-    <string name="default_sharing_text_pattern">#NowPlaying TI - AR (AL)</string>
 
     <string name="notification_channel_name_share">共有</string>
     <string name="notification_channel_description_share">NowPlaying共有用通知</string>
@@ -14,6 +12,7 @@
     <string name="pref_category_notification">通知</string>
     <string name="pref_category_widget">ウィジェット</string>
     <string name="pref_category_others">その他</string>
+    <string name="pref_category_wear">Wear</string>
     <string name="pref_item_title_pattern">投稿文のフォーマットを指定</string>
     <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="pref_item_title_choose_color">通知の配色を選択</string>
@@ -28,6 +27,8 @@
     <string name="pref_item_desc_switch_colorize_notification_bg">共有用通知に背景色を設定する</string>
     <string name="pref_item_title_switch_show_artwork_in_widget">共有用ウィジェットのアートワーク</string>
     <string name="pref_item_desc_switch_show_artwork_in_widget">共有用ウィジェットにアートワークを表示</string>
+    <string name="pref_item_title_auth_twitter">Twitter認証</string>
+    <string name="pref_item_desc_auth_twitter">Wearから共有するためにTwitterアカウントを認証する</string>
     <string name="pref_item_title_donate">寄付</string>
     <string name="pref_item_desc_donate">寄付する (一部機能のロックが解除されます)</string>
     <string name="pref_item_title_switch_launch_gpm_on_click_widget_artwork">ウィジェットのアートワークのタップ時</string>
@@ -44,6 +45,7 @@
     <string name="dialog_title_alert_no_for_share">共有できません</string>
     <string name="dialog_title_alert_failure_purchase">購入できませんでした</string>
     <string name="dialog_title_alert_grant_notification_listener">権限が必要です</string>
+    <string name="dialog_title_alert_failure_auth_twitter">認証失敗</string>
     <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
     <string name="dialog_message_alert_no_metadata">曲情報を取得できませんでした</string>
@@ -52,7 +54,10 @@
     <string name="dialog_message_alert_on_start_purchase">購入処理を開始できませんでした</string>
     <string name="dialog_message_alert_on_cancel_purchase">購入処理をキャンセルしました</string>
     <string name="dialog_message_alert_grant_notification_listener">通知リスナの権限を付与するためにシステム設定を開きます</string>
+    <string name="dialog_message_alert_failure_auth_twitter">Twitterアカウントの認証に失敗しました</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
+
+    <string name="snackbar_text_success_auth_twitter">Twitterアカウントの認証に成功しました</string>
 
     <string name="share_title">共有先を選択…</string>
 

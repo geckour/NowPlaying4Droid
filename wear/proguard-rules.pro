@@ -20,15 +20,3 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
--keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
--keepnames class com.geckour.nowplaying4gpm.util.WidgetState { *; }
-
--keepattributes *Annotation*
--keepattributes SourceFile,LineNumberTable
--keep public class * extends java.lang.Exception
-
--keep class twitter4j.** { *; }
--dontwarn javax.management.**
--dontwarn org.apache.log4j.**
--dontwarn org.slf4j.**
--dontwarn java.lang.management.ManagementFactory
