@@ -53,6 +53,17 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:text="#NowPlaying Track name - Artist name (Album name)"/>
 
+        <View
+            android:id="@+id/skin_artwork"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:visibility="@{info.subject == null ? View.GONE : View.VISIBLE}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
         <android.support.wear.widget.BoxInsetLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
@@ -83,17 +94,6 @@
                     android:visibility="@{info.subject == null ? View.GONE : View.VISIBLE}"/>
             </RelativeLayout>
         </android.support.wear.widget.BoxInsetLayout>
-
-        <View
-            android:id="@+id/skin_artwork"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:visibility="@{info.subject == null ? View.GONE : View.VISIBLE}"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
 
         <ImageView
             android:id="@+id/indicator_success_post"
