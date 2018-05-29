@@ -91,7 +91,7 @@ class MainActivity : WearableActivity() {
 
         binding.info = TrackInfo.empty
         binding.buttonShare.setOnClickListener { invokeShare() }
-        binding.buttonShare.setOnLongClickListener { invokeShareOnHost() }
+        binding.skinArtwork.setOnLongClickListener { invokeShareOnHost() }
     }
 
     override fun onResume() {
