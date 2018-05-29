@@ -233,6 +233,12 @@ class SettingsActivity : Activity() {
 
         requestNotificationListenerPermission {
             updateNotification()
+            if (sharedPreferences.getAlertTwitterAuthFlag())
+                showErrorDialog(
+                        R.string.dialog_title_alert_must_auth_twitter,
+                        R.string.dialog_message_alert_must_auth_twitter) {
+                    sharedPreferences.setAlertTwitterAuthFlag(false)
+                }
         }
     }
 
@@ -328,14 +334,19 @@ class SettingsActivity : Activity() {
                 else {
                     sharedPreferences.storeTwitterAccessToken(accessToken)
                     binding.itemAuthTwitter.summary = accessToken.screenName
-                    Snackbar.make(binding.root, R.string.snackbar_text_success_auth_twitter, Snackbar.LENGTH_LONG).show()
+                    Snackbar.make(binding.root,
+                            R.string.snackbar_text_success_auth_twitter,
+                            Snackbar.LENGTH_LONG
+                    ).show()
                 }
             }
         }
     }
 
     private fun onAuthTwitterError() {
-        showErrorDialog(R.string.dialog_title_alert_failure_auth_twitter, R.string.dialog_message_alert_failure_auth_twitter)
+        showErrorDialog(
+                R.string.dialog_title_alert_failure_auth_twitter,
+                R.string.dialog_message_alert_failure_auth_twitter)
     }
 
     private fun updateNotification() =
@@ -428,7 +439,7 @@ class SettingsActivity : Activity() {
 
         if (text == null) {
             showErrorDialog(
-                    R.string.dialog_title_alert_no_for_share,
+                    R.string.dialog_title_alert_no_metadata,
                     R.string.dialog_message_alert_no_metadata)
             return
         }
@@ -523,11 +534,12 @@ class SettingsActivity : Activity() {
                 isChecked = sharedPreferences.getBoolean(prefKey.name, true)
             }
 
-    private fun showErrorDialog(titleResId: Int, messageResId: Int) =
+    private fun showErrorDialog(titleResId: Int, messageResId: Int, onDismiss: () -> Unit = {}) =
             AlertDialog.Builder(this)
                     .setTitle(titleResId)
                     .setMessage(messageResId)
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+                    .setOnDismissListener { onDismiss() }
                     .show()
 
     private fun reflectDonation(state: Boolean? = null) {

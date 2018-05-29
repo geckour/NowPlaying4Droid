@@ -24,7 +24,8 @@ enum class PrefKey {
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE,
     PREF_KEY_WIDGET_STATES,
-    PREF_KEY_TWITTER_ACCESS_TOKEN
+    PREF_KEY_TWITTER_ACCESS_TOKEN,
+    PREF_KEY_FLAG_ALERT_AUTH_TWITTER
 }
 
 enum class WidgetState(val code: Int) {
@@ -161,3 +162,12 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? =
         if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
             Gson().fromJson(getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, null), AccessToken::class.java)
         else null
+
+fun SharedPreferences.setAlertTwitterAuthFlag(flag: Boolean) {
+    edit().putBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name, flag).apply()
+}
+
+fun SharedPreferences.getAlertTwitterAuthFlag(): Boolean =
+        if (contains(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name))
+            getBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name, false)
+        else false

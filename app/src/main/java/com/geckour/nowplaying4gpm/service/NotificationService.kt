@@ -298,6 +298,7 @@ class NotificationService : NotificationListenerService() {
                 else getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
 
         val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
+            sharedPreferences.setAlertTwitterAuthFlag(true)
             onFailureShareToTwitter(sourceNodeId)
             return
         }
