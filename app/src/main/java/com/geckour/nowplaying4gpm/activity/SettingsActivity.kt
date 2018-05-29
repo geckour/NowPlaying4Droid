@@ -242,6 +242,14 @@ class SettingsActivity : Activity() {
         super.onResume()
 
         reflectDonation()
+
+        if (sharedPreferences.getAlertTwitterAuthFlag()) {
+            showErrorDialog(
+                    R.string.dialog_title_alert_must_auth_twitter,
+                    R.string.dialog_message_alert_must_auth_twitter) {
+                sharedPreferences.setAlertTwitterAuthFlag(false)
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
@@ -348,13 +356,6 @@ class SettingsActivity : Activity() {
     private fun updateNotification() =
             requestStoragePermission {
                 NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
-
-                if (sharedPreferences.getAlertTwitterAuthFlag())
-                    showErrorDialog(
-                            R.string.dialog_title_alert_must_auth_twitter,
-                            R.string.dialog_message_alert_must_auth_twitter) {
-                        sharedPreferences.setAlertTwitterAuthFlag(false)
-                    }
             }
 
     private fun destroyNotification() =
