@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.ui
 
+import android.content.res.ColorStateList
 import android.databinding.DataBindingUtil
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -155,14 +156,26 @@ class MainActivity : WearableActivity() {
     }
 
     private fun onPostToTwitterSuccess() {
-        binding.indicatorSuccessPost.startAnimation(fadeAnimation)
+        binding.indicator.apply {
+            setImageResource(R.drawable.ic_baseline_send_24px)
+            imageTintList = ColorStateList.valueOf(getColor(R.color.colorPrimaryDark))
+            startAnimation(fadeAnimation)
+        }
     }
 
     private fun onFailure() {
-        binding.indicatorFailure.startAnimation(fadeAnimation)
+        binding.indicator.apply {
+            setImageResource(R.drawable.ic_baseline_error_24px)
+            imageTintList = ColorStateList.valueOf(getColor(R.color.colorAccent))
+            startAnimation(fadeAnimation)
+        }
     }
 
     private fun onDelegateSuccess() {
-        binding.indicatorSuccessDelegate.startAnimation(fadeAnimation)
+        binding.indicator.apply {
+            setImageResource(R.drawable.ic_baseline_mobile_screen_share_24px)
+            imageTintList = ColorStateList.valueOf(getColor(R.color.colorPrimaryDark))
+            startAnimation(fadeAnimation)
+        }
     }
 }
