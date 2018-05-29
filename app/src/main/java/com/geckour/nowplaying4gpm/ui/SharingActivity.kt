@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
@@ -54,14 +55,6 @@ class SharingActivity : Activity() {
     }
 
     private fun startShare(text: String, stream: Uri?) {
-        FirebaseAnalytics.getInstance(application)
-                .logEvent(
-                        FirebaseAnalytics.Event.SELECT_CONTENT,
-                        Bundle().apply {
-                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
-                        }
-                )
-
         ShareCompat.IntentBuilder.from(this@SharingActivity)
                 .setChooserTitle(R.string.share_title)
                 .setText(text)
@@ -71,11 +64,25 @@ class SharingActivity : Activity() {
                 }
                 .createChooserIntent()
                 .apply {
-                    PendingIntent.getActivity(
-                            this@SharingActivity,
-                            IntentRequestCode.SHARE.ordinal,
-                            this@apply,
-                            PendingIntent.FLAG_UPDATE_CURRENT).send()
+                    if (this.resolveActivity(this@SharingActivity.packageManager) != null) {
+                        FirebaseAnalytics.getInstance(application)
+                                .logEvent(
+                                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                                        Bundle().apply {
+                                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
+                                        }
+                                )
+
+                        PendingIntent.getActivity(
+                                this@SharingActivity,
+                                IntentRequestCode.SHARE.ordinal,
+                                this@apply,
+                                PendingIntent.FLAG_UPDATE_CURRENT).send()
+
+                        NotificationService.sendRequestNotifyShareResult(this@SharingActivity, true)
+                    } else {
+                        NotificationService.sendRequestNotifyShareResult(this@SharingActivity, false)
+                    }
                 }
     }
 }

@@ -358,7 +358,7 @@ class SettingsActivity : Activity() {
 
     private fun updateNotification() =
             requestStoragePermission {
-                NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+                NotificationService.sendRequestShowNotification(this, sharedPreferences.getCurrentTrackInfo())
             }
 
     private fun destroyNotification() =
