@@ -30,6 +30,8 @@ class SharingActivity : Activity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
+        setCrashlytics()
+
         intent?.apply {
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@SharingActivity)
 

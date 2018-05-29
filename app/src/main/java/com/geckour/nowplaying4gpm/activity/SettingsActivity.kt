@@ -71,6 +71,8 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        setCrashlytics()
+
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
         binding.toolbar.title = "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
@@ -233,12 +235,6 @@ class SettingsActivity : Activity() {
 
         requestNotificationListenerPermission {
             updateNotification()
-            if (sharedPreferences.getAlertTwitterAuthFlag())
-                showErrorDialog(
-                        R.string.dialog_title_alert_must_auth_twitter,
-                        R.string.dialog_message_alert_must_auth_twitter) {
-                    sharedPreferences.setAlertTwitterAuthFlag(false)
-                }
         }
     }
 
@@ -352,6 +348,13 @@ class SettingsActivity : Activity() {
     private fun updateNotification() =
             requestStoragePermission {
                 NotificationService.sendNotification(this, sharedPreferences.getCurrentTrackInfo())
+
+                if (sharedPreferences.getAlertTwitterAuthFlag())
+                    showErrorDialog(
+                            R.string.dialog_title_alert_must_auth_twitter,
+                            R.string.dialog_message_alert_must_auth_twitter) {
+                        sharedPreferences.setAlertTwitterAuthFlag(false)
+                    }
             }
 
     private fun destroyNotification() =

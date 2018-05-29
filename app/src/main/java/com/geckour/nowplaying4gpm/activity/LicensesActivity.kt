@@ -9,6 +9,7 @@ import android.support.v7.widget.LinearLayoutManager
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.adapter.LicenseListAdapter
 import com.geckour.nowplaying4gpm.databinding.ActivityLicensesBinding
+import com.geckour.nowplaying4gpm.util.setCrashlytics
 
 class LicensesActivity: Activity() {
 
@@ -22,6 +23,8 @@ class LicensesActivity: Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setCrashlytics()
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_licenses)
 

@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -14,9 +15,11 @@ import android.support.annotation.ColorInt
 import android.support.v4.content.ContextCompat
 import android.support.v7.graphics.Palette
 import android.view.View
+import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.activity.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 import kotlin.math.absoluteValue
@@ -92,7 +95,7 @@ enum class PaletteColor {
     abstract val hierarchyList: List<PaletteColor>
 
     fun getSummaryResId(): Int =
-            when(this) {
+            when (this) {
                 LIGHT_VIBRANT -> R.string.palette_light_vibrant
                 VIBRANT -> R.string.palette_vibrant
                 DARK_VIBRANT -> R.string.palette_dark_vibrant
@@ -234,4 +237,8 @@ fun Palette.getOptimizedColor(context: Context): Int {
     return paletteColorHierarchies.firstOrNull {
         getColorFromPaletteColor(it) != Color.TRANSPARENT
     }?.let { getColorFromPaletteColor(it) } ?: Color.WHITE
+}
+
+fun Activity.setCrashlytics() {
+    Fabric.with(this, Crashlytics())
 }
