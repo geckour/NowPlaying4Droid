@@ -21,7 +21,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".activity.SettingsActivity"
+            android:name=".ui.SettingsActivity"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -40,12 +40,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".activity.SharingActivity"
+            android:name=".ui.SharingActivity"
             android:launchMode="singleTask"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay" />
         <activity
-            android:name=".activity.LicensesActivity"
+            android:name=".ui.LicensesActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.Dark" />
 

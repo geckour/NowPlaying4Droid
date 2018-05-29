@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.activity
+package com.geckour.nowplaying4gpm.ui
 
 import android.app.Activity
 import android.app.PendingIntent

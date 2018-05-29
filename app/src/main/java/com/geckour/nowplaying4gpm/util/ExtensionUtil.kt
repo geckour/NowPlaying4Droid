@@ -17,7 +17,7 @@ import android.support.v7.graphics.Palette
 import android.view.View
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.activity.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job

@@ -13,8 +13,8 @@ import android.view.View
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.activity.SettingsActivity
-import com.geckour.nowplaying4gpm.activity.SharingActivity
+import com.geckour.nowplaying4gpm.ui.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider

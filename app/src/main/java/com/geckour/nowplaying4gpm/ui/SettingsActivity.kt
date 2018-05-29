@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.activity
+package com.geckour.nowplaying4gpm.ui
 
 import android.Manifest
 import android.app.Activity

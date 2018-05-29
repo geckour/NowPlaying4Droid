@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.activity
+package com.geckour.nowplaying4gpm.ui
 
 import android.app.Activity
 import android.content.Context
@@ -7,7 +7,7 @@ import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.activity.adapter.LicenseListAdapter
+import com.geckour.nowplaying4gpm.ui.adapter.LicenseListAdapter
 import com.geckour.nowplaying4gpm.databinding.ActivityLicensesBinding
 import com.geckour.nowplaying4gpm.util.setCrashlytics
 
