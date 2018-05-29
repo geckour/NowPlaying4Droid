@@ -337,6 +337,7 @@ class SettingsActivity : Activity() {
                 if (accessToken == null) onAuthTwitterError()
                 else {
                     sharedPreferences.storeTwitterAccessToken(accessToken)
+                    sharedPreferences.setAlertTwitterAuthFlag(false)
                     binding.itemAuthTwitter.summary = accessToken.screenName
                     Snackbar.make(binding.root,
                             R.string.snackbar_text_success_auth_twitter,
