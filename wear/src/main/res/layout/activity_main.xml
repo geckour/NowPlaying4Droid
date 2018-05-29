@@ -76,6 +76,7 @@
                     android:fitsSystemWindows="true"
                     android:maxLines="1"
                     android:text="@string/button_share"
+                    android:textAllCaps="false"
                     android:textColor="@color/white"
                     android:textSize="12sp"
                     android:textStyle="bold"
