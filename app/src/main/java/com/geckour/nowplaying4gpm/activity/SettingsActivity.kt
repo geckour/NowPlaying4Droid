@@ -321,6 +321,8 @@ class SettingsActivity : Activity() {
     }
 
     private fun onAuthTwitterCallback(intent: Intent) {
+        sharedPreferences.setAlertTwitterAuthFlag(false)
+
         val verifier = intent.data?.let {
             val queryName = "oauth_verifier"
 
@@ -337,7 +339,7 @@ class SettingsActivity : Activity() {
                 if (accessToken == null) onAuthTwitterError()
                 else {
                     sharedPreferences.storeTwitterAccessToken(accessToken)
-                    sharedPreferences.setAlertTwitterAuthFlag(false)
+
                     binding.itemAuthTwitter.summary = accessToken.screenName
                     Snackbar.make(binding.root,
                             R.string.snackbar_text_success_auth_twitter,
