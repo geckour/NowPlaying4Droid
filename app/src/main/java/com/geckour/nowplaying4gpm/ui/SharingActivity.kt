@@ -1,6 +1,7 @@
-package com.geckour.nowplaying4gpm.activity
+package com.geckour.nowplaying4gpm.ui
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -12,12 +13,12 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
+import timber.log.Timber
 
 class SharingActivity : Activity() {
 
     enum class IntentRequestCode {
-        SHARE,
-        CALLBACK
+        SHARE
     }
 
     companion object {
@@ -29,6 +30,8 @@ class SharingActivity : Activity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+
+        setCrashlytics()
 
         intent?.apply {
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this@SharingActivity)
@@ -52,12 +55,6 @@ class SharingActivity : Activity() {
     }
 
     private fun startShare(text: String, stream: Uri?) {
-        FirebaseAnalytics.getInstance(application)
-                .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT,
-                        Bundle().apply {
-                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
-                        })
-
         ShareCompat.IntentBuilder.from(this@SharingActivity)
                 .setChooserTitle(R.string.share_title)
                 .setText(text)
@@ -67,11 +64,29 @@ class SharingActivity : Activity() {
                 }
                 .createChooserIntent()
                 .apply {
-                    PendingIntent.getActivity(
-                            this@SharingActivity,
-                            IntentRequestCode.SHARE.ordinal,
-                            this@apply,
-                            PendingIntent.FLAG_UPDATE_CURRENT).send()
+                    val keyguardManager =
+                            try {
+                                getSystemService(KeyguardManager::class.java)
+                            } catch (t: Throwable) {
+                                Timber.e(t)
+                                null
+                            }
+
+                    if (keyguardManager?.isDeviceLocked?.not() == true) {
+                        FirebaseAnalytics.getInstance(application)
+                                .logEvent(
+                                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                                        Bundle().apply {
+                                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
+                                        }
+                                )
+
+                        PendingIntent.getActivity(
+                                this@SharingActivity,
+                                IntentRequestCode.SHARE.ordinal,
+                                this@apply,
+                                PendingIntent.FLAG_UPDATE_CURRENT).send()
+                    }
                 }
     }
 }

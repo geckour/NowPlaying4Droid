@@ -41,20 +41,22 @@
     <string name="dialog_button_ng">キャンセル</string>
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
-    <string name="dialog_title_choose_color">カラーパレットから選択</string>
-    <string name="dialog_title_alert_no_for_share">共有できません</string>
-    <string name="dialog_title_alert_failure_purchase">購入できませんでした</string>
-    <string name="dialog_title_alert_grant_notification_listener">権限が必要です</string>
-    <string name="dialog_title_alert_failure_auth_twitter">認証失敗</string>
     <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む</string>
+    <string name="dialog_title_choose_color">カラーパレットから選択</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
+    <string name="dialog_title_alert_no_metadata">共有できません</string>
     <string name="dialog_message_alert_no_metadata">曲情報を取得できませんでした</string>
+    <string name="dialog_title_alert_failure_purchase">購入できませんでした</string>
     <string name="dialog_message_alert_failure_purchase">購入処理中にエラーが発生しました</string>
     <string name="dialog_message_alert_already_purchase">既に購入しています</string>
     <string name="dialog_message_alert_on_start_purchase">購入処理を開始できませんでした</string>
     <string name="dialog_message_alert_on_cancel_purchase">購入処理をキャンセルしました</string>
+    <string name="dialog_title_alert_grant_notification_listener">権限が必要です</string>
     <string name="dialog_message_alert_grant_notification_listener">通知リスナの権限を付与するためにシステム設定を開きます</string>
+    <string name="dialog_title_alert_failure_auth_twitter">認証失敗</string>
     <string name="dialog_message_alert_failure_auth_twitter">Twitterアカウントの認証に失敗しました</string>
+    <string name="dialog_title_alert_must_auth_twitter">Wearからの共有に失敗しています</string>
+    <string name="dialog_message_alert_must_auth_twitter">共有するためにTwitterアカウントを認証してください</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
 
     <string name="snackbar_text_success_auth_twitter">Twitterアカウントの認証に成功しました</string>

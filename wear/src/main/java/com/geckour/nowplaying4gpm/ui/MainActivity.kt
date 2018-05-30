@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.ui
 
+import android.content.res.ColorStateList
 import android.databinding.DataBindingUtil
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -15,18 +16,19 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.experimental.async
+import timber.log.Timber
 
 class MainActivity : WearableActivity() {
-
-    enum class IntentRequestCode {
-        SHARE
-    }
 
     companion object {
         private const val PATH_TRACK_INFO_POST = "/track_info/post"
         private const val PATH_TRACK_INFO_GET = "/track_info/get"
-        private const val PATH_DELEGATE_SHARE = "/share/delegate"
-        private const val PATH_SUCCESS_SHARE = "/share/success"
+        private const val PATH_POST_TWITTER = "/post/twitter"
+        private const val PATH_POST_SUCCESS = "/post/success"
+        private const val PATH_POST_FAILURE = "/post/failure"
+        private const val PATH_SHARE_DELEGATE = "/share/delegate"
+        private const val PATH_SHARE_SUCCESS = "/share/success"
+        private const val PATH_SHARE_FAILURE = "/share/failure"
         private const val KEY_SUBJECT = "key_subject"
         private const val KEY_ARTWORK = "key_artwork"
     }
@@ -59,8 +61,15 @@ class MainActivity : WearableActivity() {
     }
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
+        Timber.d("message event: $it")
         when (it.path) {
-            PATH_SUCCESS_SHARE -> onShareSuccess()
+            PATH_POST_SUCCESS -> onPostToTwitterSuccess()
+
+            PATH_POST_FAILURE -> onFailure()
+
+            PATH_SHARE_SUCCESS -> onDelegateSuccess()
+
+            PATH_SHARE_FAILURE -> onFailure()
         }
     }
 
@@ -83,6 +92,7 @@ class MainActivity : WearableActivity() {
 
         binding.info = TrackInfo.empty
         binding.buttonShare.setOnClickListener { invokeShare() }
+        binding.skinArtwork.setOnLongClickListener { invokeShareOnHost() }
     }
 
     override fun onResume() {
@@ -129,11 +139,43 @@ class MainActivity : WearableActivity() {
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(node.id, PATH_DELEGATE_SHARE, null)
+                    .sendMessage(node.id, PATH_POST_TWITTER, null)
         }
     }
 
-    private fun onShareSuccess() {
-        binding.indicatorSuccessShare.startAnimation(fadeAnimation)
+    private fun invokeShareOnHost(): Boolean {
+        Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
+            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+                    ?: return@addOnCompleteListener
+
+            Wearable.getMessageClient(this@MainActivity)
+                    .sendMessage(node.id, PATH_SHARE_DELEGATE, null)
+        }
+
+        return true
+    }
+
+    private fun onPostToTwitterSuccess() {
+        binding.indicator.apply {
+            setImageResource(R.drawable.ic_baseline_send_24px)
+            imageTintList = ColorStateList.valueOf(getColor(R.color.colorPrimaryDark))
+            startAnimation(fadeAnimation)
+        }
+    }
+
+    private fun onFailure() {
+        binding.indicator.apply {
+            setImageResource(R.drawable.ic_baseline_error_24px)
+            imageTintList = ColorStateList.valueOf(getColor(R.color.colorAccent))
+            startAnimation(fadeAnimation)
+        }
+    }
+
+    private fun onDelegateSuccess() {
+        binding.indicator.apply {
+            setImageResource(R.drawable.ic_baseline_mobile_screen_share_24px)
+            imageTintList = ColorStateList.valueOf(getColor(R.color.colorPrimaryDark))
+            startAnimation(fadeAnimation)
+        }
     }
 }

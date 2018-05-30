@@ -7,8 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import com.geckour.nowplaying4gpm.activity.SettingsActivity
-import com.geckour.nowplaying4gpm.activity.SharingActivity
+import com.geckour.nowplaying4gpm.ui.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.util.*
 import kotlinx.coroutines.experimental.Job
