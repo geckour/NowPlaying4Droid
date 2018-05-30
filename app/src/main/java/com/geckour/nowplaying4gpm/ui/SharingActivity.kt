@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.ui
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -13,12 +14,12 @@ import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
+import timber.log.Timber
 
 class SharingActivity : Activity() {
 
     enum class IntentRequestCode {
-        SHARE,
-        CALLBACK
+        SHARE
     }
 
     companion object {
@@ -64,7 +65,15 @@ class SharingActivity : Activity() {
                 }
                 .createChooserIntent()
                 .apply {
-                    if (this.resolveActivity(this@SharingActivity.packageManager) != null) {
+                    val keyguardManager =
+                            try {
+                                getSystemService(KeyguardManager::class.java)
+                            } catch (t: Throwable) {
+                                Timber.e(t)
+                                null
+                            }
+
+                    if (keyguardManager?.isDeviceLocked?.not() == true) {
                         FirebaseAnalytics.getInstance(application)
                                 .logEvent(
                                         FirebaseAnalytics.Event.SELECT_CONTENT,
