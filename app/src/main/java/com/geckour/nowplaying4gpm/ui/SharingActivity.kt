@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
@@ -87,10 +86,6 @@ class SharingActivity : Activity() {
                                 IntentRequestCode.SHARE.ordinal,
                                 this@apply,
                                 PendingIntent.FLAG_UPDATE_CURRENT).send()
-
-                        NotificationService.sendRequestNotifyShareResult(this@SharingActivity, true)
-                    } else {
-                        NotificationService.sendRequestNotifyShareResult(this@SharingActivity, false)
                     }
                 }
     }

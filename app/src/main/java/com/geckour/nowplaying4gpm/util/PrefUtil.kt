@@ -25,7 +25,8 @@ enum class PrefKey {
     PREF_KEY_BILLING_DONATE,
     PREF_KEY_WIDGET_STATES,
     PREF_KEY_TWITTER_ACCESS_TOKEN,
-    PREF_KEY_FLAG_ALERT_AUTH_TWITTER
+    PREF_KEY_FLAG_ALERT_AUTH_TWITTER,
+    PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE
 }
 
 enum class WidgetState(val code: Int) {
@@ -171,3 +172,12 @@ fun SharedPreferences.getAlertTwitterAuthFlag(): Boolean =
         if (contains(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name))
             getBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name, false)
         else false
+
+fun SharedPreferences.setReceivedDelegateShareNodeId(nodeId: String?) {
+    edit().putString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, nodeId).apply()
+}
+
+fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
+        if (contains(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name))
+            getString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, null)
+        else null

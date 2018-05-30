@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.service
 
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -43,8 +44,6 @@ class NotificationService : NotificationListenerService() {
     companion object {
         const val ACTION_DESTROY_NOTIFICATION = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_SHOW_NOTIFICATION = "com.geckour.nowplaying4gpm.shownotification"
-        const val ACTION_NOTIFY_SUCCESS_START_SHARE = "com.geckour.nowplaying4gpm.notifysuccessstartshare"
-        const val ACTION_NOTIFY_FAILURE_START_SHARE = "com.geckour.nowplaying4gpm.notifyfailurestartshare"
         private const val BUNDLE_KEY_TRACK_INFO = "bundle_key_track_info"
         private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
         private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
@@ -64,14 +63,6 @@ class NotificationService : NotificationListenerService() {
                     putExtra(BUNDLE_KEY_TRACK_INFO, trackInfo)
                 })
             }
-        }
-
-        fun sendRequestNotifyShareResult(context: Context, success: Boolean) {
-            context.sendBroadcast(Intent().apply {
-                action =
-                        if (success) ACTION_NOTIFY_SUCCESS_START_SHARE
-                        else ACTION_NOTIFY_FAILURE_START_SHARE
-            })
         }
     }
 
@@ -93,9 +84,11 @@ class NotificationService : NotificationListenerService() {
                         async { showNotification(trackInfo) }
                     }
 
-                    ACTION_NOTIFY_SUCCESS_START_SHARE -> onSuccessDelegateShare()
-
-                    ACTION_NOTIFY_FAILURE_START_SHARE -> onFailureDelegateShare()
+                    Intent.ACTION_USER_PRESENT -> {
+                        val nodeId = sharedPreferences.getReceivedDelegateShareNodeId() ?: return
+                        onRequestDelegateShareFromWear(nodeId, true)
+                        sharedPreferences.setReceivedDelegateShareNodeId(null)
+                    }
                 }
             }
         }
@@ -122,9 +115,6 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private var onSuccessDelegateShare: () -> Unit = {}
-    private var onFailureDelegateShare: () -> Unit = {}
-
     override fun onCreate() {
         super.onCreate()
 
@@ -135,8 +125,7 @@ class NotificationService : NotificationListenerService() {
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_DESTROY_NOTIFICATION)
             addAction(ACTION_SHOW_NOTIFICATION)
-            addAction(ACTION_NOTIFY_SUCCESS_START_SHARE)
-            addAction(ACTION_NOTIFY_FAILURE_START_SHARE)
+            addAction(Intent.ACTION_USER_PRESENT)
         }
 
         registerReceiver(receiver, intentFilter)
@@ -302,23 +291,25 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private fun onRequestDelegateShareFromWear(sourceNodeId: String) {
-        onSuccessDelegateShare = {
+    private fun onRequestDelegateShareFromWear(sourceNodeId: String, onLockReleased: Boolean = false) {
+        val keyguardManager =
+                try {
+                    getSystemService(KeyguardManager::class.java)
+                } catch (t: Throwable) {
+                    Timber.e(t)
+                    null
+                }
+
+        if (keyguardManager?.isDeviceLocked?.not() == true) {
+            startActivity(SharingActivity.getIntent(this@NotificationService)
+                    .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+        } else {
+            sharedPreferences.setReceivedDelegateShareNodeId(sourceNodeId)
+        }
+
+        if (onLockReleased.not())
             Wearable.getMessageClient(this@NotificationService)
                     .sendMessage(sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null)
-            onSuccessDelegateShare = {}
-            onFailureDelegateShare = {}
-        }
-
-        onFailureDelegateShare = {
-            Wearable.getMessageClient(this@NotificationService)
-                    .sendMessage(sourceNodeId, WEAR_PATH_SHARE_FAILURE, null)
-            onSuccessDelegateShare = {}
-            onFailureDelegateShare = {}
-        }
-
-        startActivity(SharingActivity.getIntent(this@NotificationService)
-                .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
     }
 
     private suspend fun onRequestPostToTwitterFromWear(sourceNodeId: String) {
