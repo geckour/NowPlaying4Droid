@@ -70,7 +70,9 @@ class NotificationService : NotificationListenerService() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.apply {
                 when (action) {
-                    ACTION_DESTROY_NOTIFICATION -> destroyNotification()
+                    ACTION_DESTROY_NOTIFICATION -> {
+                        getSystemService(NotificationManager::class.java).destroyNotification()
+                    }
 
                     ACTION_SHOW_NOTIFICATION -> {
                         if (context == null) return
@@ -81,7 +83,10 @@ class NotificationService : NotificationListenerService() {
                                             ?: TrackInfo.empty
                                 else TrackInfo.empty
 
-                        async { showNotification(trackInfo) }
+                        async {
+                            getSystemService(NotificationManager::class.java)
+                                    .showNotification(trackInfo)
+                        }
                     }
 
                     Intent.ACTION_USER_PRESENT -> {
@@ -99,7 +104,8 @@ class NotificationService : NotificationListenerService() {
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val twitterApiClient: TwitterApiClient =
-            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
+            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY,
+                    BuildConfig.TWITTER_CONSUMER_SECRET)
     private val jobs: ArrayList<Job> = ArrayList()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
@@ -109,9 +115,14 @@ class NotificationService : NotificationListenerService() {
         when (it.path) {
             WEAR_PATH_TRACK_INFO_GET -> onPulledFromWear()
 
-            WEAR_PATH_POST_TWITTER -> if (it.sourceNodeId != null) async { onRequestPostToTwitterFromWear(it.sourceNodeId) }
+            WEAR_PATH_POST_TWITTER -> {
+                if (it.sourceNodeId != null)
+                    async { onRequestPostToTwitterFromWear(it.sourceNodeId) }
+            }
 
-            WEAR_PATH_SHARE_DELEGATE -> if (it.sourceNodeId != null) onRequestDelegateShareFromWear(it.sourceNodeId)
+            WEAR_PATH_SHARE_DELEGATE -> {
+                if (it.sourceNodeId != null) onRequestDelegateShareFromWear(it.sourceNodeId)
+            }
         }
     }
 
@@ -140,7 +151,7 @@ class NotificationService : NotificationListenerService() {
             Timber.e(e)
         }
 
-        destroyNotification()
+        getSystemService(NotificationManager::class.java).destroyNotification()
         jobs.cancelAll()
     }
 
@@ -166,7 +177,9 @@ class NotificationService : NotificationListenerService() {
 
         if (sbn.packageName == PACKAGE_NAME_GPM) {
             val coreElement = getTrackCoreElement(sbn.notification)
-            val notificationBitmap = (sbn.notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+            val notificationBitmap =
+                    (sbn.notification.getLargeIcon()
+                            ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
             if (currentTrack != coreElement && notificationBitmap != null) {
                 resetCurrentTrackJob?.cancel()
                 currentTrack = coreElement
@@ -191,9 +204,19 @@ class NotificationService : NotificationListenerService() {
 
     private fun getTrackCoreElement(notification: Notification): TrackCoreElement =
             notification.extras.let {
-                val track: String? = if (it.containsKey(Notification.EXTRA_TITLE)) it.getString(Notification.EXTRA_TITLE) else null
-                val artist: String? = if (it.containsKey(Notification.EXTRA_TEXT)) it.getString(Notification.EXTRA_TEXT) else null
-                val album: String? = if (it.containsKey(Notification.EXTRA_INFO_TEXT)) it.getString(Notification.EXTRA_SUB_TEXT) else null
+                val track: String? =
+                        if (it.containsKey(Notification.EXTRA_TITLE))
+                            it.getString(Notification.EXTRA_TITLE)
+                        else null
+                val artist: String? =
+                        if (it.containsKey(Notification.EXTRA_TEXT))
+                            it.getString(Notification.EXTRA_TEXT)
+                        else null
+                val album: String? =
+                        if (it.containsKey(Notification.EXTRA_INFO_TEXT))
+                            it.getString(Notification.EXTRA_SUB_TEXT)
+                        else null
+
                 TrackCoreElement(track, artist, album)
             }
 
@@ -225,17 +248,19 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun updateNotification(trackInfo: TrackInfo) {
-        showNotification(trackInfo)
+        getSystemService(NotificationManager::class.java).showNotification(trackInfo)
     }
 
     private suspend fun updateWidget(trackInfo: TrackInfo) {
         AppWidgetManager.getInstance(this).apply {
-            val ids = getAppWidgetIds(ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
+            val ids = getAppWidgetIds(
+                    ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
-            ids.forEach {
+            ids.forEach { id ->
                 updateAppWidget(
-                        it,
-                        getShareWidgetViews(this@NotificationService, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                        id,
+                        getShareWidgetViews(this@NotificationService,
+                                id, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
                 )
             }
         }
@@ -243,9 +268,10 @@ class NotificationService : NotificationListenerService() {
 
     private suspend fun updateWear(trackInfo: TrackInfo) {
         val subject =
-                if (trackInfo.coreElement.isAllNonNull)
-                    sharedPreferences.getFormatPattern(this).getSharingText(trackInfo.coreElement)
-                else null
+                if (trackInfo.coreElement.isAllNonNull) {
+                    sharedPreferences.getFormatPattern(this)
+                            .getSharingText(trackInfo.coreElement)
+                } else null
         val artwork = trackInfo.artworkUriString
                 ?.getUri()
                 ?.let {
@@ -265,7 +291,10 @@ class NotificationService : NotificationListenerService() {
                                 .apply {
                                     dataMap.apply {
                                         putString(WEAR_KEY_SUBJECT, subject)
-                                        if (artwork != null) putAsset(WEAR_KEY_ARTWORK, Asset.createFromBytes(artwork))
+                                        if (artwork != null) {
+                                            putAsset(WEAR_KEY_ARTWORK,
+                                                    Asset.createFromBytes(artwork))
+                                        }
                                     }
                                 }.asPutDataRequest()
                 )
@@ -291,7 +320,8 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private fun onRequestDelegateShareFromWear(sourceNodeId: String, invokeOnReleasedLock: Boolean = false) {
+    private fun onRequestDelegateShareFromWear(sourceNodeId: String,
+                                               invokeOnReleasedLock: Boolean = false) {
         val keyguardManager =
                 try {
                     getSystemService(KeyguardManager::class.java)
@@ -329,8 +359,9 @@ class NotificationService : NotificationListenerService() {
         val subject = sharedPreferences.getFormatPattern(this)
                 .getSharingText(trackInfo.coreElement)
         val artwork =
-                if (trackInfo.artworkUriString == null) null
-                else getBitmapFromUriString(this@NotificationService, trackInfo.artworkUriString)
+                trackInfo.artworkUriString?.let {
+                    getBitmapFromUriString(this@NotificationService, it)
+                }
 
         val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
             sharedPreferences.setAlertTwitterAuthFlag(true)
@@ -349,20 +380,26 @@ class NotificationService : NotificationListenerService() {
                 .sendMessage(sourceNodeId, WEAR_PATH_POST_FAILURE, null)
     }
 
-    private suspend fun getArtworkUri(notification: Notification, coreElement: TrackCoreElement): Uri? {
+    private suspend fun getArtworkUri(notification: Notification,
+                                      coreElement: TrackCoreElement): Uri? {
         var artworkUri =
                 getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
                     sharedPreferences.refreshTempArtwork(this)
                 }
 
         if (artworkUri == null) {
-            val notificationBitmap = (notification.getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+            val notificationBitmap =
+                    (notification.getLargeIcon()
+                            ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
 
             if (notificationBitmap != null) {
-                val placeholderBitmap = (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
+                val placeholderBitmap =
+                        (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
                 artworkUri =
-                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9 && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                            getArtworkUriFromLastFmApi(this@NotificationService, lastFmApiClient, coreElement)
+                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9
+                                && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+                            getArtworkUriFromLastFmApi(this@NotificationService,
+                                    lastFmApiClient, coreElement)
                         } else refreshArtworkUriFromBitmap(this, notificationBitmap)
             }
         }
@@ -377,7 +414,7 @@ class NotificationService : NotificationListenerService() {
             updateWidget(info)
             updateWear(info)
         }
-        destroyNotification()
+        getSystemService(NotificationManager::class.java).destroyNotification()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -395,21 +432,29 @@ class NotificationService : NotificationListenerService() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun showNotification(trackInfo: TrackInfo) {
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE) && trackInfo.coreElement.isAllNonNull) {
+    private fun NotificationManager.showNotification(trackInfo: TrackInfo) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
+                && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
                 ui(jobs) {
                     getNotification(this@NotificationService, trackInfo)?.apply {
-                        getSystemService(NotificationManager::class.java)
-                                .notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                        } else {
+                            this@showNotification.notify(
+                                    Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                        }
                     }
                 }
             }
-        } else destroyNotification()
+        } else this.destroyNotification()
     }
 
-    private fun destroyNotification() {
-        getSystemService(NotificationManager::class.java)
-                .cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
+    private fun NotificationManager.destroyNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            stopForeground(true)
+        } else {
+            this.cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
+        }
     }
 }
