@@ -13,12 +13,12 @@ import android.view.View
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.ui.SettingsActivity
-import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
+import com.geckour.nowplaying4gpm.ui.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.SharingActivity
 
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
@@ -53,7 +53,7 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
                     PendingIntent.getActivity(context,
                             0,
                             context.packageManager.getLaunchIntentForPackage(App.PACKAGE_NAME_GPM),
-                            PendingIntent.FLAG_UPDATE_CURRENT)
+                            PendingIntent.FLAG_CANCEL_CURRENT)
                 else
                     ShareWidgetProvider.getPendingIntent(context,
                             ShareWidgetProvider.Action.SHARE)
@@ -86,7 +86,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     val notificationBuilder =
-            if (Build.VERSION.SDK_INT >= 26)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 Notification.Builder(context, NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name)
             else Notification.Builder(context)
 

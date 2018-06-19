@@ -118,7 +118,7 @@ class NotificationService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
 
-        if (Build.VERSION.SDK_INT >= 26) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createDefaultChannel()
         }
 
@@ -291,7 +291,7 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    private fun onRequestDelegateShareFromWear(sourceNodeId: String, onLockReleased: Boolean = false) {
+    private fun onRequestDelegateShareFromWear(sourceNodeId: String, invokeOnReleasedLock: Boolean = false) {
         val keyguardManager =
                 try {
                     getSystemService(KeyguardManager::class.java)
@@ -307,7 +307,7 @@ class NotificationService : NotificationListenerService() {
             sharedPreferences.setReceivedDelegateShareNodeId(sourceNodeId)
         }
 
-        if (onLockReleased.not())
+        if (invokeOnReleasedLock.not())
             Wearable.getMessageClient(this@NotificationService)
                     .sendMessage(sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null)
     }
@@ -400,7 +400,8 @@ class NotificationService : NotificationListenerService() {
             checkStoragePermission {
                 ui(jobs) {
                     getNotification(this@NotificationService, trackInfo)?.apply {
-                        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                        getSystemService(NotificationManager::class.java)
+                                .notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                     }
                 }
             }
@@ -408,7 +409,7 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun destroyNotification() {
-        if (Build.VERSION.SDK_INT >= 26) stopForeground(true)
-        else cancelAllNotifications()
+        getSystemService(NotificationManager::class.java)
+                .cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
     }
 }
