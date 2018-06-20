@@ -90,7 +90,7 @@ dependencies {
     implementation "com.android.support:support-v4:$android_support_version"
     implementation "com.android.support:recyclerview-v7:$android_support_version"
     implementation "com.android.support:customtabs:$android_support_version"
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
     implementation "com.google.firebase:firebase-core:$firebase_version"
     implementation "com.google.firebase:firebase-crash:$firebase_version"
     implementation('com.crashlytics.sdk.android:crashlytics:2.9.3') { transitive = true }
