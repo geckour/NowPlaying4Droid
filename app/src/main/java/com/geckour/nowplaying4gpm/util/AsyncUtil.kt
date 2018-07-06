@@ -24,7 +24,8 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.experimental.CoroutineContext
 
-fun <T> async(context: CoroutineContext = CommonPool, onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> T) =
+fun <T> async(context: CoroutineContext = CommonPool,
+              onError: (Throwable) -> Unit = {}, block: suspend CoroutineScope.() -> T) =
         kotlinx.coroutines.experimental.async(context, block = {
             try {
                 block()
@@ -61,9 +62,13 @@ private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: Tra
 private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
         albumId?.let {
             async {
-                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), it).let {
+                ContentUris.withAppendedId(
+                        Uri.parse("content://media/external/audio/albumart"), it
+                ).let {
                     try {
                         context.contentResolver.openInputStream(it).close()
+                        PreferenceManager.getDefaultSharedPreferences(context)
+                                .refreshTempArtwork(it)
                         it
                     } catch (e: Throwable) {
                         Timber.e(e)
@@ -76,7 +81,9 @@ private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): U
 suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackCoreElement): Uri? =
         getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackCoreElement))
 
-private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackCoreElement: TrackCoreElement, size: Image.Size = Image.Size.MEGA): String? =
+private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient,
+                                               trackCoreElement: TrackCoreElement,
+                                               size: Image.Size = Image.Size.MEGA): String? =
         if (trackCoreElement.album == null && trackCoreElement.artist == null) null
         else client.searchAlbum(
                 trackCoreElement.album,
@@ -84,7 +91,8 @@ private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient, trackCor
             it.find { it.size == size.rawStr } ?: it.lastOrNull()
         }?.url
 
-suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient, trackCoreElement: TrackCoreElement): Uri? {
+suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient,
+                                       trackCoreElement: TrackCoreElement): Uri? {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     val cacheInfo = sharedPreferences.getCurrentTrackInfo()
     return if (trackCoreElement.isAllNonNull
