@@ -8,6 +8,8 @@ import android.appwidget.AppWidgetManager
 import android.content.*
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.media.MediaMetadata
+import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,7 +17,6 @@ import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.support.annotation.RequiresApi
-import com.geckour.nowplaying4gpm.App.Companion.PACKAGE_NAME_GPM
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
@@ -32,6 +33,7 @@ import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 
@@ -55,6 +57,8 @@ class NotificationService : NotificationListenerService() {
         private const val WEAR_PATH_SHARE_FAILURE = "/share/failure"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
+
+        var currentPlayerPackageName: String? = null
 
         fun sendRequestShowNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
@@ -129,17 +133,16 @@ class NotificationService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createDefaultChannel()
-        }
-
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_DESTROY_NOTIFICATION)
             addAction(ACTION_SHOW_NOTIFICATION)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-
         registerReceiver(receiver, intentFilter)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createDefaultChannel()
+        }
     }
 
     override fun onDestroy() {
@@ -158,9 +161,7 @@ class NotificationService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
 
-        activeNotifications.forEach {
-            onNotificationPosted(it)
-        }
+        activeNotifications.forEach { onNotificationPosted(it) }
 
         Wearable.getMessageClient(this).addListener(onMessageReceived)
     }
@@ -173,67 +174,85 @@ class NotificationService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        if (sbn == null) return
 
-        if (sbn.packageName == PACKAGE_NAME_GPM) {
-            val coreElement = getTrackCoreElement(sbn.notification)
-            val notificationBitmap =
-                    (sbn.notification.getLargeIcon()
-                            ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
-            if (currentTrack != coreElement && notificationBitmap != null) {
-                resetCurrentTrackJob?.cancel()
-                currentTrack = coreElement
-                onUpdate(sbn.notification)
+        if (sbn != null && sbn.packageName != packageName) {
+            fetchMetadata(sbn.packageName)?.apply {
+                onMetadataChanged(this, sbn.notification)
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        if (sbn == null) return
 
-        if (sbn.packageName == PACKAGE_NAME_GPM) {
-            onDestroyNotification()
-            resetCurrentTrackJob =
-                    async {
-                        delay(250)
-                        currentTrack = TrackCoreElement.empty
-                    }
+        if (sbn?.packageName == currentPlayerPackageName) onMetadataCleared()
+    }
+
+    private fun fetchMetadata(packageName: String): MediaMetadata? =
+            getSystemService(MediaSessionManager::class.java).let {
+                val componentName =
+                        ComponentName(this@NotificationService,
+                                NotificationService::class.java)
+
+                return@let it.getActiveSessions(componentName)
+                        .firstOrNull { it.packageName == packageName }
+                        ?.let {
+                            currentPlayerPackageName = packageName
+                            it.metadata
+                        }
+            }
+
+    private fun onMetadataCleared() {
+        resetCurrentTrackJob =
+                launch {
+                    delay(100)
+
+                    val info = TrackInfo.empty
+                    currentTrack = info.coreElement
+                    reflectTrackInfo(info)
+                    getSystemService(NotificationManager::class.java).destroyNotification()
+                }
+    }
+
+    private fun onMetadataChanged(metadata: MediaMetadata, notification: Notification? = null) {
+        val coreElement = metadata.getTrackCoreElement()
+        launch {
+            if (onQuickUpdate(coreElement)) {
+                val artworkUri = metadata.getArtworkUri(coreElement, notification?.getArtworkBitmap())
+                onUpdate(TrackInfo(coreElement, artworkUri?.toString()))
+            }
         }
     }
 
-    private fun getTrackCoreElement(notification: Notification): TrackCoreElement =
-            notification.extras.let {
+    private fun MediaMetadata.getTrackCoreElement(): TrackCoreElement =
+            this.let {
                 val track: String? =
-                        if (it.containsKey(Notification.EXTRA_TITLE))
-                            it.getString(Notification.EXTRA_TITLE)
+                        if (it.containsKey(MediaMetadata.METADATA_KEY_TITLE))
+                            it.getString(MediaMetadata.METADATA_KEY_TITLE)
                         else null
                 val artist: String? =
-                        if (it.containsKey(Notification.EXTRA_TEXT))
-                            it.getString(Notification.EXTRA_TEXT)
+                        if (it.containsKey(MediaMetadata.METADATA_KEY_ARTIST))
+                            it.getString(MediaMetadata.METADATA_KEY_ARTIST)
                         else null
                 val album: String? =
-                        if (it.containsKey(Notification.EXTRA_INFO_TEXT))
-                            it.getString(Notification.EXTRA_SUB_TEXT)
+                        if (it.containsKey(MediaMetadata.METADATA_KEY_ALBUM))
+                            it.getString(MediaMetadata.METADATA_KEY_ALBUM)
                         else null
 
                 TrackCoreElement(track, artist, album)
             }
 
-    private fun onUpdate(notification: Notification) {
-        var artworkUri: Uri? = null
-        async(onError = {
-            sharedPreferences.refreshTempArtwork(artworkUri)
-        }) {
-            val coreElement = getTrackCoreElement(notification)
-            reflectTrackInfo(TrackInfo(coreElement, null), false)
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement): Boolean =
+            if (coreElement != currentTrack) {
+                resetCurrentTrackJob?.cancel()
+                currentTrack = coreElement
+                reflectTrackInfo(TrackInfo(coreElement, null), false)
 
-            artworkUri = getArtworkUri(notification, coreElement)
-            reflectTrackInfo(TrackInfo(coreElement, artworkUri?.toString()))
-        }.invokeOnCompletion {
-            it?.apply { Timber.e(this) }
-            sharedPreferences.refreshTempArtwork(artworkUri)
-        }
+                true
+            } else false
+
+    private suspend fun onUpdate(trackInfo: TrackInfo) {
+        reflectTrackInfo(trackInfo)
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
@@ -380,41 +399,52 @@ class NotificationService : NotificationListenerService() {
                 .sendMessage(sourceNodeId, WEAR_PATH_POST_FAILURE, null)
     }
 
-    private suspend fun getArtworkUri(notification: Notification,
-                                      coreElement: TrackCoreElement): Uri? {
-        var artworkUri =
-                getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+    private suspend fun MediaMetadata.getArtworkUri(coreElement: TrackCoreElement, bitmap: Bitmap?): Uri? {
+        var artworkUri: Uri? = null
+
+        val artworkBitmap = bitmap ?: (
+                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
+                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                else null)
+
+        if (artworkBitmap != null) {
+            artworkUri = refreshArtworkUriFromBitmap(this@NotificationService, artworkBitmap)
+        } else {
+            if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
+                artworkUri = this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()
+            }
+
+            if (artworkUri == null
+                    && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+                artworkUri = getArtworkUriFromLastFmApi(this@NotificationService,
+                        lastFmApiClient, coreElement)
+            }
+
+            if (artworkUri == null) {
+                artworkUri = getArtworkUriFromDevice(this@NotificationService,
+                        coreElement)?.apply {
                     sharedPreferences.refreshTempArtwork(this)
                 }
-
-        if (artworkUri == null) {
-            val notificationBitmap =
-                    (notification.getLargeIcon()
-                            ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
-
-            if (notificationBitmap != null) {
-                val placeholderBitmap =
-                        (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
-                artworkUri =
-                        if (notificationBitmap.similarity(placeholderBitmap) > 0.9
-                                && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                            getArtworkUriFromLastFmApi(this@NotificationService,
-                                    lastFmApiClient, coreElement)
-                        } else refreshArtworkUriFromBitmap(this, notificationBitmap)
             }
         }
 
         return artworkUri
     }
 
-    private fun onDestroyNotification() {
-        val info = TrackInfo.empty
-        updateSharedPreference(info)
-        async {
-            updateWidget(info)
-            updateWear(info)
+    private fun Notification.getArtworkBitmap(): Bitmap? {
+        val notificationBitmap =
+                (this.getLargeIcon()
+                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+
+        if (notificationBitmap != null) {
+            val placeholderBitmap =
+                    (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
+
+            return if (notificationBitmap.similarity(placeholderBitmap) > 0.9) null
+            else notificationBitmap
         }
-        getSystemService(NotificationManager::class.java).destroyNotification()
+
+        return null
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

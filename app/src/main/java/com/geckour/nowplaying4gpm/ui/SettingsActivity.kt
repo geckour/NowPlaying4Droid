@@ -334,7 +334,7 @@ class SettingsActivity : Activity() {
         if (verifier == null) onAuthTwitterError()
         else {
             async {
-                val accessToken = twitterApiClient.getAccessToken(verifier)
+                val accessToken = twitterApiClient.getAccessToken(verifier).await()
 
                 if (accessToken == null) onAuthTwitterError()
                 else {
@@ -404,7 +404,7 @@ class SettingsActivity : Activity() {
 
     private fun onClickAuthTwitter() {
         async {
-            val uri = twitterApiClient.getRequestOAuthUri() ?: return@async
+            val uri = twitterApiClient.getRequestOAuthUri().await() ?: return@async
 
             CustomTabsIntent.Builder()
                     .setShowTitle(true)

@@ -39,3 +39,5 @@ app/release/
 *.jks
 google-services.json
 firebase-crashreporting-key.json
+
+.DS_Store

@@ -19,8 +19,8 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 24
         targetSdkVersion 27
-        versionCode 37
-        versionName "2.1.1"
+        versionCode 38
+        versionName "2.2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -74,12 +74,12 @@ static def getKey(keyName) {
 
 dependencies {
     def android_support_version = '27.1.1'
-    def coroutines_version = '0.19.3'
+    def coroutines_version = '0.23.3'
     def stetho_version = '1.5.0'
     def retrofit2_version = '2.2.0'
     def okhttp_version = '3.7.0'
     def glide_version = '4.3.0'
-    def firebase_version = '16.0.0'
+    def firebase_version = '16.0.1'
 
     wearApp project(':wear')
 
@@ -120,7 +120,7 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
-    implementation 'ru.gildor.coroutines:kotlin-coroutines-retrofit:0.9.0'
+    implementation 'com.jakewharton.retrofit:retrofit2-kotlin-coroutines-experimental-adapter:1.0.0'
 
     // Image processing
     implementation "com.github.bumptech.glide:glide:$glide_version"

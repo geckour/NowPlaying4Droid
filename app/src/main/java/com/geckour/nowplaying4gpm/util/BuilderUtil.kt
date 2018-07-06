@@ -11,7 +11,6 @@ import android.provider.MediaStore
 import android.support.v7.graphics.Palette
 import android.view.View
 import android.widget.RemoteViews
-import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
@@ -47,12 +46,13 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
                 ShareWidgetProvider.getPendingIntent(context,
                         ShareWidgetProvider.Action.SHARE))
 
+        val targetPackageName = NotificationService.currentPlayerPackageName
 
         setOnClickPendingIntent(R.id.artwork,
-                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
+                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) && targetPackageName != null)
                     PendingIntent.getActivity(context,
                             0,
-                            context.packageManager.getLaunchIntentForPackage(App.PACKAGE_NAME_GPM),
+                            context.packageManager.getLaunchIntentForPackage(targetPackageName),
                             PendingIntent.FLAG_CANCEL_CURRENT)
                 else
                     ShareWidgetProvider.getPendingIntent(context,

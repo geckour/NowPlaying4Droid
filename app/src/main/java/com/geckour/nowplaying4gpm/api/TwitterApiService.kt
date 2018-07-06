@@ -2,10 +2,12 @@ package com.geckour.nowplaying4gpm.api
 
 import android.graphics.Bitmap
 import android.net.Uri
+import kotlinx.coroutines.experimental.Deferred
+import twitter4j.Status
 import twitter4j.auth.AccessToken
 
 interface TwitterApiService {
-    suspend fun getRequestOAuthUri(): Uri?
-    suspend fun getAccessToken(verifier: String): AccessToken?
-    fun post(accessToken: AccessToken, subject: String, artwork: Bitmap?, artworkTitle: String?)
+    fun getRequestOAuthUri(): Deferred<Uri?>
+    fun getAccessToken(verifier: String): Deferred<AccessToken?>
+    fun post(accessToken: AccessToken, subject: String, artwork: Bitmap?, artworkTitle: String?): Deferred<Status?>
 }
