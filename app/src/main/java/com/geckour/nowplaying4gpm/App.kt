@@ -8,10 +8,6 @@ import timber.log.Timber
 
 class App : Application() {
 
-    companion object {
-        const val PACKAGE_NAME_GPM: String = "com.google.android.music"
-    }
-
     override fun onCreate() {
         super.onCreate()
 

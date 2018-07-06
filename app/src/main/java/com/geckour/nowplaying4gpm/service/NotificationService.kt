@@ -399,8 +399,11 @@ class NotificationService : NotificationListenerService() {
                 .sendMessage(sourceNodeId, WEAR_PATH_POST_FAILURE, null)
     }
 
-    private suspend fun MediaMetadata.getArtworkUri(coreElement: TrackCoreElement, bitmap: Bitmap?): Uri? {
-        var artworkUri: Uri? = null
+    private suspend fun MediaMetadata.getArtworkUri(coreElement: TrackCoreElement,
+                                                    bitmap: Bitmap?): Uri? {
+        getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+            return this
+        }
 
         val artworkBitmap = bitmap ?: (
                 if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
@@ -408,27 +411,25 @@ class NotificationService : NotificationListenerService() {
                 else null)
 
         if (artworkBitmap != null) {
-            artworkUri = refreshArtworkUriFromBitmap(this@NotificationService, artworkBitmap)
-        } else {
-            if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
-                artworkUri = this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()
-            }
-
-            if (artworkUri == null
-                    && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                artworkUri = getArtworkUriFromLastFmApi(this@NotificationService,
-                        lastFmApiClient, coreElement)
-            }
-
-            if (artworkUri == null) {
-                artworkUri = getArtworkUriFromDevice(this@NotificationService,
-                        coreElement)?.apply {
-                    sharedPreferences.refreshTempArtwork(this)
-                }
+            refreshArtworkUriFromBitmap(this@NotificationService, artworkBitmap)?.apply {
+                return this
             }
         }
 
-        return artworkUri
+        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
+            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
+                return this
+            }
+        }
+
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+            getArtworkUriFromLastFmApi(this@NotificationService,
+                    lastFmApiClient, coreElement).apply {
+                return this
+            }
+        }
+
+        return null
     }
 
     private fun Notification.getArtworkBitmap(): Bitmap? {
