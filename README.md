@@ -2,8 +2,7 @@
 #NowPlaying Google - Play (Music)
 
 ## What's this?
-Android app for sharing #NowPlaying from Google Play Music app.  
-**NOTE**: This app is not affiliated with Google.
+Android app for sharing #NowPlaying using MediaSession.  
 
 ## Features
 - Reside notification to share #NowPlaying
