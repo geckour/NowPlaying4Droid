@@ -17,8 +17,8 @@ import android.support.v7.graphics.Palette
 import android.view.View
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
@@ -178,12 +178,18 @@ fun AlertDialog.Builder.generate(
 
 fun List<Job>.cancelAll() = forEach { it.cancel() }
 
-fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}) {
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? = null,
+                                   onGranted: (context: Context) -> Unit = {}) {
+    if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)
+            == PackageManager.PERMISSION_GRANTED) {
         onGranted(this)
-    else {
+    } else {
         onNotGranted?.invoke(this)
-                ?: this@checkStoragePermission.startActivity(SettingsActivity.getIntent(this).apply { flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK })
+                ?: this@checkStoragePermission.startActivity(
+                        SettingsActivity.getIntent(this).apply {
+                            flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
+                        })
     }
 }
 
@@ -201,7 +207,7 @@ fun Bitmap.similarity(bitmap: Bitmap): Float {
     }
     other.recycle()
 
-    return (count.toFloat() / (this.width * this.height)).apply { Timber.d("similarity: $this") }
+    return (count.toFloat() / (this.width * this.height))
 }
 
 fun String.getUri(): Uri? =

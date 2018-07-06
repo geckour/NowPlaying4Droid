@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">NowPlaying4GPM</string>
+    <string name="app_name" translatable="false">NowPlaying4Droid</string>
 
     <string name="com.crashlytics.useFirebaseAppId" translatable="false">true</string>
 
