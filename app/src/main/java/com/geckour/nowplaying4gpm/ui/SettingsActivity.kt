@@ -373,7 +373,7 @@ class SettingsActivity : Activity() {
             ids.forEach {
                 updateAppWidget(
                         it,
-                        getShareWidgetViews(this@SettingsActivity, it, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                        getShareWidgetViews(this@SettingsActivity, it, trackInfo)
                 )
             }
         }
@@ -553,11 +553,11 @@ class SettingsActivity : Activity() {
         state?.apply {
             sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, this).apply()
             binding.itemDonate.root.visibility = if (state) View.GONE else View.VISIBLE
-            binding.itemSwitchUseApi.maskInactive?.visibility = if (state) View.GONE else View.VISIBLE
+            binding.itemSwitchUseApi.maskInactive.visibility = if (state) View.GONE else View.VISIBLE
         } ?: run {
             val s = sharedPreferences.getDonateBillingState()
             binding.itemDonate.root.visibility = if (s) View.GONE else View.VISIBLE
-            binding.itemSwitchUseApi.maskInactive?.visibility = if (s) View.GONE else View.VISIBLE
+            binding.itemSwitchUseApi.maskInactive.visibility = if (s) View.GONE else View.VISIBLE
         }
     }
 }

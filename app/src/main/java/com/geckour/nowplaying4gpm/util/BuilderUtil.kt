@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
 import android.preference.PreferenceManager
 import android.provider.MediaStore
@@ -12,7 +11,6 @@ import android.support.v7.graphics.Palette
 import android.view.View
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
@@ -22,16 +20,23 @@ import com.geckour.nowplaying4gpm.ui.SharingActivity
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: String?, artworkUri: Uri?): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, id: Int?, trackInfo: TrackInfo? = null): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
-        setTextViewText(R.id.widget_summary_share,
-                summary
-                        ?: context.getString(R.string.dialog_message_alert_no_metadata))
+        val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
+        val summary =
+                if (info?.coreElement?.isAllNonNull == true) {
+                    sharedPreferences.getFormatPattern(context)
+                            .getSharingText(info.coreElement)
+                } else null
 
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) && (id == null || sharedPreferences.getWidgetState(id) != WidgetState.MIN)) {
-            val artwork = getBitmapFromUri(context, artworkUri)
+        setTextViewText(R.id.widget_summary_share,
+                summary ?: context.getString(R.string.dialog_message_alert_no_metadata))
+
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
+                && (id == null || sharedPreferences.getWidgetState(id) != WidgetState.MIN)) {
+            val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
             } else {
@@ -46,13 +51,11 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
                 ShareWidgetProvider.getPendingIntent(context,
                         ShareWidgetProvider.Action.SHARE))
 
-        val targetPackageName = NotificationService.currentPlayerPackageName
-
         setOnClickPendingIntent(R.id.artwork,
-                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) && targetPackageName != null)
+                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) && info?.playerPackageName != null)
                     PendingIntent.getActivity(context,
                             0,
-                            context.packageManager.getLaunchIntentForPackage(targetPackageName),
+                            context.packageManager.getLaunchIntentForPackage(info.playerPackageName),
                             PendingIntent.FLAG_CANCEL_CURRENT)
                 else
                     ShareWidgetProvider.getPendingIntent(context,
@@ -63,21 +66,6 @@ private suspend fun getShareWidgetViews(context: Context, id: Int?, summary: Str
                 ShareWidgetProvider.getPendingIntent(context,
                         ShareWidgetProvider.Action.OPEN_SETTING))
     }
-}
-
-suspend fun getShareWidgetViews(context: Context, id: Int?, trackCoreElement: TrackCoreElement, artworkUri: Uri?): RemoteViews {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-    val summary =
-            if (trackCoreElement.isAllNonNull) {
-                if (trackCoreElement.isAllNonNull) {
-                    sharedPreferences.getFormatPattern(context)
-                            .getSharingText(trackCoreElement)
-                } else {
-                    sharedPreferences.getSharingText(context)
-                }
-            } else null
-
-    return getShareWidgetViews(context, id, summary, artworkUri)
 }
 
 suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notification? {

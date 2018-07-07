@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.util.*
@@ -70,17 +69,14 @@ class ShareWidgetProvider : AppWidgetProvider() {
     private fun updateWidget(context: Context, vararg ids: Int) =
             async {
                 if (ids.isNotEmpty()) {
-                    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-                    val coreElement =
-                            sharedPreferences.getCurrentTrackInfo()?.coreElement
-                                    ?: TrackCoreElement.empty
-                    val artworkUri = sharedPreferences.getTempArtworkUri(context)
+                    val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
+                            .getCurrentTrackInfo()
 
                     AppWidgetManager.getInstance(context).apply {
                         ids.forEach {
                             updateAppWidget(
                                     it,
-                                    getShareWidgetViews(context, it, coreElement, artworkUri)
+                                    getShareWidgetViews(context, it, trackInfo)
                             )
                         }
                     }
