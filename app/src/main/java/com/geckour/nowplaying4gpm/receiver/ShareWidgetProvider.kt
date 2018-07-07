@@ -7,10 +7,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
-import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.async
+import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
+import com.geckour.nowplaying4gpm.util.getShareWidgetViews
+import com.geckour.nowplaying4gpm.util.ui
 import kotlinx.coroutines.experimental.Job
 
 class ShareWidgetProvider : AppWidgetProvider() {
@@ -27,6 +29,12 @@ class ShareWidgetProvider : AppWidgetProvider() {
                         0,
                         Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) },
                         PendingIntent.FLAG_CANCEL_CURRENT)
+
+        fun isMin(widgetOptions: Bundle?): Boolean {
+            if (widgetOptions == null) return false
+            val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
+            return maxWidth < 232
+        }
     }
 
     private val jobs: ArrayList<Job> = ArrayList()
@@ -41,14 +49,6 @@ class ShareWidgetProvider : AppWidgetProvider() {
     override fun onAppWidgetOptionsChanged(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetId: Int, newOptions: Bundle?) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
         if (context == null || newOptions == null) return
-
-        val maxWidth = newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
-        val state =
-                if (maxWidth >= 232) WidgetState.NORMAL
-                else WidgetState.MIN
-
-        PreferenceManager.getDefaultSharedPreferences(context)
-                .setWidgetState(appWidgetId, state)
 
         updateWidget(context, appWidgetId)
     }
@@ -70,17 +70,15 @@ class ShareWidgetProvider : AppWidgetProvider() {
     private fun updateWidget(context: Context, vararg ids: Int) =
             async {
                 if (ids.isNotEmpty()) {
-                    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-                    val coreElement =
-                            sharedPreferences.getCurrentTrackInfo()?.coreElement
-                                    ?: TrackCoreElement.empty
-                    val artworkUri = sharedPreferences.getTempArtworkUri(context)
+                    val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
+                            .getCurrentTrackInfo()
 
                     AppWidgetManager.getInstance(context).apply {
-                        ids.forEach {
+                        ids.forEach { id ->
+                            val widgetOptions = this.getAppWidgetOptions(id)
                             updateAppWidget(
-                                    it,
-                                    getShareWidgetViews(context, it, coreElement, artworkUri)
+                                    id,
+                                    getShareWidgetViews(context, isMin(widgetOptions), trackInfo)
                             )
                         }
                     }

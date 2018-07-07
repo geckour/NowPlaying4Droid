@@ -58,8 +58,6 @@ class NotificationService : NotificationListenerService() {
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
-        var currentPlayerPackageName: String? = null
-
         fun sendRequestShowNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
                 it.sendBroadcast(Intent().apply {
@@ -177,15 +175,17 @@ class NotificationService : NotificationListenerService() {
 
         if (sbn != null && sbn.packageName != packageName) {
             fetchMetadata(sbn.packageName)?.apply {
-                onMetadataChanged(this, sbn.notification)
+                onMetadataChanged(this, sbn.packageName, sbn.notification)
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
+        if (sbn == null) return
 
-        if (sbn?.packageName == currentPlayerPackageName) onMetadataCleared()
+        val currentTrackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
+        if (sbn.packageName == currentTrackInfo.playerPackageName) onMetadataCleared()
     }
 
     private fun fetchMetadata(packageName: String): MediaMetadata? =
@@ -196,10 +196,7 @@ class NotificationService : NotificationListenerService() {
 
                 return@let it.getActiveSessions(componentName)
                         .firstOrNull { it.packageName == packageName }
-                        ?.let {
-                            currentPlayerPackageName = packageName
-                            it.metadata
-                        }
+                        ?.metadata
             }
 
     private fun onMetadataCleared() {
@@ -214,12 +211,12 @@ class NotificationService : NotificationListenerService() {
                 }
     }
 
-    private fun onMetadataChanged(metadata: MediaMetadata, notification: Notification? = null) {
+    private fun onMetadataChanged(metadata: MediaMetadata, packageName: String, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
         launch {
-            if (onQuickUpdate(coreElement)) {
+            if (onQuickUpdate(coreElement, packageName)) {
                 val artworkUri = metadata.getArtworkUri(coreElement, notification?.getArtworkBitmap())
-                onUpdate(TrackInfo(coreElement, artworkUri?.toString()))
+                onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName))
             }
         }
     }
@@ -242,11 +239,11 @@ class NotificationService : NotificationListenerService() {
                 TrackCoreElement(track, artist, album)
             }
 
-    private suspend fun onQuickUpdate(coreElement: TrackCoreElement): Boolean =
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String): Boolean =
             if (coreElement != currentTrack) {
                 resetCurrentTrackJob?.cancel()
                 currentTrack = coreElement
-                reflectTrackInfo(TrackInfo(coreElement, null), false)
+                reflectTrackInfo(TrackInfo(coreElement, null, packageName), false)
 
                 true
             } else false
@@ -276,10 +273,11 @@ class NotificationService : NotificationListenerService() {
                     ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
             ids.forEach { id ->
+                val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
                         id,
                         getShareWidgetViews(this@NotificationService,
-                                id, trackInfo.coreElement, trackInfo.artworkUriString?.getUri())
+                                ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
         }
@@ -405,10 +403,10 @@ class NotificationService : NotificationListenerService() {
             return this
         }
 
-        val artworkBitmap = bitmap ?: (
-                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
+        val artworkBitmap =
+                (if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
                     this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                else null)
+                else null) ?: bitmap
 
         if (artworkBitmap != null) {
             refreshArtworkUriFromBitmap(this@NotificationService, artworkBitmap)?.apply {
@@ -432,16 +430,25 @@ class NotificationService : NotificationListenerService() {
         return null
     }
 
-    private fun Notification.getArtworkBitmap(): Bitmap? {
+    private suspend fun Notification.getArtworkBitmap(): Bitmap? {
         val notificationBitmap =
                 (this.getLargeIcon()
-                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)
+                        ?.bitmap
+                        ?.let {
+                            try {
+                                it.copy(it.config, false)
+                            } catch (t: Throwable) {
+                                Timber.e(t)
+                                null
+                            }
+                        }
 
         if (notificationBitmap != null) {
             val placeholderBitmap =
                     (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
 
-            return if (notificationBitmap.similarity(placeholderBitmap) > 0.9) null
+            return if ((notificationBitmap.similarity(placeholderBitmap).await() ?: 1f) > 0.9) null
             else notificationBitmap
         }
 

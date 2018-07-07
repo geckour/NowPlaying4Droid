@@ -20,12 +20,34 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+-dontwarn android.databinding.adapters.CardViewBindingAdapter
+
+-keepattributes Signature
+
+-dontwarn sun.misc.**
+#-keep class com.google.gson.stream.** { *; }
+
+-keep class com.google.gson.examples.android.model.** { *; }
+
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
 -keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
 -keepnames class com.geckour.nowplaying4gpm.util.WidgetState { *; }
 
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable
 -keep public class * extends java.lang.Exception
+
+-keep class * implements com.bumptech.glide.** { *; }
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
+}
 
 -keep class twitter4j.** { *; }
 -dontwarn javax.management.**
