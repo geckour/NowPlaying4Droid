@@ -20,3 +20,18 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+-dontwarn android.databinding.adapters.CardViewBindingAdapter
+
+-keepattributes Signature
+
+-keepattributes *Annotation*
+
+-dontwarn sun.misc.**
+#-keep class com.google.gson.stream.** { *; }
+
+-keep class com.google.gson.examples.android.model.** { *; }
+
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer

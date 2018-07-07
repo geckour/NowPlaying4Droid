@@ -370,10 +370,12 @@ class SettingsActivity : Activity() {
         AppWidgetManager.getInstance(this).apply {
             val ids = getAppWidgetIds(ComponentName(this@SettingsActivity, ShareWidgetProvider::class.java))
 
-            ids.forEach {
+            ids.forEach { id ->
+                val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
-                        it,
-                        getShareWidgetViews(this@SettingsActivity, it, trackInfo)
+                        id,
+                        getShareWidgetViews(this@SettingsActivity,
+                                ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
         }

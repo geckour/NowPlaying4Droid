@@ -196,9 +196,7 @@ class NotificationService : NotificationListenerService() {
 
                 return@let it.getActiveSessions(componentName)
                         .firstOrNull { it.packageName == packageName }
-                        ?.let {
-                            it.metadata
-                        }
+                        ?.metadata
             }
 
     private fun onMetadataCleared() {
@@ -275,9 +273,11 @@ class NotificationService : NotificationListenerService() {
                     ComponentName(this@NotificationService, ShareWidgetProvider::class.java))
 
             ids.forEach { id ->
+                val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
                         id,
-                        getShareWidgetViews(this@NotificationService, id, trackInfo)
+                        getShareWidgetViews(this@NotificationService,
+                                ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
         }
@@ -403,10 +403,10 @@ class NotificationService : NotificationListenerService() {
             return this
         }
 
-        val artworkBitmap = bitmap ?: (
-                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
+        val artworkBitmap =
+                (if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
                     this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                else null)
+                else null) ?: bitmap
 
         if (artworkBitmap != null) {
             refreshArtworkUriFromBitmap(this@NotificationService, artworkBitmap)?.apply {
@@ -430,16 +430,25 @@ class NotificationService : NotificationListenerService() {
         return null
     }
 
-    private fun Notification.getArtworkBitmap(): Bitmap? {
+    private suspend fun Notification.getArtworkBitmap(): Bitmap? {
         val notificationBitmap =
                 (this.getLargeIcon()
-                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)?.bitmap
+                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)
+                        ?.bitmap
+                        ?.let {
+                            try {
+                                it.copy(it.config, false)
+                            } catch (t: Throwable) {
+                                Timber.e(t)
+                                null
+                            }
+                        }
 
         if (notificationBitmap != null) {
             val placeholderBitmap =
                     (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
 
-            return if (notificationBitmap.similarity(placeholderBitmap) > 0.9) null
+            return if ((notificationBitmap.similarity(placeholderBitmap).await() ?: 1f) > 0.9) null
             else notificationBitmap
         }
 

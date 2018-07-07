@@ -7,7 +7,6 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import timber.log.Timber
 import twitter4j.auth.AccessToken
 
@@ -23,15 +22,9 @@ enum class PrefKey {
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE,
-    PREF_KEY_WIDGET_STATES,
     PREF_KEY_TWITTER_ACCESS_TOKEN,
     PREF_KEY_FLAG_ALERT_AUTH_TWITTER,
     PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE
-}
-
-enum class WidgetState(val code: Int) {
-    NORMAL(0),
-    MIN(1)
 }
 
 fun SharedPreferences.init(context: Context) {
@@ -54,9 +47,6 @@ fun SharedPreferences.init(context: Context) {
             putBoolean(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK.name, true)
         if (contains(PrefKey.PREF_KEY_BILLING_DONATE.name).not())
             putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, false)
-        if (contains(PrefKey.PREF_KEY_WIDGET_STATES.name).not()) {
-            putString(PrefKey.PREF_KEY_WIDGET_STATES.name, Gson().toJson(mapOf<Int, WidgetState>()))
-        }
     }.apply()
 }
 
@@ -133,23 +123,6 @@ fun SharedPreferences.getSwitchSummaryResId(key: PrefKey): Int =
 fun SharedPreferences.getSwitchState(key: PrefKey): Boolean =
         contains(key.name).not()
                 || getBoolean(key.name, true)
-
-fun SharedPreferences.setWidgetState(id: Int, state: WidgetState) {
-    val stateMap = getWidgetStateMap().toMutableMap().apply {
-        this[id] = state
-    }
-
-    edit().putString(PrefKey.PREF_KEY_WIDGET_STATES.name, Gson().toJson(stateMap)).apply()
-}
-
-private fun SharedPreferences.getWidgetStateMap(): Map<Int, WidgetState> =
-        if (contains(PrefKey.PREF_KEY_WIDGET_STATES.name)) {
-            val type = object : TypeToken<Map<Int, WidgetState>>() {}.type
-            Gson().fromJson(getString(PrefKey.PREF_KEY_WIDGET_STATES.name, null), type)
-        } else mapOf()
-
-fun SharedPreferences.getWidgetState(id: Int): WidgetState =
-        getWidgetStateMap()[id] ?: WidgetState.NORMAL
 
 fun SharedPreferences.getDonateBillingState(): Boolean =
         contains(PrefKey.PREF_KEY_BILLING_DONATE.name)

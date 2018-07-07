@@ -19,9 +19,12 @@ import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
+import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
+import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
+import java.lang.reflect.Type
 import kotlin.math.absoluteValue
 
 enum class PaletteColor {
@@ -193,22 +196,23 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
     }
 }
 
-fun Bitmap.similarity(bitmap: Bitmap): Float {
-    val other =
-            if (this.width != bitmap.width || this.height != bitmap.height)
-                Bitmap.createScaledBitmap(bitmap, this.width, this.height, false)
-            else bitmap
+fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> =
+        async {
+            val other =
+                    if (this@similarity.width != bitmap.width || this@similarity.height != bitmap.height)
+                        Bitmap.createScaledBitmap(bitmap, this@similarity.width, this@similarity.height, false)
+                    else bitmap
 
-    var count = 0
-    for (x in 0 until this.width) {
-        for (y in 0 until this.height) {
-            if (this.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
+            var count = 0
+            for (x in 0 until this@similarity.width) {
+                for (y in 0 until this@similarity.height) {
+                    if (this@similarity.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
+                }
+            }
+            other.recycle()
+
+            return@async (count.toFloat() / (this@similarity.width * this@similarity.height))
         }
-    }
-    other.recycle()
-
-    return (count.toFloat() / (this.width * this.height))
-}
 
 fun String.getUri(): Uri? =
         try {
@@ -248,3 +252,11 @@ fun Palette.getOptimizedColor(context: Context): Int {
 fun Activity.setCrashlytics() {
     Fabric.with(this, Crashlytics())
 }
+
+fun <T> Gson.fromJsonOrNull(json: String, type: Type): T? =
+        try {
+            this.fromJson(json, type)
+        } catch (t: Throwable) {
+            Timber.e(t)
+            null
+        }

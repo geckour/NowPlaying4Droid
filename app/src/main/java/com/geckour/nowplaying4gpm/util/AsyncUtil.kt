@@ -123,6 +123,7 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? 
             }
 
             FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
+                bitmap.recycle()
                 sharedPreferences.refreshTempArtwork(this)
             }
         }.await()
