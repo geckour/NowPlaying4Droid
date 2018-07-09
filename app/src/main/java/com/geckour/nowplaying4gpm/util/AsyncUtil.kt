@@ -95,16 +95,24 @@ private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient,
 
 suspend fun refreshArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient,
                                            trackCoreElement: TrackCoreElement): Uri? {
-    return getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackCoreElement))?.let {
-        refreshArtworkUriFromBitmap(context, it)
-    }
+    val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
+    val bitmap = getBitmapFromUrl(context, url)?.let { it.copy(it.config, false) } ?: return null
+    val uri = refreshArtworkUriFromBitmap(context, bitmap)
+    bitmap.recycle()
+
+    return uri
 }
 
-suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
+suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap, checkSimilarity: Boolean = false): Uri? =
         async {
+            if (bitmap.isRecycled) {
+                Timber.e(IllegalStateException("Bitmap is recycled"))
+                return@async null
+            }
+
             val placeholderBitmap =
                     (context.getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
-            if ((bitmap.similarity(placeholderBitmap).await() ?: 1f) > 0.9) return@async null
+            if (checkSimilarity && (bitmap.similarity(placeholderBitmap).await() ?: 1f) > 0.9) return@async null
 
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val dirName = "images"
@@ -121,7 +129,6 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? 
             }
 
             FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
-                bitmap.recycle()
                 sharedPreferences.refreshTempArtwork(this)
             }
         }.await()

@@ -31,8 +31,8 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
-import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.cancelAndJoin
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
@@ -58,6 +58,8 @@ class NotificationService : NotificationListenerService() {
         private const val WEAR_PATH_SHARE_FAILURE = "/share/failure"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
+
+        private const val timeMargin: Long = 300
 
         fun sendRequestShowNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
@@ -112,7 +114,8 @@ class NotificationService : NotificationListenerService() {
     private val jobs: ArrayList<Job> = ArrayList()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
-    private var currentTrackJob: Job? = null
+    private var currentTrackClearJob: Job? = null
+    private var currentTrackSetJob: Job? = null
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
@@ -174,7 +177,7 @@ class NotificationService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
 
-        if (sbn != null && sbn.packageName != packageName && currentTrackJob?.isActive != true) {
+        if (sbn != null && sbn.packageName != packageName) {
             fetchMetadata(sbn.packageName)?.apply {
                 onMetadataChanged(this, sbn.packageName, sbn.notification)
             }
@@ -201,22 +204,32 @@ class NotificationService : NotificationListenerService() {
             }
 
     private fun onMetadataCleared() {
-        resetCurrentTrackJob {
-            delay(100)
+        currentTrackClearJob?.cancel()
 
-            val info = TrackInfo.empty
-            currentTrack = info.coreElement
-            reflectTrackInfo(info)
-            sharedPreferences.refreshTempArtwork(null)
-            getSystemService(NotificationManager::class.java).destroyNotification()
-        }
+        sharedPreferences.refreshTempArtwork(null)
+
+        val info = TrackInfo.empty
+        currentTrack = info.coreElement
+        currentTrackClearJob = launch { reflectTrackInfo(info) }
+
+        getSystemService(NotificationManager::class.java).destroyNotification()
     }
 
-    private fun onMetadataChanged(metadata: MediaMetadata, packageName: String, notification: Notification? = null) {
+    private fun onMetadataChanged(metadata: MediaMetadata,
+                                  packageName: String, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
-        resetCurrentTrackJob {
-            if (onQuickUpdate(coreElement, packageName)) {
-                val artworkUri = metadata.storeArtworkUri(coreElement, notification?.getArtworkBitmap())
+
+        if (coreElement != currentTrack) {
+            currentTrackSetJob?.cancel()
+
+            currentTrackSetJob = launch {
+                delay(timeMargin)
+
+                currentTrackClearJob?.cancelAndJoin()
+
+                onQuickUpdate(coreElement, packageName)
+                val artworkUri = metadata.storeArtworkUri(coreElement,
+                        notification?.getArtworkBitmap())
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName))
             }
         }
@@ -240,19 +253,11 @@ class NotificationService : NotificationListenerService() {
                 TrackCoreElement(track, artist, album)
             }
 
-    private fun resetCurrentTrackJob(predicate: suspend CoroutineScope.() -> Unit) {
-        currentTrackJob?.cancel()
-        currentTrackJob = launch(block = predicate)
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String) {
+        sharedPreferences.refreshTempArtwork(null)
+        currentTrack = coreElement
+        reflectTrackInfo(TrackInfo(coreElement, null, packageName), false)
     }
-
-    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String): Boolean =
-            if (coreElement != currentTrack) {
-                sharedPreferences.refreshTempArtwork(null)
-                currentTrack = coreElement
-                reflectTrackInfo(TrackInfo(coreElement, null, packageName), false)
-
-                true
-            } else false
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
         reflectTrackInfo(trackInfo)
@@ -426,7 +431,7 @@ class NotificationService : NotificationListenerService() {
                 else null) ?: bitmap
 
         if (metadataBitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap)?.apply {
+            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap, true)?.apply {
                 return this
             }
         }
@@ -435,7 +440,7 @@ class NotificationService : NotificationListenerService() {
         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
             this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
                 getBitmapFromUri(this@NotificationService, this)?.apply {
-                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
+                    refreshArtworkUriFromBitmap(this@NotificationService, this, true)?.apply {
                         return this
                     }
                 }
@@ -445,7 +450,7 @@ class NotificationService : NotificationListenerService() {
         // Find from Last.fm API
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
             refreshArtworkUriFromLastFmApi(this@NotificationService,
-                    lastFmApiClient, coreElement).apply {
+                    lastFmApiClient, coreElement)?.apply {
                 return this
             }
         }
