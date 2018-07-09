@@ -67,9 +67,14 @@ private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
 }
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
-        if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name))
-            Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
-        else null
+        if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
+            try {
+                Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                null
+            }
+        } else null
 
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
     val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
