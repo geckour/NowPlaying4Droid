@@ -3,6 +3,7 @@ package com.geckour.nowplaying4gpm.util
 import android.content.ContentUris
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
@@ -11,6 +12,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.geckour.nowplaying4gpm.BuildConfig
+import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
@@ -91,23 +93,27 @@ private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient,
             it.find { it.size == size.rawStr } ?: it.lastOrNull()
         }?.url
 
-suspend fun getArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient,
-                                       trackCoreElement: TrackCoreElement): Uri? {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-    val cacheInfo = sharedPreferences.getCurrentTrackInfo()
-    return if (trackCoreElement.isAllNonNull
-            && cacheInfo?.artworkUriString != null
-            && trackCoreElement == cacheInfo.coreElement) {
-        sharedPreferences.getTempArtworkUri(context)
-    } else {
-        getBitmapFromUrl(context, getArtworkUrlFromLastFmApi(client, trackCoreElement))?.let {
-            refreshArtworkUriFromBitmap(context, it)
-        }
-    }
+suspend fun refreshArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient,
+                                           trackCoreElement: TrackCoreElement): Uri? {
+    val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
+    val bitmap = getBitmapFromUrl(context, url)?.let { it.copy(it.config, false) } ?: return null
+    val uri = refreshArtworkUriFromBitmap(context, bitmap)
+    bitmap.recycle()
+
+    return uri
 }
 
-suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
+suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap, checkSimilarity: Boolean = false): Uri? =
         async {
+            if (bitmap.isRecycled) {
+                Timber.e(IllegalStateException("Bitmap is recycled"))
+                return@async null
+            }
+
+            val placeholderBitmap =
+                    (context.getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
+            if (checkSimilarity && (bitmap.similarity(placeholderBitmap).await() ?: 1f) > 0.9) return@async null
+
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val dirName = "images"
             val fileName = "temp_artwork.jpg"
@@ -123,7 +129,6 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? 
             }
 
             FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
-                bitmap.recycle()
                 sharedPreferences.refreshTempArtwork(this)
             }
         }.await()

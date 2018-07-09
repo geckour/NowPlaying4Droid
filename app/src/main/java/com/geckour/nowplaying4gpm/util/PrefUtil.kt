@@ -60,18 +60,21 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
 fun SharedPreferences.getFormatPattern(context: Context): String =
         getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
 
-private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri) {
-    val currentInfo = getCurrentTrackInfo() ?: return
-
+private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit().putString(
             PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
-            Gson().toJson(ArtworkInfo(artworkUri.toString(), currentInfo.coreElement))).apply()
+            Gson().toJson(ArtworkInfo(artworkUri?.toString()))).apply()
 }
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
-        if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name))
-            Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
-        else null
+        if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
+            try {
+                Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                null
+            }
+        } else null
 
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
     val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
@@ -86,7 +89,7 @@ fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
 }
 
 fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
-    artworkUri?.apply { setTempArtworkInfo(this) }
+    setTempArtworkInfo(artworkUri)
 }
 
 fun SharedPreferences.getSharingText(context: Context): String? {

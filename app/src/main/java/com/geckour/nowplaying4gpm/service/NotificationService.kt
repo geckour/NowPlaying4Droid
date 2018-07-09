@@ -32,6 +32,7 @@ import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.cancelAndJoin
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
@@ -57,6 +58,8 @@ class NotificationService : NotificationListenerService() {
         private const val WEAR_PATH_SHARE_FAILURE = "/share/failure"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
+
+        private const val timeMargin: Long = 300
 
         fun sendRequestShowNotification(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
@@ -111,7 +114,8 @@ class NotificationService : NotificationListenerService() {
     private val jobs: ArrayList<Job> = ArrayList()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
-    private var resetCurrentTrackJob: Job? = null
+    private var currentTrackClearJob: Job? = null
+    private var currentTrackSetJob: Job? = null
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
@@ -200,22 +204,32 @@ class NotificationService : NotificationListenerService() {
             }
 
     private fun onMetadataCleared() {
-        resetCurrentTrackJob =
-                launch {
-                    delay(100)
+        currentTrackClearJob?.cancel()
 
-                    val info = TrackInfo.empty
-                    currentTrack = info.coreElement
-                    reflectTrackInfo(info)
-                    getSystemService(NotificationManager::class.java).destroyNotification()
-                }
+        sharedPreferences.refreshTempArtwork(null)
+
+        val info = TrackInfo.empty
+        currentTrack = info.coreElement
+        currentTrackClearJob = launch { reflectTrackInfo(info) }
+
+        getSystemService(NotificationManager::class.java).destroyNotification()
     }
 
-    private fun onMetadataChanged(metadata: MediaMetadata, packageName: String, notification: Notification? = null) {
+    private fun onMetadataChanged(metadata: MediaMetadata,
+                                  packageName: String, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
-        launch {
-            if (onQuickUpdate(coreElement, packageName)) {
-                val artworkUri = metadata.getArtworkUri(coreElement, notification?.getArtworkBitmap())
+
+        if (coreElement != currentTrack) {
+            currentTrackSetJob?.cancel()
+
+            currentTrackSetJob = launch {
+                delay(timeMargin)
+
+                currentTrackClearJob?.cancelAndJoin()
+
+                onQuickUpdate(coreElement, packageName)
+                val artworkUri = metadata.storeArtworkUri(coreElement,
+                        notification?.getArtworkBitmap())
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName))
             }
         }
@@ -239,14 +253,11 @@ class NotificationService : NotificationListenerService() {
                 TrackCoreElement(track, artist, album)
             }
 
-    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String): Boolean =
-            if (coreElement != currentTrack) {
-                resetCurrentTrackJob?.cancel()
-                currentTrack = coreElement
-                reflectTrackInfo(TrackInfo(coreElement, null, packageName), false)
-
-                true
-            } else false
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String) {
+        sharedPreferences.refreshTempArtwork(null)
+        currentTrack = coreElement
+        reflectTrackInfo(TrackInfo(coreElement, null, packageName), false)
+    }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
         reflectTrackInfo(trackInfo)
@@ -397,32 +408,49 @@ class NotificationService : NotificationListenerService() {
                 .sendMessage(sourceNodeId, WEAR_PATH_POST_FAILURE, null)
     }
 
-    private suspend fun MediaMetadata.getArtworkUri(coreElement: TrackCoreElement,
-                                                    bitmap: Bitmap?): Uri? {
+    private suspend fun MediaMetadata.storeArtworkUri(coreElement: TrackCoreElement,
+                                                      bitmap: Bitmap?): Uri? {
+        // Check whether arg metadata and current metadata are the same or not
+        val cacheInfo = sharedPreferences.getCurrentTrackInfo()
+        if (coreElement.isAllNonNull
+                && cacheInfo?.artworkUriString != null
+                && coreElement == cacheInfo.coreElement) {
+            return sharedPreferences.getTempArtworkUri(this@NotificationService)
+        }
+
+        // Find from ContentResolver
         getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+            sharedPreferences.refreshTempArtwork(this)
             return this
         }
 
-        val artworkBitmap =
+        // Fetch from MediaMetadata's Bitmap field
+        val metadataBitmap =
                 (if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
                     this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                 else null) ?: bitmap
 
-        if (artworkBitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, artworkBitmap)?.apply {
+        if (metadataBitmap != null) {
+            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap, true)?.apply {
                 return this
             }
         }
 
+        // Fetch from MediaMetadata's Uri field
         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
             this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                return this
+                getBitmapFromUri(this@NotificationService, this)?.apply {
+                    refreshArtworkUriFromBitmap(this@NotificationService, this, true)?.apply {
+                        return this
+                    }
+                }
             }
         }
 
+        // Find from Last.fm API
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-            getArtworkUriFromLastFmApi(this@NotificationService,
-                    lastFmApiClient, coreElement).apply {
+            refreshArtworkUriFromLastFmApi(this@NotificationService,
+                    lastFmApiClient, coreElement)?.apply {
                 return this
             }
         }

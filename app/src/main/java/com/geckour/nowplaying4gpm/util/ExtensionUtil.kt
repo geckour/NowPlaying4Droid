@@ -198,20 +198,25 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
 
 fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> =
         async {
+            if (this@similarity.isRecycled) {
+                Timber.e(IllegalStateException("Bitmap is recycled"))
+                return@async null
+            }
+
+            val origin = this@similarity.copy(this@similarity.config, false)
             val other =
-                    if (this@similarity.width != bitmap.width || this@similarity.height != bitmap.height)
-                        Bitmap.createScaledBitmap(bitmap, this@similarity.width, this@similarity.height, false)
+                    if (origin.width != bitmap.width || origin.height != bitmap.height)
+                        Bitmap.createScaledBitmap(bitmap, origin.width, origin.height, false)
                     else bitmap
 
             var count = 0
-            for (x in 0 until this@similarity.width) {
-                for (y in 0 until this@similarity.height) {
-                    if (this@similarity.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
+            for (x in 0 until origin.width) {
+                for (y in 0 until origin.height) {
+                    if (origin.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
                 }
             }
-            other.recycle()
 
-            return@async (count.toFloat() / (this@similarity.width * this@similarity.height))
+            return@async (count.toFloat() / (origin.width * origin.height))
         }
 
 fun String.getUri(): Uri? =
