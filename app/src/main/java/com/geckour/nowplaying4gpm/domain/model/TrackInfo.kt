@@ -13,8 +13,7 @@ data class TrackInfo(
 }
 
 data class ArtworkInfo(
-        val artworkUriString: String?,
-        val trackCoreElement: TrackCoreElement
+        val artworkUriString: String?
 )
 
 data class TrackCoreElement(

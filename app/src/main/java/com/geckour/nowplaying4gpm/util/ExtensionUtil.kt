@@ -209,7 +209,6 @@ fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> =
                     if (this@similarity.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
                 }
             }
-            other.recycle()
 
             return@async (count.toFloat() / (this@similarity.width * this@similarity.height))
         }
