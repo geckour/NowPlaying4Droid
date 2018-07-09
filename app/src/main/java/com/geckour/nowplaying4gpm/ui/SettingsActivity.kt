@@ -16,19 +16,14 @@ import android.support.v4.app.NotificationManagerCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.FrameLayout
-import android.widget.Switch
-import android.widget.TextView
+import android.widget.*
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.api.model.PurchaseResult
-import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
-import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
-import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
+import com.geckour.nowplaying4gpm.databinding.*
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
@@ -115,6 +110,30 @@ class SettingsActivity : Activity() {
                 if (y < oldY && binding.fab.isShown.not())
                     binding.fab.show()
             }
+        }
+
+        binding.scrollView
+                .getChildAt(0)
+                .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            var visibleCount = 0
+            (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
+                (0 until this.childCount).forEach {
+                    val itemBinding: ItemPrefItemBinding? = try {
+                        DataBindingUtil.findBinding(this.getChildAt(it))
+                    } catch (e: ClassCastException) {
+                        return@forEach
+                    }
+
+                    if (itemBinding?.root?.visibility == View.VISIBLE
+                            && itemBinding.categoryId == binding.categoryOthers.root.id) {
+                        visibleCount++
+                    }
+                }
+            }
+
+            binding.categoryOthers.root.visibility =
+                    if (visibleCount == 0) View.GONE
+                    else View.VISIBLE
         }
 
         binding.itemSwitchUseApi.apply {
