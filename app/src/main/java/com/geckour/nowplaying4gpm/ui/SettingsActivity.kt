@@ -32,7 +32,6 @@ import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
-import timber.log.Timber
 
 class SettingsActivity : Activity() {
 
@@ -312,15 +311,8 @@ class SettingsActivity : Activity() {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
-                            val purchaseResult =
-                                    try {
-                                        Gson().fromJson(
-                                                this,
-                                                PurchaseResult::class.java)
-                                    } catch (e: Throwable) {
-                                        Timber.e(e)
-                                        null
-                                    }
+                            val purchaseResult: PurchaseResult? =
+                                    Gson().fromJsonOrNull(this, PurchaseResult::class.java)
 
                             if (purchaseResult?.purchaseState == 0) {
                                 reflectDonation(true)

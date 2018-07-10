@@ -258,10 +258,10 @@ fun Activity.setCrashlytics() {
     Fabric.with(this, Crashlytics())
 }
 
-fun <T> Gson.fromJsonOrNull(json: String, type: Type): T? =
+fun <T> Gson.fromJsonOrNull(json: String, type: Type,
+                            onError: Throwable.() -> Unit = { Timber.e(this) }): T? =
         try {
             this.fromJson(json, type)
         } catch (t: Throwable) {
-            Timber.e(t)
+            onError(t)
             null
-        }
