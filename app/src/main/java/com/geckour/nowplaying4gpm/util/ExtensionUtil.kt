@@ -265,3 +265,7 @@ fun <T> Gson.fromJsonOrNull(json: String, type: Type,
         } catch (t: Throwable) {
             onError(t)
             null
+        }
+
+fun String.foldBreak(): String =
+        this.replace(Regex("[\r\n]"), " ")
