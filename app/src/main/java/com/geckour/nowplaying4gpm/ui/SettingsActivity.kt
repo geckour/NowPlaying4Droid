@@ -23,7 +23,10 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.api.model.PurchaseResult
-import com.geckour.nowplaying4gpm.databinding.*
+import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
+import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
+import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
+import com.geckour.nowplaying4gpm.databinding.ItemPrefItemBinding
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
@@ -115,26 +118,26 @@ class SettingsActivity : Activity() {
         binding.scrollView
                 .getChildAt(0)
                 .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            var visibleCount = 0
-            (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
-                (0 until this.childCount).forEach {
-                    val itemBinding: ItemPrefItemBinding? = try {
-                        DataBindingUtil.findBinding(this.getChildAt(it))
-                    } catch (e: ClassCastException) {
-                        return@forEach
+                    var visibleCount = 0
+                    (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
+                        (0 until this.childCount).forEach {
+                            val itemBinding: ItemPrefItemBinding? = try {
+                                DataBindingUtil.findBinding(this.getChildAt(it))
+                            } catch (e: ClassCastException) {
+                                return@forEach
+                            }
+
+                            if (itemBinding?.root?.visibility == View.VISIBLE
+                                    && itemBinding.categoryId == binding.categoryOthers.root.id) {
+                                visibleCount++
+                            }
+                        }
                     }
 
-                    if (itemBinding?.root?.visibility == View.VISIBLE
-                            && itemBinding.categoryId == binding.categoryOthers.root.id) {
-                        visibleCount++
-                    }
+                    binding.categoryOthers.root.visibility =
+                            if (visibleCount == 0) View.GONE
+                            else View.VISIBLE
                 }
-            }
-
-            binding.categoryOthers.root.visibility =
-                    if (visibleCount == 0) View.GONE
-                    else View.VISIBLE
-        }
 
         binding.itemSwitchUseApi.apply {
             maskInactive.visibility =
