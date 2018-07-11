@@ -41,7 +41,7 @@
     <string name="dialog_button_ng">キャンセル</string>
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
-    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む</string>
+    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む\n改行: \\n</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
     <string name="dialog_title_alert_no_metadata">共有できません</string>
