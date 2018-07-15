@@ -37,6 +37,13 @@
     <string name="pref_item_summary_switch_off">OFF</string>
     <string name="pref_mask_desc">寄付によってロックが解除されます</string>
 
+    <string name="palette_light_vibrant">鮮やか / 明</string>
+    <string name="palette_vibrant">鮮やか</string>
+    <string name="palette_dark_vibrant">鮮やか / 暗</string>
+    <string name="palette_light_muted">控えめ / 明</string>
+    <string name="palette_muted">控えめ</string>
+    <string name="palette_dark_muted">控えめ / 暗</string>
+
     <string name="dialog_button_ok">OK</string>
     <string name="dialog_button_ng">キャンセル</string>
 

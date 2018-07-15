@@ -42,12 +42,12 @@
     <string name="pref_item_summary_switch_off">OFF</string>
     <string name="pref_mask_desc">Please donate for unlock this feature</string>
 
-    <string name="palette_light_vibrant" translatable="false">Light Vibrant</string>
-    <string name="palette_vibrant" translatable="false">Vibrant</string>
-    <string name="palette_dark_vibrant" translatable="false">Dark Vibrant</string>
-    <string name="palette_light_muted" translatable="false">Light Muted</string>
-    <string name="palette_muted" translatable="false">Muted</string>
-    <string name="palette_dark_muted" translatable="false">Dark Muted</string>
+    <string name="palette_light_vibrant">Light Vibrant</string>
+    <string name="palette_vibrant">Vibrant</string>
+    <string name="palette_dark_vibrant">Dark Vibrant</string>
+    <string name="palette_light_muted">Light Muted</string>
+    <string name="palette_muted">Muted</string>
+    <string name="palette_dark_muted">Dark Muted</string>
 
     <string name="dialog_button_ok">OK</string>
     <string name="dialog_button_ng">Cancel</string>
