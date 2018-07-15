@@ -16,6 +16,10 @@
         <variable
             name="summary"
             type="String"/>
+
+        <variable
+            name="categoryId"
+            type="Integer" />
     </data>
 
     <android.support.constraint.ConstraintLayout

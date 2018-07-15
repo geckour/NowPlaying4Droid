@@ -16,6 +16,7 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.graphics.Palette
 import android.view.View
 import com.crashlytics.android.Crashlytics
+import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
@@ -255,13 +256,17 @@ fun Palette.getOptimizedColor(context: Context): Int {
 }
 
 fun Activity.setCrashlytics() {
-    Fabric.with(this, Crashlytics())
+    if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
 }
 
-fun <T> Gson.fromJsonOrNull(json: String, type: Type): T? =
+fun <T> Gson.fromJsonOrNull(json: String, type: Type,
+                            onError: Throwable.() -> Unit = { Timber.e(this) }): T? =
         try {
             this.fromJson(json, type)
         } catch (t: Throwable) {
-            Timber.e(t)
+            onError(t)
             null
         }
+
+fun String.foldBreak(): String =
+        this.replace(Regex("[\r\n]"), " ")

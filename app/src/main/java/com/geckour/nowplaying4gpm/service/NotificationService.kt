@@ -46,7 +46,7 @@ class NotificationService : NotificationListenerService() {
 
     companion object {
         const val ACTION_DESTROY_NOTIFICATION = "com.geckour.nowplaying4gpm.destroynotification"
-        const val ACTION_SHOW_NOTIFICATION = "com.geckour.nowplaying4gpm.shownotification"
+        const val ACTION_INVOKE_UPDATE = "com.geckour.nowplaying4gpm.invokeupdate"
         private const val BUNDLE_KEY_TRACK_INFO = "bundle_key_track_info"
         private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
         private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
@@ -61,10 +61,10 @@ class NotificationService : NotificationListenerService() {
 
         private const val timeMargin: Long = 300
 
-        fun sendRequestShowNotification(context: Context, trackInfo: TrackInfo?) {
+        fun sendRequestInvokeUpdate(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
                 it.sendBroadcast(Intent().apply {
-                    action = ACTION_SHOW_NOTIFICATION
+                    action = ACTION_INVOKE_UPDATE
                     putExtra(BUNDLE_KEY_TRACK_INFO, trackInfo)
                 })
             }
@@ -79,7 +79,7 @@ class NotificationService : NotificationListenerService() {
                         getSystemService(NotificationManager::class.java).destroyNotification()
                     }
 
-                    ACTION_SHOW_NOTIFICATION -> {
+                    ACTION_INVOKE_UPDATE -> {
                         if (context == null) return
 
                         val trackInfo =
@@ -89,8 +89,7 @@ class NotificationService : NotificationListenerService() {
                                 else TrackInfo.empty
 
                         async {
-                            getSystemService(NotificationManager::class.java)
-                                    .showNotification(trackInfo)
+                            onUpdate(trackInfo)
                         }
                     }
 
@@ -137,7 +136,7 @@ class NotificationService : NotificationListenerService() {
 
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_DESTROY_NOTIFICATION)
-            addAction(ACTION_SHOW_NOTIFICATION)
+            addAction(ACTION_INVOKE_UPDATE)
             addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(receiver, intentFilter)

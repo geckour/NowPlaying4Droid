@@ -28,7 +28,7 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
         val summary =
                 if (info?.coreElement?.isAllNonNull == true) {
                     sharedPreferences.getFormatPattern(context)
-                            .getSharingText(info.coreElement)
+                            .getSharingText(info.coreElement).foldBreak()
                 } else null
 
         setTextViewText(R.id.widget_summary_share,
@@ -95,7 +95,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 }
         val notificationText =
                 sharedPreferences.getFormatPattern(context)
-                        .getSharingText(trackInfo.coreElement)
+                        .getSharingText(trackInfo.coreElement).foldBreak()
 
         val thumb =
                 trackInfo.artworkUriString?.let {

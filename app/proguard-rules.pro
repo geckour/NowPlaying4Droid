@@ -23,10 +23,11 @@
 
 -dontwarn android.databinding.adapters.CardViewBindingAdapter
 
+-dontwarn okhttp3.internal.platform.ConscryptPlatform
+
 -keepattributes Signature
 
 -dontwarn sun.misc.**
-#-keep class com.google.gson.stream.** { *; }
 
 -keep class com.google.gson.examples.android.model.** { *; }
 

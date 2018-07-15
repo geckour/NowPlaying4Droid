@@ -16,10 +16,7 @@ import android.support.v4.app.NotificationManagerCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.FrameLayout
-import android.widget.Switch
-import android.widget.TextView
+import android.widget.*
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -29,12 +26,12 @@ import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
+import com.geckour.nowplaying4gpm.databinding.ItemPrefItemBinding
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
-import timber.log.Timber
 
 class SettingsActivity : Activity() {
 
@@ -117,6 +114,30 @@ class SettingsActivity : Activity() {
             }
         }
 
+        binding.scrollView
+                .getChildAt(0)
+                .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    var visibleCount = 0
+                    (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
+                        (0 until this.childCount).forEach {
+                            val itemBinding: ItemPrefItemBinding? = try {
+                                DataBindingUtil.findBinding(this.getChildAt(it))
+                            } catch (e: ClassCastException) {
+                                return@forEach
+                            }
+
+                            if (itemBinding?.root?.visibility == View.VISIBLE
+                                    && itemBinding.categoryId == binding.categoryOthers.root.id) {
+                                visibleCount++
+                            }
+                        }
+                    }
+
+                    binding.categoryOthers.root.visibility =
+                            if (visibleCount == 0) View.GONE
+                            else View.VISIBLE
+                }
+
         binding.itemSwitchUseApi.apply {
             maskInactive.visibility =
                     if (sharedPreferences.getDonateBillingState())
@@ -129,7 +150,7 @@ class SettingsActivity : Activity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
                     binding.summarySwitchUseApi = summary
-                    updateNotification()
+                    invokeUpdate()
                 })
             }
         }
@@ -146,7 +167,7 @@ class SettingsActivity : Activity() {
                     binding.summarySwitchReside = summary
 
                     sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, state).apply()
-                    if (state) updateNotification()
+                    if (state) invokeUpdate()
                     else destroyNotification()
                 })
             }
@@ -159,7 +180,7 @@ class SettingsActivity : Activity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
                     binding.summarySwitchBundleArtwork = summary
 
-                    updateNotification()
+                    invokeUpdate()
                 })
             }
         }
@@ -173,7 +194,7 @@ class SettingsActivity : Activity() {
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
                         binding.summarySwitchColorizeNotificationBg = summary
 
-                        updateNotification()
+                        invokeUpdate()
                     })
                 }
             }
@@ -234,7 +255,7 @@ class SettingsActivity : Activity() {
         )
 
         requestNotificationListenerPermission {
-            updateNotification()
+            invokeUpdate()
         }
     }
 
@@ -257,7 +278,7 @@ class SettingsActivity : Activity() {
 
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
-                updateNotification()
+                invokeUpdate()
             }
         }
     }
@@ -282,7 +303,7 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
                 requestNotificationListenerPermission {
-                    updateNotification()
+                    invokeUpdate()
                 }
             }
 
@@ -290,15 +311,8 @@ class SettingsActivity : Activity() {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
-                            val purchaseResult =
-                                    try {
-                                        Gson().fromJson(
-                                                this,
-                                                PurchaseResult::class.java)
-                                    } catch (e: Throwable) {
-                                        Timber.e(e)
-                                        null
-                                    }
+                            val purchaseResult: PurchaseResult? =
+                                    Gson().fromJsonOrNull(this, PurchaseResult::class.java)
 
                             if (purchaseResult?.purchaseState == 0) {
                                 reflectDonation(true)
@@ -356,9 +370,9 @@ class SettingsActivity : Activity() {
                 R.string.dialog_message_alert_failure_auth_twitter)
     }
 
-    private fun updateNotification() =
+    private fun invokeUpdate() =
             requestStoragePermission {
-                NotificationService.sendRequestShowNotification(this, sharedPreferences.getCurrentTrackInfo())
+                NotificationService.sendRequestInvokeUpdate(this, sharedPreferences.getCurrentTrackInfo())
             }
 
     private fun destroyNotification() =
@@ -482,7 +496,7 @@ class SettingsActivity : Activity() {
                     binding.summaryPattern = pattern
                 }
             }
-            updateNotification()
+            invokeUpdate()
             dialog.dismiss()
         }.show()
     }
@@ -522,7 +536,7 @@ class SettingsActivity : Activity() {
                             .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
                             .apply()
                     binding.summaryChooseColor = getString(PaletteColor.getFromIndex(paletteIndex).getSummaryResId())
-                    updateNotification()
+                    invokeUpdate()
                 }
             }
             dialog.dismiss()

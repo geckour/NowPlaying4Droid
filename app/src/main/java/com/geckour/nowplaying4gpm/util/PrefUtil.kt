@@ -68,12 +68,9 @@ private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
         if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
-            try {
-                Gson().fromJson(getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null), ArtworkInfo::class.java)
-            } catch (t: Throwable) {
-                Timber.e(t)
-                null
-            }
+            Gson().fromJsonOrNull(
+                    getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null),
+                    ArtworkInfo::class.java)
         } else null
 
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
@@ -100,17 +97,13 @@ fun SharedPreferences.getSharingText(context: Context): String? {
 }
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? =
-        if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
-            try {
-                Gson().fromJson(
-                        getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
-                        TrackInfo::class.java)
-            } catch (t: Throwable) {
-                Timber.e(t)
+        if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
+            Gson().fromJsonOrNull(
+                    getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
+                    TrackInfo::class.java) {
                 refreshCurrentTrackInfo(TrackInfo.empty)
-                null
             }
-        else null
+        } else null
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
         PaletteColor.values().getOrNull(
@@ -137,7 +130,9 @@ fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
 
 fun SharedPreferences.getTwitterAccessToken(): AccessToken? =
         if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
-            Gson().fromJson(getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, null), AccessToken::class.java)
+            Gson().fromJsonOrNull(
+                    getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, null),
+                    AccessToken::class.java)
         else null
 
 fun SharedPreferences.setAlertTwitterAuthFlag(flag: Boolean) {

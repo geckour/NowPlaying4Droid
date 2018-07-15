@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
@@ -52,18 +52,18 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:title="ツールバータイトル"/>
+            tools:title="ツールバータイトル" />
 
         <View
             android:id="@+id/toolbar_cover"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="?android:attr/selectableItemBackground"
-            app:layout_constraintTop_toTopOf="@id/toolbar"
+            android:elevation="5dp"
             app:layout_constraintBottom_toBottomOf="@id/toolbar"
-            app:layout_constraintStart_toStartOf="@id/toolbar"
             app:layout_constraintEnd_toEndOf="@id/toolbar"
-            android:elevation="5dp"/>
+            app:layout_constraintStart_toStartOf="@id/toolbar"
+            app:layout_constraintTop_toTopOf="@id/toolbar" />
 
         <ScrollView
             android:id="@+id/scrollView"
@@ -87,100 +87,108 @@
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_general}"/>
+                    app:title="@{@string/pref_category_general}" />
 
                 <include
                     android:id="@+id/item_switch_use_api"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_general}"
                     app:desc="@{@string/pref_item_desc_switch_use_api}"
                     app:summary="@{summarySwitchUseApi}"
-                    app:title="@{@string/pref_item_title_switch_use_api}"/>
+                    app:title="@{@string/pref_item_title_switch_use_api}" />
 
                 <include
                     android:id="@+id/category_share"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_share}"/>
+                    app:title="@{@string/pref_category_share}" />
 
                 <include
                     android:id="@+id/item_pattern_format"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_pattern}"
                     app:summary="@{summaryPattern}"
-                    app:title="@{@string/pref_item_title_pattern}"/>
+                    app:title="@{@string/pref_item_title_pattern}" />
 
                 <include
                     android:id="@+id/item_switch_bundle_artwork"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_switch_bundle_artwork}"
                     app:summary="@{summarySwitchBundleArtwork}"
-                    app:title="@{@string/pref_item_title_switch_bundle_artwork}"/>
+                    app:title="@{@string/pref_item_title_switch_bundle_artwork}" />
 
                 <include
                     android:id="@+id/category_notification"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_notification}"/>
+                    app:title="@{@string/pref_category_notification}" />
 
                 <include
                     android:id="@+id/item_switch_reside"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
                     app:desc="@{@string/pref_item_desc_switch_reside_notification}"
                     app:summary="@{summarySwitchReside}"
-                    app:title="@{@string/pref_item_title_switch_reside_notification}"/>
+                    app:title="@{@string/pref_item_title_switch_reside_notification}" />
 
                 <include
                     android:id="@+id/item_choose_color"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
                     app:desc="@{@string/pref_item_desc_choose_color}"
                     app:summary="@{summaryChooseColor}"
-                    app:title="@{@string/pref_item_title_choose_color}"/>
+                    app:title="@{@string/pref_item_title_choose_color}" />
 
                 <include
                     android:id="@+id/item_switch_colorize_notification_bg"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
                     app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
                     app:summary="@{summarySwitchColorizeNotificationBg}"
-                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
+                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}" />
 
                 <include
                     android:id="@+id/category_widget"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_widget}"/>
+                    app:title="@{@string/pref_category_widget}" />
 
                 <include
                     android:id="@+id/item_switch_show_artwork_in_widget"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_widget}"
                     app:desc="@{@string/pref_item_desc_switch_show_artwork_in_widget}"
                     app:summary="@{summarySwitchShowArtworkInWidget}"
-                    app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}"/>
+                    app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}" />
 
                 <include
                     android:id="@+id/item_switch_launch_gpm_on_click_widget_artwork"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_widget}"
                     app:desc="@{@string/pref_item_desc_switch_launch_gpm_on_click_widget_artwork}"
                     app:summary="@{summarySwitchLaunchGpmOnClickWidgetArtwork}"
-                    app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}"/>
+                    app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}" />
 
                 <include
                     android:id="@+id/category_wear"
@@ -194,23 +202,25 @@
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_wear}"
                     app:desc="@{@string/pref_item_desc_auth_twitter}"
-                    app:title="@{@string/pref_item_title_auth_twitter}"/>
+                    app:title="@{@string/pref_item_title_auth_twitter}" />
 
                 <include
                     android:id="@+id/category_others"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_others}"/>
+                    app:title="@{@string/pref_category_others}" />
 
                 <include
                     android:id="@+id/item_donate"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_others}"
                     app:desc="@{@string/pref_item_desc_donate}"
-                    app:title="@{@string/pref_item_title_donate}"/>
+                    app:title="@{@string/pref_item_title_donate}" />
 
             </LinearLayout>
         </ScrollView>
@@ -224,11 +234,11 @@
             android:clickable="true"
             android:focusable="true"
             android:scaleType="fitCenter"
-            app:tint="@android:color/white"
             app:backgroundTint="@color/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:srcCompat="@drawable/ic_app_icon" />
+            app:srcCompat="@drawable/ic_app_icon"
+            app:tint="@android:color/white" />
 
     </android.support.constraint.ConstraintLayout>
 </layout>

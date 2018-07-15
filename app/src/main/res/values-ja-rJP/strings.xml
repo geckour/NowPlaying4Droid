@@ -37,11 +37,18 @@
     <string name="pref_item_summary_switch_off">OFF</string>
     <string name="pref_mask_desc">寄付によってロックが解除されます</string>
 
+    <string name="palette_light_vibrant">鮮やか / 明</string>
+    <string name="palette_vibrant">鮮やか</string>
+    <string name="palette_dark_vibrant">鮮やか / 暗</string>
+    <string name="palette_light_muted">控えめ / 明</string>
+    <string name="palette_muted">控えめ</string>
+    <string name="palette_dark_muted">控えめ / 暗</string>
+
     <string name="dialog_button_ok">OK</string>
     <string name="dialog_button_ng">キャンセル</string>
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
-    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む</string>
+    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む\n改行: \\n</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
     <string name="dialog_title_alert_no_metadata">共有できません</string>
