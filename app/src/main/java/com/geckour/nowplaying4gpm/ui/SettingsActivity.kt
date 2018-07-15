@@ -150,7 +150,7 @@ class SettingsActivity : Activity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
                     binding.summarySwitchUseApi = summary
-                    updateNotification()
+                    invokeUpdate()
                 })
             }
         }
@@ -167,7 +167,7 @@ class SettingsActivity : Activity() {
                     binding.summarySwitchReside = summary
 
                     sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, state).apply()
-                    if (state) updateNotification()
+                    if (state) invokeUpdate()
                     else destroyNotification()
                 })
             }
@@ -180,7 +180,7 @@ class SettingsActivity : Activity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
                     binding.summarySwitchBundleArtwork = summary
 
-                    updateNotification()
+                    invokeUpdate()
                 })
             }
         }
@@ -194,7 +194,7 @@ class SettingsActivity : Activity() {
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
                         binding.summarySwitchColorizeNotificationBg = summary
 
-                        updateNotification()
+                        invokeUpdate()
                     })
                 }
             }
@@ -255,7 +255,7 @@ class SettingsActivity : Activity() {
         )
 
         requestNotificationListenerPermission {
-            updateNotification()
+            invokeUpdate()
         }
     }
 
@@ -278,7 +278,7 @@ class SettingsActivity : Activity() {
 
         when (requestCode) {
             PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
-                updateNotification()
+                invokeUpdate()
             }
         }
     }
@@ -303,7 +303,7 @@ class SettingsActivity : Activity() {
         when (requestCode) {
             RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
                 requestNotificationListenerPermission {
-                    updateNotification()
+                    invokeUpdate()
                 }
             }
 
@@ -370,9 +370,9 @@ class SettingsActivity : Activity() {
                 R.string.dialog_message_alert_failure_auth_twitter)
     }
 
-    private fun updateNotification() =
+    private fun invokeUpdate() =
             requestStoragePermission {
-                NotificationService.sendRequestShowNotification(this, sharedPreferences.getCurrentTrackInfo())
+                NotificationService.sendRequestInvokeUpdate(this, sharedPreferences.getCurrentTrackInfo())
             }
 
     private fun destroyNotification() =
@@ -496,7 +496,7 @@ class SettingsActivity : Activity() {
                     binding.summaryPattern = pattern
                 }
             }
-            updateNotification()
+            invokeUpdate()
             dialog.dismiss()
         }.show()
     }
@@ -536,7 +536,7 @@ class SettingsActivity : Activity() {
                             .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
                             .apply()
                     binding.summaryChooseColor = getString(PaletteColor.getFromIndex(paletteIndex).getSummaryResId())
-                    updateNotification()
+                    invokeUpdate()
                 }
             }
             dialog.dismiss()
