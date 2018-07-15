@@ -1,5 +1,5 @@
-# NowPlaying4GPM
-#NowPlaying Google - Play (Music)
+# NowPlaying4Droid
+#NowPlaying Music - with Player on (Android)
 
 ## What's this?
 Android app for sharing #NowPlaying using MediaController.  
