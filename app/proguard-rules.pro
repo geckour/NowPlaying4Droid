@@ -24,10 +24,16 @@
 -dontwarn android.databinding.adapters.CardViewBindingAdapter
 
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
 -keepattributes Signature
+-keepattributes Exceptions
+-keepclassmembernames interface * {
+    @retrofit2.http.* <methods>;
+}
 
 -dontwarn sun.misc.**
+
 
 -keep class com.google.gson.examples.android.model.** { *; }
 
