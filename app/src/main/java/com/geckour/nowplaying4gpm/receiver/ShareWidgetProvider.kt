@@ -9,11 +9,10 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
-import com.geckour.nowplaying4gpm.util.async
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getShareWidgetViews
 import com.geckour.nowplaying4gpm.util.ui
-import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.async
 
 class ShareWidgetProvider : AppWidgetProvider() {
 
@@ -37,8 +36,6 @@ class ShareWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private val jobs: ArrayList<Job> = ArrayList()
-
     override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
         if (context == null || appWidgetIds == null) return
@@ -60,7 +57,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
         when (intent.action) {
             Action.SHARE.name -> {
-                ui(jobs) { context.startActivity(SharingActivity.getIntent(context)) }
+                ui(context) { context.startActivity(SharingActivity.getIntent(context)) }
             }
 
             Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))

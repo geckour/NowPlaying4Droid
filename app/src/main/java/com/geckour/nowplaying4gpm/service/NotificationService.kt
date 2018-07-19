@@ -38,7 +38,7 @@ import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 
-class NotificationService : NotificationListenerService() {
+class NotificationService : NotificationListenerService(), JobHandler {
 
     enum class Channel(val id: Int) {
         NOTIFICATION_CHANNEL_SHARE(180)
@@ -88,9 +88,7 @@ class NotificationService : NotificationListenerService() {
                                             ?: TrackInfo.empty
                                 else TrackInfo.empty
 
-                        async {
-                            onUpdate(trackInfo)
-                        }
+                        launch { onUpdate(trackInfo) }
                     }
 
                     Intent.ACTION_USER_PRESENT -> {
@@ -107,10 +105,11 @@ class NotificationService : NotificationListenerService() {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
-    private val twitterApiClient: TwitterApiClient =
-            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY,
-                    BuildConfig.TWITTER_CONSUMER_SECRET)
-    private val jobs: ArrayList<Job> = ArrayList()
+    private val twitterApiClient: TwitterApiClient by lazy {
+        TwitterApiClient(this, BuildConfig.TWITTER_CONSUMER_KEY,
+                BuildConfig.TWITTER_CONSUMER_SECRET)
+    }
+    override val job: Job = Job()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var currentTrackClearJob: Job? = null
@@ -122,7 +121,7 @@ class NotificationService : NotificationListenerService() {
 
             WEAR_PATH_POST_TWITTER -> {
                 if (it.sourceNodeId != null)
-                    async { onRequestPostToTwitterFromWear(it.sourceNodeId) }
+                    launch { onRequestPostToTwitterFromWear(it.sourceNodeId) }
             }
 
             WEAR_PATH_SHARE_DELEGATE -> {
@@ -156,7 +155,7 @@ class NotificationService : NotificationListenerService() {
         }
 
         getSystemService(NotificationManager::class.java).destroyNotification()
-        jobs.cancelAll()
+        job.cancel()
     }
 
     override fun onListenerConnected() {
@@ -342,7 +341,7 @@ class NotificationService : NotificationListenerService() {
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
         if (trackInfo != null) {
             deleteWearTrackInfo {
-                async { updateWear(trackInfo) }
+                launch { updateWear(trackInfo) }
             }
         }
     }
@@ -475,8 +474,9 @@ class NotificationService : NotificationListenerService() {
             val placeholderBitmap =
                     (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
 
-            return if ((notificationBitmap.similarity(placeholderBitmap).await() ?: 1f) > 0.9) null
-            else notificationBitmap
+            return if ((notificationBitmap.similarity(placeholderBitmap) ?: 1f) > 0.9) {
+                null
+            } else notificationBitmap
         }
 
         return null
@@ -501,7 +501,7 @@ class NotificationService : NotificationListenerService() {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
                 && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
-                ui(jobs) {
+                ui(this@NotificationService) {
                     getNotification(this@NotificationService, trackInfo)?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)

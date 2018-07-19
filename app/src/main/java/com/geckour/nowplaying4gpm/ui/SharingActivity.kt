@@ -14,7 +14,7 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 
-class SharingActivity : Activity() {
+class SharingActivity : Activity(), JobHandler {
 
     enum class IntentRequestCode {
         SHARE
@@ -29,14 +29,14 @@ class SharingActivity : Activity() {
                 }
     }
 
-    private val jobs: ArrayList<Job> = ArrayList()
+    override val job: Job = Job()
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
         setCrashlytics()
 
-        ui(jobs) { startShare(intent.requireUnlock()) }
+        ui(this) { startShare(intent.requireUnlock()) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,5 +100,11 @@ class SharingActivity : Activity() {
         return if (this.hasExtra(ARGS_KEY_REQUIRE_UNLOCK))
             this.getBooleanExtra(ARGS_KEY_REQUIRE_UNLOCK, default)
         else default
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        job.cancel()
     }
 }

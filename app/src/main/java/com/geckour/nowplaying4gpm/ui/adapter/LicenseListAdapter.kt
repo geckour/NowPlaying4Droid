@@ -77,7 +77,7 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
     inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind() {
-            ui(jobs) {
+            ui(binding.root.context) {
                 Glide.with(binding.button)
                         .load(binding.button.context.getString(R.string.easter_egg_icon_url))
                         .into(binding.button)
