@@ -11,7 +11,7 @@ import com.geckour.nowplaying4gpm.ui.adapter.LicenseListAdapter
 import com.geckour.nowplaying4gpm.databinding.ActivityLicensesBinding
 import com.geckour.nowplaying4gpm.util.setCrashlytics
 
-class LicensesActivity: Activity() {
+class LicensesActivity : Activity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
@@ -42,7 +42,9 @@ class LicensesActivity: Activity() {
                             LicenseListAdapter.LicenseItem(getString(R.string.library_retrofit), getString(R.string.license_retrofit), false),
                             LicenseListAdapter.LicenseItem(getString(R.string.library_okhttp), getString(R.string.license_okhttp), false),
                             LicenseListAdapter.LicenseItem(getString(R.string.library_coroutines4retrofit), getString(R.string.license_coroutines4retrofit), false),
-                            LicenseListAdapter.LicenseItem(getString(R.string.library_glide), getString(R.string.license_glide), false)
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_glide), getString(R.string.license_glide), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_twitter4j), getString(R.string.license_twitter4j), false),
+                            LicenseListAdapter.LicenseItem(getString(R.string.library_gson), getString(R.string.license_gson), false)
                     )
             )
             adapter = this@LicensesActivity.adapter
