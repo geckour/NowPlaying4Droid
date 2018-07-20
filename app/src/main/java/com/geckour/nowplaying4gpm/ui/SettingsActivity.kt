@@ -33,7 +33,7 @@ import com.geckour.nowplaying4gpm.util.*
 import com.google.gson.Gson
 import kotlinx.coroutines.experimental.Job
 
-class SettingsActivity : Activity() {
+class SettingsActivity : Activity(), JobHandler {
 
     enum class PermissionRequestCode {
         EXTERNAL_STORAGE
@@ -58,12 +58,13 @@ class SettingsActivity : Activity() {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
     private lateinit var binding: ActivitySettingsBinding
-    private val jobs: ArrayList<Job> = ArrayList()
     private lateinit var serviceConnection: ServiceConnection
     private var billingService: IInAppBillingService? = null
 
     private val twitterApiClient =
-            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
+            TwitterApiClient(this, BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
+
+    override val job: Job = Job()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -207,7 +208,7 @@ class SettingsActivity : Activity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) { _, summary ->
                     binding.summarySwitchShowArtworkInWidget = summary
 
-                    async { updateWidget() }
+                    launch(this@SettingsActivity) { updateWidget() }
                 })
             }
         }
@@ -219,7 +220,7 @@ class SettingsActivity : Activity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) { _, summary ->
                     binding.summarySwitchLaunchGpmOnClickWidgetArtwork = summary
 
-                    async { updateWidget() }
+                    launch(this@SettingsActivity) { updateWidget() }
                 })
             }
         }
@@ -233,7 +234,7 @@ class SettingsActivity : Activity() {
         binding.itemDonate.apply {
             if (sharedPreferences.getDonateBillingState()) root.visibility = View.GONE
             else root.setOnClickListener {
-                ui(jobs) { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
+                ui(this@SettingsActivity) { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
             }
         }
 
@@ -287,7 +288,7 @@ class SettingsActivity : Activity() {
         super.onDestroy()
 
         billingService?.apply { unbindService(serviceConnection) }
-        jobs.cancelAll()
+        job.cancel()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -347,7 +348,7 @@ class SettingsActivity : Activity() {
 
         if (verifier == null) onAuthTwitterError()
         else {
-            async {
+            launch(this@SettingsActivity) {
                 val accessToken = twitterApiClient.getAccessToken(verifier).await()
 
                 if (accessToken == null) onAuthTwitterError()
@@ -419,8 +420,8 @@ class SettingsActivity : Activity() {
     }
 
     private fun onClickAuthTwitter() {
-        async {
-            val uri = twitterApiClient.getRequestOAuthUri().await() ?: return@async
+        launch(this@SettingsActivity) {
+            val uri = twitterApiClient.getRequestOAuthUri().await() ?: return@launch
 
             CustomTabsIntent.Builder()
                     .setShowTitle(true)

@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.api.model.SkuDetail
-import com.geckour.nowplaying4gpm.util.async
+import com.geckour.nowplaying4gpm.util.asyncOrNull
 import com.google.gson.Gson
 
 class BillingApiClient(private val service: IInAppBillingService) {
@@ -26,7 +26,7 @@ class BillingApiClient(private val service: IInAppBillingService) {
         const val QUERY_KEY_SKU_DETAILS = "ITEM_ID_LIST"
     }
 
-    suspend fun getPurchasedItems(context: Context): List<String> = async {
+    suspend fun getPurchasedItems(context: Context): List<String> = asyncOrNull(context) {
         service.getPurchases(
                 API_VERSION,
                 context.packageName,
@@ -35,7 +35,7 @@ class BillingApiClient(private val service: IInAppBillingService) {
         ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
     }.await() ?: listOf()
 
-    suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = async {
+    suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = asyncOrNull(context) {
         service.getSkuDetails(
                 API_VERSION,
                 context.packageName,

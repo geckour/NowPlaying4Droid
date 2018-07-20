@@ -22,7 +22,6 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 import java.lang.reflect.Type
@@ -197,28 +196,27 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
     }
 }
 
-fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> =
-        async {
-            if (this@similarity.isRecycled) {
-                Timber.e(IllegalStateException("Bitmap is recycled"))
-                return@async null
-            }
+fun Bitmap.similarity(bitmap: Bitmap): Float? {
+    if (this@similarity.isRecycled) {
+        Timber.e(IllegalStateException("Bitmap is recycled"))
+        return null
+    }
 
-            val origin = this@similarity.copy(this@similarity.config, false)
-            val other =
-                    if (origin.width != bitmap.width || origin.height != bitmap.height)
-                        Bitmap.createScaledBitmap(bitmap, origin.width, origin.height, false)
-                    else bitmap
+    val origin = this@similarity.copy(this@similarity.config, false)
+    val other =
+            if (origin.width != bitmap.width || origin.height != bitmap.height)
+                Bitmap.createScaledBitmap(bitmap, origin.width, origin.height, false)
+            else bitmap
 
-            var count = 0
-            for (x in 0 until origin.width) {
-                for (y in 0 until origin.height) {
-                    if (origin.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
-                }
-            }
-
-            return@async (count.toFloat() / (origin.width * origin.height))
+    var count = 0
+    for (x in 0 until origin.width) {
+        for (y in 0 until origin.height) {
+            if (origin.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
         }
+    }
+
+    return (count.toFloat() / (origin.width * origin.height))
+}
 
 fun String.getUri(): Uri? =
         try {
