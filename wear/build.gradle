@@ -1,6 +1,9 @@
 apply plugin: 'com.android.application'
+
 apply plugin: 'kotlin-android'
+
 apply plugin: 'kotlin-android-extensions'
+
 apply plugin: 'kotlin-kapt'
 
 kotlin.experimental.coroutines 'enable'
@@ -12,8 +15,8 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 3
-        versionName "1.1.0"
+        versionCode 4
+        versionName "1.1.1"
         dataBinding.enabled = true
 
         def filesAuthorityValue = applicationId + ".files"
@@ -50,6 +53,7 @@ android {
 dependencies {
     def coroutines_version = '0.23.3'
     def android_support_version = '27.1.1'
+    def firebase_version = '16.0.1'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
@@ -61,6 +65,9 @@ dependencies {
     implementation "com.android.support:appcompat-v7:$android_support_version"
     implementation "com.android.support:wear:$android_support_version"
     compileOnly 'com.google.android.wearable:wearable:2.3.0'
+    implementation "com.google.firebase:firebase-core:$firebase_version"
+    implementation "com.google.firebase:firebase-crash:$firebase_version"
+    implementation('com.crashlytics.sdk.android:crashlytics:2.9.3') { transitive = true }
 
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"

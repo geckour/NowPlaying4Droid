@@ -36,7 +36,6 @@ import kotlinx.coroutines.experimental.cancelAndJoin
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
-import java.io.ByteArrayOutputStream
 
 class NotificationService : NotificationListenerService(), JobHandler {
 
@@ -191,12 +190,12 @@ class NotificationService : NotificationListenerService(), JobHandler {
     }
 
     private fun fetchMetadata(packageName: String): MediaMetadata? =
-            getSystemService(MediaSessionManager::class.java).let {
+            getSystemService(MediaSessionManager::class.java).let { manager ->
                 val componentName =
                         ComponentName(this@NotificationService,
                                 NotificationService::class.java)
 
-                return@let it.getActiveSessions(componentName)
+                return@let manager.getActiveSessions(componentName)
                         .firstOrNull { it.packageName == packageName }
                         ?.metadata
             }
@@ -292,38 +291,30 @@ class NotificationService : NotificationListenerService(), JobHandler {
         }
     }
 
-    private suspend fun updateWear(trackInfo: TrackInfo) {
-        val subject =
-                if (trackInfo.coreElement.isAllNonNull) {
-                    sharedPreferences.getFormatPattern(this)
-                            .getSharingText(trackInfo.coreElement)
-                } else null
-        val artwork = trackInfo.artworkUriString
-                ?.getUri()
-                ?.let {
-                    ByteArrayOutputStream().apply {
-                        getBitmapFromUri(this@NotificationService, it)
-                                ?.compress(
-                                        Bitmap.CompressFormat.JPEG,
-                                        100,
-                                        this
-                                )
-                    }.toByteArray()
-                }
+    private fun updateWear(trackInfo: TrackInfo) {
+        launch {
+            val subject =
+                    if (trackInfo.coreElement.isAllNonNull) {
+                        sharedPreferences.getFormatPattern(this@NotificationService)
+                                .getSharingText(trackInfo.coreElement)
+                    } else null
+            val artwork = trackInfo.artworkUriString
+                    ?.getUri()
 
-        Wearable.getDataClient(this)
-                .putDataItem(
-                        PutDataMapRequest.create(WEAR_PATH_TRACK_INFO_POST)
-                                .apply {
-                                    dataMap.apply {
-                                        putString(WEAR_KEY_SUBJECT, subject)
-                                        if (artwork != null) {
-                                            putAsset(WEAR_KEY_ARTWORK,
-                                                    Asset.createFromBytes(artwork))
+            Wearable.getDataClient(this@NotificationService)
+                    .putDataItem(
+                            PutDataMapRequest.create(WEAR_PATH_TRACK_INFO_POST)
+                                    .apply {
+                                        dataMap.apply {
+                                            putString(WEAR_KEY_SUBJECT, subject)
+                                            if (artwork != null) {
+                                                putAsset(WEAR_KEY_ARTWORK,
+                                                        Asset.createFromUri(artwork))
+                                            }
                                         }
-                                    }
-                                }.asPutDataRequest()
-                )
+                                    }.asPutDataRequest()
+                    )
+        }
     }
 
     private fun deleteWearTrackInfo(onComplete: () -> Unit = {}) {
@@ -373,7 +364,8 @@ class NotificationService : NotificationListenerService(), JobHandler {
                 .logEvent(
                         FirebaseAnalytics.Event.SELECT_CONTENT,
                         Bundle().apply {
-                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked direct share to twitter")
+                            putString(FirebaseAnalytics.Param.ITEM_NAME,
+                                    "Invoked direct share to twitter")
                         }
                 )
 
@@ -456,31 +448,32 @@ class NotificationService : NotificationListenerService(), JobHandler {
         return null
     }
 
-    private suspend fun Notification.getArtworkBitmap(): Bitmap? {
-        val notificationBitmap =
-                (this.getLargeIcon()
-                        ?.loadDrawable(this@NotificationService) as? BitmapDrawable?)
-                        ?.bitmap
-                        ?.let {
-                            try {
-                                it.copy(it.config, false)
-                            } catch (t: Throwable) {
-                                Timber.e(t)
-                                null
-                            }
-                        }
+    private suspend fun Notification.getArtworkBitmap(): Bitmap? =
+            async(this@NotificationService) {
+                val notificationBitmap =
+                        (this@getArtworkBitmap.getLargeIcon()
+                                ?.loadDrawable(this@NotificationService) as? BitmapDrawable)
+                                ?.bitmap
+                                ?.let {
+                                    try {
+                                        it.copy(it.config, false)
+                                    } catch (t: Throwable) {
+                                        Timber.e(t)
+                                        null
+                                    }
+                                }
 
-        if (notificationBitmap != null) {
-            val placeholderBitmap =
-                    (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
+                if (notificationBitmap != null) {
+                    val placeholderBitmap =
+                            (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
 
-            return if ((notificationBitmap.similarity(placeholderBitmap) ?: 1f) > 0.9) {
-                null
-            } else notificationBitmap
-        }
+                    return@async if ((notificationBitmap.similarity(placeholderBitmap)
+                                    ?: 1f) > 0.9) null
+                    else notificationBitmap
+                }
 
-        return null
-    }
+                return@async null
+            }.await()
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createDefaultChannel() {
