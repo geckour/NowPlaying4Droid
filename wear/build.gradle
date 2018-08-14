@@ -15,8 +15,8 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 3
-        versionName "1.1.0"
+        versionCode 4
+        versionName "1.1.1"
         dataBinding.enabled = true
 
         def filesAuthorityValue = applicationId + ".files"
