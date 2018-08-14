@@ -16,6 +16,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
 
 class MainActivity : WearableActivity() {
@@ -42,7 +43,7 @@ class MainActivity : WearableActivity() {
                     if (it.dataItem.uri.path.compareTo(PATH_TRACK_INFO_POST) == 0) {
                         val dataMap = DataMapItem.fromDataItem(it.dataItem).dataMap
 
-                        async {
+                        launch {
                             val subject = dataMap.getString(KEY_SUBJECT)
                             onUpdateTrackInfo(TrackInfo(subject, null))
 
