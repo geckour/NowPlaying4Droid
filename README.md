@@ -1,6 +1,6 @@
 # NowPlaying4Droid
 #NowPlaying Music - with Player on (Android)  
-<a href='https://play.google.com/store/apps/details?id=com.geckour.nowplaying4gpm&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1' target='_blank'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' style='width:12%'/></a>
+<a href='https://play.google.com/store/apps/details?id=com.geckour.nowplaying4gpm&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1' target='_blank'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' width='15%'/></a>
 
 ## What's this?
 Android app for sharing #NowPlaying using MediaController.  
