@@ -58,8 +58,6 @@ class NotificationService : NotificationListenerService(), JobHandler {
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
-        private const val timeMargin: Long = 300
-
         fun sendRequestInvokeUpdate(context: Context, trackInfo: TrackInfo?) {
             context.checkStoragePermission {
                 it.sendBroadcast(Intent().apply {
@@ -113,6 +111,9 @@ class NotificationService : NotificationListenerService(), JobHandler {
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var currentTrackClearJob: Job? = null
     private var currentTrackSetJob: Job? = null
+
+    private var playerChangedFlag = false
+    private var chatteringCancelFlag = false
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
@@ -176,7 +177,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
 
         if (sbn != null && sbn.packageName != packageName) {
             fetchMetadata(sbn.packageName)?.apply {
-                onMetadataChanged(this, sbn.packageName, sbn.notification)
+                launch { onMetadataChanged(this@apply, sbn.packageName, sbn.notification) }
             }
         }
     }
@@ -212,22 +213,28 @@ class NotificationService : NotificationListenerService(), JobHandler {
         getSystemService(NotificationManager::class.java).destroyNotification()
     }
 
-    private fun onMetadataChanged(metadata: MediaMetadata,
-                                  packageName: String, notification: Notification? = null) {
+    private suspend fun onMetadataChanged(metadata: MediaMetadata,
+                                          packageName: String, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
 
-        if (coreElement != currentTrack) {
-            currentTrackSetJob?.cancel()
+        if (coreElement != currentTrack && playerChangedFlag.not() && chatteringCancelFlag.not()) {
+            launch {
+                chatteringCancelFlag = true
+                delay(200)
+                chatteringCancelFlag = false
+            }
+            if (sharedPreferences.getCurrentTrackInfo()?.equals(packageName)?.not() == true) {
+                playerChangedFlag = true
+            }
+            currentTrackClearJob?.cancelAndJoin()
+            currentTrackSetJob?.cancelAndJoin()
 
             currentTrackSetJob = launch {
-                delay(timeMargin)
-
-                currentTrackClearJob?.cancelAndJoin()
-
                 onQuickUpdate(coreElement, packageName)
                 val artworkUri = metadata.storeArtworkUri(coreElement,
                         notification?.getArtworkBitmap())
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName))
+                playerChangedFlag = false
             }
         }
     }
@@ -239,9 +246,13 @@ class NotificationService : NotificationListenerService(), JobHandler {
                             it.getString(MediaMetadata.METADATA_KEY_TITLE)
                         else null
                 val artist: String? =
-                        if (it.containsKey(MediaMetadata.METADATA_KEY_ARTIST))
-                            it.getString(MediaMetadata.METADATA_KEY_ARTIST)
-                        else null
+                        when {
+                            it.containsKey(MediaMetadata.METADATA_KEY_ARTIST) ->
+                                it.getString(MediaMetadata.METADATA_KEY_ARTIST)
+                            it.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ARTIST) ->
+                                it.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
+                            else -> null
+                        }
                 val album: String? =
                         if (it.containsKey(MediaMetadata.METADATA_KEY_ALBUM))
                             it.getString(MediaMetadata.METADATA_KEY_ALBUM)
