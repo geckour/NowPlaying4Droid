@@ -19,4 +19,22 @@ object OkHttpProvider {
                     addNetworkInterceptor(StethoInterceptor())
                 }
             }.build()
+
+    val mastodonInstancesClient: OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .addInterceptor {
+                return@addInterceptor it.proceed(it.request()
+                        .newBuilder().header("Authorization",
+                                "Bearer ${BuildConfig.MASTODON_INSTANCES_SECRET}")
+                        .build())
+            }
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addNetworkInterceptor(
+                            HttpLoggingInterceptor()
+                                    .setLevel(HttpLoggingInterceptor.Level.BODY))
+                    addNetworkInterceptor(StethoInterceptor())
+                }
+            }.build()
 }

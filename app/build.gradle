@@ -38,6 +38,8 @@ android {
         it.buildConfigField "String", keyNameTwitterConsumerSecret, getKey(keyNameTwitterConsumerSecret)
         def keyNameSkuDonate = "SKU_KEY_DONATE"
         it.buildConfigField "String", keyNameSkuDonate, getKey(keyNameSkuDonate)
+        def keyNameMastodonInstancesSecret = "MASTODON_INSTANCES_SECRET"
+        it.buildConfigField "String", keyNameMastodonInstancesSecret, getKey(keyNameMastodonInstancesSecret)
     }
 
     signingConfigs {
@@ -129,6 +131,9 @@ dependencies {
     // Wear
     implementation 'com.google.android.gms:play-services-wearable:15.0.1'
     implementation 'org.twitter4j:twitter4j-core:4.0.4'
+
+    // Mastodon
+    implementation 'com.github.sys1yagi.mastodon4j:mastodon4j:1.6.0'
 }
 
 // Billing
