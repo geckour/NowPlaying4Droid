@@ -20,6 +20,7 @@ import android.support.annotation.RequiresApi
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
@@ -31,11 +32,19 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.gson.Gson
+import com.sys1yagi.mastodon4j.MastodonClient
+import com.sys1yagi.mastodon4j.api.method.Media
+import com.sys1yagi.mastodon4j.api.method.Statuses
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.cancelAndJoin
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 
 class NotificationService : NotificationListenerService(), JobHandler {
 
@@ -111,6 +120,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var currentTrackClearJob: Job? = null
     private var currentTrackSetJob: Job? = null
+    private var postMastodonJob: Job? = null
 
     private var playerChangedFlag = false
     private var chatteringCancelFlag = false
@@ -217,7 +227,10 @@ class NotificationService : NotificationListenerService(), JobHandler {
                                           packageName: String, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
 
-        if (coreElement != currentTrack && playerChangedFlag.not() && chatteringCancelFlag.not()) {
+        if (coreElement.isAllNonNull &&
+                coreElement != currentTrack &&
+                playerChangedFlag.not() &&
+                chatteringCancelFlag.not()) {
             launch {
                 chatteringCancelFlag = true
                 delay(200)
@@ -275,7 +288,10 @@ class NotificationService : NotificationListenerService(), JobHandler {
         updateSharedPreference(info)
         updateWidget(info)
         updateNotification(info)
-        if (withArtwork) updateWear(info)
+        if (withArtwork) {
+            updateWear(info)
+            postMastodon(info)
+        }
     }
 
     private fun updateSharedPreference(trackInfo: TrackInfo) {
@@ -309,8 +325,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
                         sharedPreferences.getFormatPattern(this@NotificationService)
                                 .getSharingText(trackInfo.coreElement)
                     } else null
-            val artwork = trackInfo.artworkUriString
-                    ?.getUri()
+            val artwork = trackInfo.artworkUriString?.getUri()
 
             Wearable.getDataClient(this@NotificationService)
                     .putDataItem(
@@ -325,6 +340,56 @@ class NotificationService : NotificationListenerService(), JobHandler {
                                         }
                                     }.asPutDataRequest()
                     )
+        }
+    }
+
+    private fun postMastodon(trackInfo: TrackInfo) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
+            postMastodonJob?.cancel()
+            postMastodonJob = launch {
+                delay(sharedPreferences.getDelayDurationPostMastodon())
+
+                val subject =
+                        if (trackInfo.coreElement.isAllNonNull) {
+                            sharedPreferences.getFormatPattern(this@NotificationService)
+                                    .getSharingText(trackInfo.coreElement)
+                        } else null ?: return@launch
+                val artwork = trackInfo.artworkUriString?.let {
+                    try {
+                        getBitmapFromUriString(this@NotificationService, it)?.let { bitmap ->
+                            ByteArrayOutputStream().apply {
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                            }.toByteArray()
+                        }
+                    } catch (t: Throwable) {
+                        Timber.e(t)
+                        null
+                    }
+                }
+
+                val userInfo = sharedPreferences.getMastodonUserInfo() ?: return@launch
+
+                val mastodonClient = MastodonClient.Builder(userInfo.instanceName,
+                        OkHttpProvider.clientBuilder, Gson())
+                        .accessToken(userInfo.accessToken.accessToken)
+                        .build()
+
+                val mediaId = artwork?.let {
+                    Media(mastodonClient).postMedia(
+                            MultipartBody.Part.createFormData("file", "artwork.jpg",
+                                    RequestBody.create(MediaType.get("image/jpeg"), it)))
+                            .toJob(this@NotificationService)
+                            .await()
+                            ?.id
+                }
+                Statuses(mastodonClient).postStatus(
+                        subject,
+                        null,
+                        mediaId?.let { listOf(it) },
+                        false,
+                        null)
+                        .toJob(this@NotificationService)
+            }
         }
     }
 

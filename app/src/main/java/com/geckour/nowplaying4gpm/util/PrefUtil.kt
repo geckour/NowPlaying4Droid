@@ -18,6 +18,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_USE_API(false),
     PREF_KEY_WHETHER_BUNDLE_ARTWORK(true),
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
+    PREF_KEY_DELAY_POST_MASTODON(500L),
     PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET(true),
     PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK(true),
@@ -25,7 +26,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE(false),
     PREF_KEY_TWITTER_ACCESS_TOKEN,
-    PREF_KEY_MASTODON_ACCESS_TOKEN,
+    PREF_KEY_MASTODON_USER_INFO,
     PREF_KEY_FLAG_ALERT_AUTH_TWITTER(false),
     PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE
 }
@@ -98,6 +99,16 @@ fun SharedPreferences.getSwitchState(key: PrefKey): Boolean =
             getBoolean(key.name, (key.defaultValue as? Boolean) ?: true)
         else key.defaultValue as? Boolean ?: true
 
+fun SharedPreferences.getDelayDurationPostMastodon(): Long =
+        if (contains(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name))
+            getLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name,
+                    PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long)
+        else PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long
+
+fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
+    edit().putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration).apply()
+}
+
 fun SharedPreferences.getDonateBillingState(): Boolean =
         contains(PrefKey.PREF_KEY_BILLING_DONATE.name)
                 && getBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name,
@@ -116,15 +127,15 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? =
         else null
 
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
-    edit().putString(PrefKey.PREF_KEY_MASTODON_ACCESS_TOKEN.name, Gson().toJson(userInfo))
+    edit().putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, Gson().toJson(userInfo))
             .apply()
 }
 
 fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? =
-        if (contains(PrefKey.PREF_KEY_MASTODON_ACCESS_TOKEN.name))
+        if (contains(PrefKey.PREF_KEY_MASTODON_USER_INFO.name))
             Gson().fromJsonOrNull(
-                    getString(PrefKey.PREF_KEY_MASTODON_ACCESS_TOKEN.name,
-                            PrefKey.PREF_KEY_MASTODON_ACCESS_TOKEN.defaultValue as? String),
+                    getString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
+                            PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String),
                     MastodonUserInfo::class.java)
         else null
 

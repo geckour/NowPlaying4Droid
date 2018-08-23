@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object OkHttpProvider {
 
-    val client: OkHttpClient = OkHttpClient.Builder()
+    val clientBuilder: OkHttpClient.Builder = OkHttpClient.Builder()
             .connectTimeout(3, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.SECONDS)
             .apply {
@@ -18,7 +18,9 @@ object OkHttpProvider {
                                     .setLevel(HttpLoggingInterceptor.Level.BODY))
                     addNetworkInterceptor(StethoInterceptor())
                 }
-            }.build()
+            }
+
+    val client: OkHttpClient = clientBuilder.build()
 
     val mastodonInstancesClient: OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(3, TimeUnit.SECONDS)
