@@ -14,6 +14,7 @@ import android.preference.PreferenceManager
 import android.support.customtabs.CustomTabsIntent
 import android.support.design.widget.Snackbar
 import android.support.v4.app.NotificationManagerCompat
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -210,6 +211,8 @@ class SettingsActivity : Activity(), JobHandler {
                     binding.summary = summary
                     this@SettingsActivity.binding.itemAuthMastodon.maskInactive.visibility =
                             if (checkState) View.GONE else View.VISIBLE
+                    this@SettingsActivity.binding.itemDelayMastodon.maskInactive.visibility =
+                            if (checkState) View.GONE else View.VISIBLE
                 })
             }
         }
@@ -228,6 +231,19 @@ class SettingsActivity : Activity(), JobHandler {
                                 userInfo.userName, userInfo.instanceName)
             }
             binding.root.setOnClickListener { onClickAuthMastodon() }
+        }
+
+        binding.itemDelayMastodon.also { binding ->
+            binding.maskInactive.visibility =
+                    if (sharedPreferences.getSwitchState(
+                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
+                        View.GONE
+                    else View.VISIBLE
+
+            binding.summary = getString(R.string.pref_item_summary_delay_mastodon,
+                    sharedPreferences.getDelayDurationPostMastodon())
+            binding.root.setOnClickListener { onClickDelayMastodon() }
+
         }
 
         binding.itemSwitchColorizeNotificationBg.also { binding ->
@@ -640,6 +656,44 @@ class SettingsActivity : Activity(), JobHandler {
                                     .build()
                                     .launchUrl(this@SettingsActivity, Uri.parse(authUrl))
                         }
+                    }
+                }
+            }
+            dialog.dismiss()
+        }.show()
+    }
+
+    private fun onClickDelayMastodon() {
+        val delayTimeInputDialogBinding = DialogEditTextBinding.inflate(
+                LayoutInflater.from(this),
+                null,
+                false
+        ).apply {
+            hint = getString(R.string.dialog_hint_mastodon_delay)
+            editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            editText.setText(sharedPreferences.getDelayDurationPostMastodon().toString())
+            editText.setSelection(editText.text.length)
+        }
+
+        AlertDialog.Builder(this).generate(
+                delayTimeInputDialogBinding.root,
+                getString(R.string.dialog_title_mastodon_delay)
+        ) { dialog, which ->
+            when (which) {
+                DialogInterface.BUTTON_POSITIVE -> {
+                    val duration = try {
+                        delayTimeInputDialogBinding.editText.text.toString().toLong()
+                    } catch (t: Throwable) {
+                        Timber.e(t)
+                        null
+                    }
+                    if (duration != null && duration in (500..60000)) {
+                        sharedPreferences.storeDelayDurationPostMastodon(duration)
+                        binding.itemDelayMastodon.summary =
+                                getString(R.string.pref_item_summary_delay_mastodon, duration)
+                    } else {
+                        showErrorDialog(R.string.dialog_title_alert_invalid_duration_value,
+                                R.string.dialog_message_alert_invalid_duration_value)
                     }
                 }
             }
