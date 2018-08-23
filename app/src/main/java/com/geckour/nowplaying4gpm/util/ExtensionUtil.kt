@@ -166,12 +166,12 @@ fun String.splitIncludeDelimiter(vararg delimiters: String) =
 fun String.escapeSql(): String = replace("'", "''")
 
 fun AlertDialog.Builder.generate(
-        title: String,
-        message: String,
         view: View,
+        title: String,
+        message: String? = null,
         callback: (dialog: DialogInterface, which: Int) -> Unit = { _, _ -> }): AlertDialog {
     setTitle(title)
-    setMessage(message)
+    if (message != null) setMessage(message)
     setView(view)
     setPositiveButton(R.string.dialog_button_ok) { dialog, which -> callback(dialog, which) }
     setNegativeButton(R.string.dialog_button_ng) { dialog, _ -> dialog.dismiss() }

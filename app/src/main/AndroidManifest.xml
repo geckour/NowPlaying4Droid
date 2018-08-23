@@ -37,6 +37,8 @@
                 <data android:scheme="np4gpm"/>
                 <data android:host="twitter"/>
                 <data android:host="twitter.callback"/>
+                <data android:host="mastodon"/>
+                <data android:host="mastodon.callback"/>
             </intent-filter>
         </activity>
         <activity

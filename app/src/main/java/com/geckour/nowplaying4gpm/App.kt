@@ -1,12 +1,16 @@
 package com.geckour.nowplaying4gpm
 
 import android.app.Application
-import android.preference.PreferenceManager
 import com.facebook.stetho.Stetho
-import com.geckour.nowplaying4gpm.util.init
 import timber.log.Timber
 
 class App : Application() {
+
+    companion object {
+        const val MASTODON_CLIENT_NAME = "NowPlaying4Droid"
+        const val MASTODON_CALLBACK = "np4gpm://mastodon.callback"
+        const val MASTODON_WEB_URL = "https://github.com/geckour/NowPlaying4Droid"
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -15,8 +19,5 @@ class App : Application() {
             Timber.plant(Timber.DebugTree())
             Stetho.initializeWithDefaults(this)
         }
-
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .init(this)
     }
 }

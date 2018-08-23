@@ -16,8 +16,10 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.sys1yagi.mastodon4j.MastodonRequest
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.CoroutineScope
+import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
@@ -45,6 +47,11 @@ fun <T> async(context: Context, coroutineContext: CoroutineContext = CommonPool,
 
 fun ui(context: Context, block: suspend CoroutineScope.() -> Unit) =
         launch(context, UI) { block() }
+
+fun <T> MastodonRequest<T>.toJob(context: Context): Deferred<T?> =
+        asyncOrNull(context) {
+            execute()
+        }
 
 fun launch(context: Context, coroutineContext: CoroutineContext = CommonPool, block: suspend CoroutineScope.() -> Unit) =
         launch(coroutineContext, parent = (context as? JobHandler)?.job) {
