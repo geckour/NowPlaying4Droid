@@ -1,7 +1,13 @@
 package com.geckour.nowplaying4gpm
 
 import android.app.Application
+import android.content.Intent
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.drawable.Icon
+import android.os.Build
 import com.facebook.stetho.Stetho
+import com.geckour.nowplaying4gpm.ui.SharingActivity
 import timber.log.Timber
 
 class App : Application() {
@@ -10,6 +16,7 @@ class App : Application() {
         const val MASTODON_CLIENT_NAME = "NowPlaying4Droid"
         const val MASTODON_CALLBACK = "np4gpm://mastodon.callback"
         const val MASTODON_WEB_URL = "https://github.com/geckour/NowPlaying4Droid"
+        private const val SHOTCUT_ID_INVOKE_SHARE = "shortcut_id_invoke_share"
     }
 
     override fun onCreate() {
@@ -18,6 +25,17 @@ class App : Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
             Stetho.initializeWithDefaults(this)
+        }
+
+        if (Build.VERSION.SDK_INT >= 25) {
+            val shortcutInfo = ShortcutInfo.Builder(this, SHOTCUT_ID_INVOKE_SHARE)
+                    .setIcon(Icon.createWithResource(this, R.mipmap.ic_launcher_round))
+                    .setShortLabel(getString(R.string.shortcut_invoke_share))
+                    .setIntent(SharingActivity.getIntent(this.applicationContext).apply {
+                        action = Intent.ACTION_DEFAULT
+                    })
+                    .build()
+            getSystemService(ShortcutManager::class.java).dynamicShortcuts = listOf(shortcutInfo)
         }
     }
 }

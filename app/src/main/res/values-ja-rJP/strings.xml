@@ -3,6 +3,9 @@
     <string name="activity_title_licenses">OSSライセンス</string>
 
 
+    <string name="shortcut_invoke_share">NowPlayingを共有…</string>
+
+
     <string name="notification_title">NowPlayingを共有…</string>
 
     <string name="notification_channel_name_share">共有</string>
