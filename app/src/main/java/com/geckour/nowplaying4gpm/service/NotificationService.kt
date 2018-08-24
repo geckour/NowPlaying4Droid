@@ -364,18 +364,23 @@ class NotificationService : NotificationListenerService(), JobHandler {
                             sharedPreferences.getFormatPattern(this@NotificationService)
                                     .getSharingText(trackInfo.coreElement)
                         } else null ?: return@launch
-                val artwork = trackInfo.artworkUriString?.let {
-                    try {
-                        getBitmapFromUriString(this@NotificationService, it)?.let { bitmap ->
-                            ByteArrayOutputStream().apply {
-                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
-                            }.toByteArray()
-                        }
-                    } catch (t: Throwable) {
-                        Timber.e(t)
-                        null
-                    }
-                }
+                val artwork =
+                        if (sharedPreferences.getSwitchState(
+                                        PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
+                            trackInfo.artworkUriString?.let {
+                                return@let try {
+                                    getBitmapFromUriString(this@NotificationService,
+                                            it)?.let { bitmap ->
+                                        ByteArrayOutputStream().apply {
+                                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                                        }.toByteArray()
+                                    }
+                                } catch (t: Throwable) {
+                                    Timber.e(t)
+                                    null
+                                }
+                            }
+                        } else null
 
                 val userInfo = sharedPreferences.getMastodonUserInfo() ?: return@launch
 
