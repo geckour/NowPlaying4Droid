@@ -352,6 +352,13 @@ class NotificationService : NotificationListenerService(), JobHandler {
             postMastodonJob = launch {
                 delay(sharedPreferences.getDelayDurationPostMastodon())
 
+                FirebaseAnalytics.getInstance(application).logEvent(
+                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                        Bundle().apply {
+                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
+                        }
+                )
+
                 val subject =
                         if (trackInfo.coreElement.isAllNonNull) {
                             sharedPreferences.getFormatPattern(this@NotificationService)

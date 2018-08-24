@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.geckour.nowplaying4gpm"
-          xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.geckour.nowplaying4gpm">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="com.android.vending.BILLING"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission
         android:name="android.permission.READ_PHONE_STATE"
-        tools:node="remove"/>
+        tools:node="remove" />
 
     <application
         android:name=".App"
@@ -24,40 +24,40 @@
             android:name=".ui.SettingsActivity"
             android:launchMode="singleTop">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
+                <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="np4gpm"/>
-                <data android:host="twitter"/>
-                <data android:host="twitter.callback"/>
-                <data android:host="mastodon"/>
-                <data android:host="mastodon.callback"/>
+                <data android:scheme="np4gpm" />
+                <data android:host="twitter" />
+                <data android:host="twitter.callback" />
+                <data android:host="mastodon" />
+                <data android:host="mastodon.callback" />
             </intent-filter>
         </activity>
         <activity
             android:name=".ui.SharingActivity"
             android:launchMode="singleTask"
             android:noHistory="true"
-            android:theme="@android:style/Theme.NoDisplay"/>
+            android:theme="@android:style/Theme.NoDisplay" />
         <activity
             android:name=".ui.LicensesActivity"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme.Dark"/>
+            android:theme="@style/AppTheme.Dark" />
         <activity
             android:name=".ui.MushroomActivity"
             android:launchMode="singleTop"
             android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
-                <action android:name="com.adamrocker.android.simeji.ACTION_INTERCEPT"/>
+                <action android:name="com.adamrocker.android.simeji.ACTION_INTERCEPT" />
 
-                <category android:name="com.adamrocker.android.simeji.REPLACE"/>
+                <category android:name="com.adamrocker.android.simeji.REPLACE" />
             </intent-filter>
         </activity>
 
@@ -65,17 +65,17 @@
             android:name=".service.NotificationService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService"/>
+                <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
 
         <receiver android:name=".receiver.ShareWidgetProvider">
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_provider"/>
+                android:resource="@xml/widget_provider" />
 
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
         </receiver>
 
@@ -86,7 +86,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/paths"/>
+                android:resource="@xml/paths" />
         </provider>
     </application>
 
