@@ -118,6 +118,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
     override val job: Job = Job()
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
+    private var lastTrack: TrackCoreElement = TrackCoreElement.empty
     private var currentTrackClearJob: Job? = null
     private var currentTrackSetJob: Job? = null
     private var postMastodonJob: Job? = null
@@ -282,6 +283,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
         reflectTrackInfo(trackInfo)
+        lastTrack = trackInfo.coreElement
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
@@ -344,7 +346,8 @@ class NotificationService : NotificationListenerService(), JobHandler {
     }
 
     private fun postMastodon(trackInfo: TrackInfo) {
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON) &&
+                trackInfo.coreElement != lastTrack) {
             postMastodonJob?.cancel()
             postMastodonJob = launch {
                 delay(sharedPreferences.getDelayDurationPostMastodon())
