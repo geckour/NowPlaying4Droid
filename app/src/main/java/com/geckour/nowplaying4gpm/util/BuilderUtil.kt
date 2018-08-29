@@ -3,6 +3,7 @@ package com.geckour.nowplaying4gpm.util
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.preference.PreferenceManager
@@ -36,7 +37,9 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
 
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
                 && isMin.not()) {
-            val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())
+            val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())?.let {
+                Bitmap.createScaledBitmap(it, 600, 600, false)
+            }
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
             } else {
