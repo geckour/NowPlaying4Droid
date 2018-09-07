@@ -504,6 +504,17 @@ class NotificationService : NotificationListenerService(), JobHandler {
             return this
         }
 
+        // Fetch from MediaMetadata's Uri field
+        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
+            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
+                getBitmapFromUri(this@NotificationService, this)?.apply {
+                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
+                        return this
+                    }
+                }
+            }
+        }
+
         if (prioritizeApi) {
             // Find from Last.fm API
             if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
@@ -516,9 +527,9 @@ class NotificationService : NotificationListenerService(), JobHandler {
 
         // Fetch from MediaMetadata's Bitmap field
         val metadataBitmap =
-                (if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
+                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
                     this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                else null) ?: bitmap
+                else null
 
         if (metadataBitmap != null) {
             refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap)?.apply {
@@ -526,14 +537,10 @@ class NotificationService : NotificationListenerService(), JobHandler {
             }
         }
 
-        // Fetch from MediaMetadata's Uri field
-        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
-            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                getBitmapFromUri(this@NotificationService, this)?.apply {
-                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
-                        return this
-                    }
-                }
+        // Fetch from Notification's Bitmap
+        if (bitmap != null) {
+            refreshArtworkUriFromBitmap(this@NotificationService, bitmap)?.apply {
+                return this
             }
         }
 
