@@ -15,6 +15,8 @@
     <string name="pref_category_general">全般</string>
     <string name="pref_item_title_switch_use_api">アートワーク取得時の通信</string>
     <string name="pref_item_desc_switch_use_api">アートワーク取得の補助手段として外部サービスと通信する</string>
+    <string name="pref_item_title_change_api_priority">アートワーク取得時の優先度を変更</string>
+    <string name="pref_item_desc_change_api_priority">外部サービスの優先度を高くする</string>
 
     <string name="pref_category_share">共有</string>
     <string name="pref_item_title_pattern">投稿文のフォーマットを指定</string>

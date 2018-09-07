@@ -64,6 +64,15 @@
                     app:title="@{@string/pref_item_title_switch_use_api}"/>
 
                 <include
+                    android:id="@+id/item_switch_change_api_priority"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_general}"
+                    app:desc="@{@string/pref_item_desc_change_api_priority}"
+                    app:title="@{@string/pref_item_title_change_api_priority}"/>
+
+                <include
                     android:id="@+id/category_share"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"

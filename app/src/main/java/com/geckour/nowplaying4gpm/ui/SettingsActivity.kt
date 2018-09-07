@@ -164,7 +164,38 @@ class SettingsActivity : Activity(), JobHandler {
 
             binding.extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { state, summary ->
+                    binding.summary = summary
+                    this@SettingsActivity.binding
+                            .itemSwitchChangeApiPriority
+                            .maskInactive
+                            .visibility =
+                            if (sharedPreferences.getDonateBillingState() &&
+                                    state.not())
+                                View.VISIBLE
+                            else View.GONE
+                    invokeUpdate()
+                })
+            }
+        }
+
+        binding.itemSwitchChangeApiPriority.also { binding ->
+            binding.maskInactiveDonate.visibility =
+                    if (sharedPreferences.getDonateBillingState())
+                        View.GONE
+                    else View.VISIBLE
+
+            binding.maskInactive.visibility =
+                    if (sharedPreferences.getDonateBillingState() &&
+                            sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API).not())
+                        View.VISIBLE
+                    else View.GONE
+
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_CHANGE_API_PRIORITY) { _, summary ->
                     binding.summary = summary
                     invokeUpdate()
                 })
@@ -848,14 +879,17 @@ class SettingsActivity : Activity(), JobHandler {
                     .show()
 
     private fun reflectDonation(state: Boolean? = null) {
-        state?.apply {
-            sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, this).apply()
-            binding.itemDonate.root.visibility = if (state) View.GONE else View.VISIBLE
-            binding.itemSwitchUseApi.maskInactiveDonate.visibility = if (state) View.GONE else View.VISIBLE
-        } ?: run {
-            val s = sharedPreferences.getDonateBillingState()
-            binding.itemDonate.root.visibility = if (s) View.GONE else View.VISIBLE
-            binding.itemSwitchUseApi.maskInactiveDonate.visibility = if (s) View.GONE else View.VISIBLE
-        }
+        val s = state ?: sharedPreferences.getDonateBillingState()
+
+        sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, s).apply()
+        binding.itemDonate.root.visibility = if (s) View.GONE else View.VISIBLE
+        binding.itemSwitchUseApi.maskInactiveDonate.visibility =
+                if (s) View.GONE else View.VISIBLE
+        binding.itemSwitchChangeApiPriority.maskInactiveDonate.visibility =
+                if (s) View.GONE else View.VISIBLE
+        binding.itemSwitchChangeApiPriority.maskInactive.visibility =
+                if (s && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API).not())
+                    View.VISIBLE
+                else View.GONE
     }
 }
