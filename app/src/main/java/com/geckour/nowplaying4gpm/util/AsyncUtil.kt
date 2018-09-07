@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.util
 import android.content.ContentUris
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
@@ -12,7 +11,6 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.geckour.nowplaying4gpm.BuildConfig
-import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
@@ -124,17 +122,12 @@ suspend fun refreshArtworkUriFromLastFmApi(context: Context, client: LastFmApiCl
     return uri
 }
 
-suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap, checkSimilarity: Boolean = false): Uri? =
+suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
         asyncOrNull(context) {
             if (bitmap.isRecycled) {
                 Timber.e(IllegalStateException("Bitmap is recycled"))
                 return@asyncOrNull null
             }
-
-            val placeholderBitmap =
-                    (context.getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
-            if (checkSimilarity && (bitmap.similarity(placeholderBitmap) ?: 1f) > 0.9)
-                return@asyncOrNull null
 
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val dirName = "images"

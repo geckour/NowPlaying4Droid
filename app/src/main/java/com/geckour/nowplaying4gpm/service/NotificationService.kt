@@ -36,10 +36,7 @@ import com.google.gson.Gson
 import com.sys1yagi.mastodon4j.MastodonClient
 import com.sys1yagi.mastodon4j.api.method.Media
 import com.sys1yagi.mastodon4j.api.method.Statuses
-import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.cancelAndJoin
-import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.*
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -246,7 +243,8 @@ class NotificationService : NotificationListenerService(), JobHandler {
             currentTrackSetJob = launch {
                 onQuickUpdate(coreElement, packageName)
                 val artworkUri = metadata.storeArtworkUri(coreElement,
-                        notification?.getArtworkBitmap())
+                        notification?.getArtworkBitmap()?.await(),
+                        sharedPreferences.getSwitchState(PrefKey.PREF_KEY_CHANGE_API_PRIORITY))
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName))
                 playerChangedFlag = false
             }
@@ -490,7 +488,8 @@ class NotificationService : NotificationListenerService(), JobHandler {
     }
 
     private suspend fun MediaMetadata.storeArtworkUri(coreElement: TrackCoreElement,
-                                                      bitmap: Bitmap?): Uri? {
+                                                      bitmap: Bitmap?,
+                                                      prioritizeApi: Boolean = false): Uri? {
         // Check whether arg metadata and current metadata are the same or not
         val cacheInfo = sharedPreferences.getCurrentTrackInfo()
         if (coreElement.isAllNonNull
@@ -505,66 +504,73 @@ class NotificationService : NotificationListenerService(), JobHandler {
             return this
         }
 
-        // Fetch from MediaMetadata's Bitmap field
-        val metadataBitmap =
-                (if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
-                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                else null) ?: bitmap
-
-        if (metadataBitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap, true)?.apply {
-                return this
-            }
-        }
-
         // Fetch from MediaMetadata's Uri field
         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
             this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
                 getBitmapFromUri(this@NotificationService, this)?.apply {
-                    refreshArtworkUriFromBitmap(this@NotificationService, this, true)?.apply {
+                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
                         return this
                     }
                 }
             }
         }
 
-        // Find from Last.fm API
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-            refreshArtworkUriFromLastFmApi(this@NotificationService,
-                    lastFmApiClient, coreElement)?.apply {
+        if (prioritizeApi) {
+            // Find from Last.fm API
+            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+                refreshArtworkUriFromLastFmApi(this@NotificationService,
+                        lastFmApiClient, coreElement)?.apply {
+                    return this
+                }
+            }
+        }
+
+        // Fetch from MediaMetadata's Bitmap field
+        val metadataBitmap =
+                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
+                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                else null
+
+        if (metadataBitmap != null) {
+            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap)?.apply {
                 return this
+            }
+        }
+
+        // Fetch from Notification's Bitmap
+        if (bitmap != null) {
+            refreshArtworkUriFromBitmap(this@NotificationService, bitmap)?.apply {
+                return this
+            }
+        }
+
+        if (prioritizeApi.not()) {
+            // Find from Last.fm API
+            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+                refreshArtworkUriFromLastFmApi(this@NotificationService,
+                        lastFmApiClient, coreElement)?.apply {
+                    return this
+                }
             }
         }
 
         return null
     }
 
-    private suspend fun Notification.getArtworkBitmap(): Bitmap? =
+    private fun Notification.getArtworkBitmap(): Deferred<Bitmap?> =
             async(this@NotificationService) {
-                val notificationBitmap =
-                        (this@getArtworkBitmap.getLargeIcon()
-                                ?.loadDrawable(this@NotificationService) as? BitmapDrawable)
-                                ?.bitmap
-                                ?.let {
-                                    try {
-                                        it.copy(it.config, false)
-                                    } catch (t: Throwable) {
-                                        Timber.e(t)
-                                        null
-                                    }
-                                }
-
-                if (notificationBitmap != null) {
-                    val placeholderBitmap =
-                            (getDrawable(R.mipmap.bg_default_album_art) as BitmapDrawable).bitmap
-
-                    return@async if ((notificationBitmap.similarity(placeholderBitmap)
-                                    ?: 1f) > 0.9) null
-                    else notificationBitmap
-                }
-
-                return@async null
-            }.await()
+                return@async (getLargeIcon()?.loadDrawable(this@NotificationService)
+                        as? BitmapDrawable)
+                        ?.bitmap
+                        ?.let {
+                            try {
+                                it.copy(it.config, false)
+                            } catch (t: Throwable) {
+                                Timber.e(t)
+                                null
+                            }
+                        }
+            }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createDefaultChannel() {

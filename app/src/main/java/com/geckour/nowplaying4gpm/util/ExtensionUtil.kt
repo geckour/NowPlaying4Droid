@@ -22,6 +22,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
+import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.Job
 import timber.log.Timber
 import java.lang.reflect.Type
@@ -196,10 +197,10 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
     }
 }
 
-fun Bitmap.similarity(bitmap: Bitmap): Float? {
+fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> = kotlinx.coroutines.experimental.async {
     if (this@similarity.isRecycled) {
         Timber.e(IllegalStateException("Bitmap is recycled"))
-        return null
+        return@async null
     }
 
     val origin = this@similarity.copy(this@similarity.config, false)
@@ -215,7 +216,7 @@ fun Bitmap.similarity(bitmap: Bitmap): Float? {
         }
     }
 
-    return (count.toFloat() / (origin.width * origin.height))
+    return@async (count.toFloat() / (origin.width * origin.height))
 }
 
 fun String.getUri(): Uri? =
