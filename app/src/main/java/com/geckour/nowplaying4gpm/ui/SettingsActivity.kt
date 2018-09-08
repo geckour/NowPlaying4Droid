@@ -388,6 +388,8 @@ class SettingsActivity : Activity(), JobHandler {
     override fun onResume() {
         super.onResume()
 
+        reflectDonation()
+
         requestNotificationListenerPermission {
             requestUpdate()
         }
