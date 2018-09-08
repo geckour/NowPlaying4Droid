@@ -98,6 +98,15 @@
                     app:title="@{@string/pref_item_title_switch_bundle_artwork}"/>
 
                 <include
+                    android:id="@+id/item_switch_copy_into_clipboard"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_switch_copy_into_clipboard}"
+                    app:title="@{@string/pref_item_title_switch_copy_into_clipboard}"/>
+
+                <include
                     android:id="@+id/item_switch_auto_post_mastodon"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"

@@ -3,6 +3,8 @@ package com.geckour.nowplaying4gpm.ui
 import android.app.Activity
 import android.app.KeyguardManager
 import android.app.PendingIntent
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -83,6 +85,12 @@ class SharingActivity : Activity(), JobHandler {
                     }
                     .createChooserIntent()
                     .apply {
+                        if (sharedPreferences.getSwitchState(
+                                        PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD)) {
+                            getSystemService(ClipboardManager::class.java).primaryClip =
+                                    ClipData.newPlainText(packageName, sharingText)
+                        }
+
                         PendingIntent.getActivity(
                                 this@SharingActivity,
                                 IntentRequestCode.SHARE.ordinal,

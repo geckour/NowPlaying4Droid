@@ -234,6 +234,18 @@ class SettingsActivity : Activity(), JobHandler {
             }
         }
 
+        binding.itemSwitchCopyIntoClipboard.also { binding ->
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD) { _, summary ->
+                    binding.summary = summary
+
+                    invokeUpdate()
+                })
+            }
+        }
+
         binding.itemSwitchAutoPostMastodon.also { binding ->
             binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
             binding.extra.apply {

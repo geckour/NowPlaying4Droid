@@ -23,6 +23,8 @@
     <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
     <string name="pref_item_desc_switch_bundle_artwork">アルバムアートワークを添付する</string>
+    <string name="pref_item_title_switch_copy_into_clipboard">クリップボードへのコピー</string>
+    <string name="pref_item_desc_switch_copy_into_clipboard">共有時にクリップボードへ共有文をコピーする</string>
     <string name="pref_item_title_switch_auto_post_mastodon">Masotdonへの自動投稿</string>
     <string name="pref_item_desc_switch_auto_post_mastodon">Mastodonへ自動投稿する</string>
     <string name="pref_item_title_auth_mastodon">Mastodon認証</string>
