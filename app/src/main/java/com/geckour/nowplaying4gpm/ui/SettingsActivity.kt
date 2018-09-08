@@ -43,13 +43,13 @@ import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.experimental.Job
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import permissions.dispatcher.NeedsPermission
+import permissions.dispatcher.OnNeverAskAgain
+import permissions.dispatcher.RuntimePermissions
 import timber.log.Timber
 
+@RuntimePermissions
 class SettingsActivity : Activity(), JobHandler {
-
-    enum class PermissionRequestCode {
-        EXTERNAL_STORAGE
-    }
 
     enum class RequestCode {
         GRANT_NOTIFICATION_LISTENER,
@@ -82,6 +82,8 @@ class SettingsActivity : Activity(), JobHandler {
 
     private val mastodonScope = Scope(Scope.Name.ALL)
     private var mastodonRegistrationInfo: AppRegistration? = null
+
+    private var showingNotificationServicePermissionDialog = false
 
     override val job: Job = Job()
 
@@ -174,7 +176,7 @@ class SettingsActivity : Activity(), JobHandler {
                                     state.not())
                                 View.VISIBLE
                             else View.GONE
-                    invokeUpdate()
+                    requestUpdate()
                 })
             }
         }
@@ -197,7 +199,7 @@ class SettingsActivity : Activity(), JobHandler {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_CHANGE_API_PRIORITY) { _, summary ->
                     binding.summary = summary
-                    invokeUpdate()
+                    requestUpdate()
                 })
             }
         }
@@ -216,7 +218,7 @@ class SettingsActivity : Activity(), JobHandler {
                     sharedPreferences.edit()
                             .putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, state)
                             .apply()
-                    if (state) invokeUpdate()
+                    if (state) requestUpdate()
                     else destroyNotification()
                 })
             }
@@ -229,7 +231,7 @@ class SettingsActivity : Activity(), JobHandler {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
                     binding.summary = summary
 
-                    invokeUpdate()
+                    requestUpdate()
                 })
             }
         }
@@ -241,7 +243,7 @@ class SettingsActivity : Activity(), JobHandler {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD) { _, summary ->
                     binding.summary = summary
 
-                    invokeUpdate()
+                    requestUpdate()
                 })
             }
         }
@@ -298,7 +300,7 @@ class SettingsActivity : Activity(), JobHandler {
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
                         binding.summary = summary
 
-                        invokeUpdate()
+                        requestUpdate()
                     })
                 }
             }
@@ -359,10 +361,6 @@ class SettingsActivity : Activity(), JobHandler {
                 serviceConnection,
                 Context.BIND_AUTO_CREATE
         )
-
-        requestNotificationListenerPermission {
-            invokeUpdate()
-        }
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
@@ -390,7 +388,9 @@ class SettingsActivity : Activity(), JobHandler {
     override fun onResume() {
         super.onResume()
 
-        reflectDonation()
+        requestNotificationListenerPermission {
+            requestUpdate()
+        }
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
             showErrorDialog(
@@ -402,15 +402,10 @@ class SettingsActivity : Activity(), JobHandler {
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
-                                            permissions: Array<out String>?,
-                                            grantResults: IntArray?) {
+                                            permissions: Array<out String>,
+                                            grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        when (requestCode) {
-            PermissionRequestCode.EXTERNAL_STORAGE.ordinal -> {
-                invokeUpdate()
-            }
-        }
+        onRequestPermissionsResult(requestCode, grantResults)
     }
 
     override fun onDestroy() {
@@ -435,7 +430,7 @@ class SettingsActivity : Activity(), JobHandler {
         when (requestCode) {
             RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
                 requestNotificationListenerPermission {
-                    invokeUpdate()
+                    requestUpdate()
                 }
             }
 
@@ -571,11 +566,26 @@ class SettingsActivity : Activity(), JobHandler {
                 R.string.dialog_message_alert_failure_auth_mastodon)
     }
 
-    private fun invokeUpdate() =
-            requestStoragePermission {
-                NotificationService.sendRequestInvokeUpdate(this,
-                        sharedPreferences.getCurrentTrackInfo())
-            }
+    private fun requestUpdate() {
+        if (showingNotificationServicePermissionDialog.not()) {
+            invokeUpdateWithPermissionCheck()
+        }
+    }
+
+    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    internal fun invokeUpdate() {
+        binding.maskInactiveApp.visibility = View.GONE
+
+        NotificationService.sendRequestInvokeUpdate(this,
+                sharedPreferences.getCurrentTrackInfo())
+    }
+
+    @OnNeverAskAgain(Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    internal fun onNeverAskPermissionAgain() {
+        binding.maskInactiveApp.visibility = View.VISIBLE
+    }
 
     private fun destroyNotification() =
             sendBroadcast(Intent().apply {
@@ -601,27 +611,23 @@ class SettingsActivity : Activity(), JobHandler {
     }
 
     private fun requestNotificationListenerPermission(onGranted: () -> Unit = {}) {
-        if (NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName).not()) {
-            AlertDialog.Builder(this)
-                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
-                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                        startActivityForResult(
-                                Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
-                                RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal)
-                        dialog.dismiss()
-                    }.show()
+        if (NotificationManagerCompat.getEnabledListenerPackages(this)
+                        .contains(packageName).not()) {
+            if (showingNotificationServicePermissionDialog.not()) {
+                showingNotificationServicePermissionDialog = true
+                AlertDialog.Builder(this)
+                        .setTitle(R.string.dialog_title_alert_grant_notification_listener)
+                        .setMessage(R.string.dialog_message_alert_grant_notification_listener)
+                        .setCancelable(false)
+                        .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                            startActivityForResult(
+                                    Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
+                                    RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal)
+                            dialog.dismiss()
+                            showingNotificationServicePermissionDialog = false
+                        }.show()
+            }
         } else onGranted()
-    }
-
-    private fun requestStoragePermission(onGranted: () -> Unit = {}) {
-        checkStoragePermission({
-            requestPermissions(
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    PermissionRequestCode.EXTERNAL_STORAGE.ordinal)
-        }) { onGranted() }
     }
 
     private fun onClickAuthTwitter() {
@@ -811,7 +817,7 @@ class SettingsActivity : Activity(), JobHandler {
                     binding.itemPatternFormat.summary = pattern
                 }
             }
-            invokeUpdate()
+            requestUpdate()
             dialog.dismiss()
         }.show()
     }
@@ -857,7 +863,7 @@ class SettingsActivity : Activity(), JobHandler {
                             .apply()
                     binding.itemChooseColor.summary =
                             getString(PaletteColor.getFromIndex(paletteIndex).getSummaryResId())
-                    invokeUpdate()
+                    requestUpdate()
                 }
             }
             dialog.dismiss()

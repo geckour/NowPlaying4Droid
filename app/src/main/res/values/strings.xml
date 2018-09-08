@@ -30,7 +30,7 @@
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
     <string name="pref_item_desc_switch_bundle_artwork">Attach album artwork on sharing</string>
     <string name="pref_item_title_switch_copy_into_clipboard">Copy into clipboard</string>
-    <string name="pref_item_desc_switch_copy_into_clipboard">Copy the sharing text into clipboard on sharing</string>
+    <string name="pref_item_desc_switch_copy_into_clipboard">Copy the sharing text</string>
     <string name="pref_item_title_switch_auto_post_mastodon">Auto post with Mastodon</string>
     <string name="pref_item_desc_switch_auto_post_mastodon">Enable auto post with Mastodon mode</string>
     <string name="pref_item_title_auth_mastodon">Mastodon Authentication</string>
@@ -65,6 +65,8 @@
     <string name="pref_item_summary_switch_on">ON</string>
     <string name="pref_item_summary_switch_off">OFF</string>
     <string name="pref_mask_desc">Please donate for unlock this feature</string>
+    <string name="pref_mask_storage_permission_desc">Please grant permissions\nto use this app by tap here</string>
+    <string name="pref_mask_inactive_app_desc">Please grant permissions\nto use this app by open device setting</string>
 
 
     <string name="palette_light_vibrant">Light Vibrant</string>

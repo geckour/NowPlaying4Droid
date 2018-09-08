@@ -57,6 +57,8 @@
     <string name="pref_item_summary_switch_on">ON</string>
     <string name="pref_item_summary_switch_off">OFF</string>
     <string name="pref_mask_desc">寄付によってロックが解除されます</string>
+    <string name="pref_mask_storage_permission_desc">アプリを使用するためには\nタップして権限を付与してください</string>
+    <string name="pref_mask_inactive_app_desc">アプリを使用するためには\n端末の設定を開いて権限を付与してください</string>
 
 
     <string name="palette_light_vibrant">鮮やか / 明</string>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
@@ -17,7 +17,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:title="ツールバータイトル"/>
+            tools:title="ツールバータイトル" />
 
         <View
             android:id="@+id/toolbar_cover"
@@ -28,7 +28,7 @@
             app:layout_constraintBottom_toBottomOf="@id/toolbar"
             app:layout_constraintEnd_toEndOf="@id/toolbar"
             app:layout_constraintStart_toStartOf="@id/toolbar"
-            app:layout_constraintTop_toTopOf="@id/toolbar"/>
+            app:layout_constraintTop_toTopOf="@id/toolbar" />
 
         <ScrollView
             android:id="@+id/scrollView"
@@ -52,7 +52,7 @@
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_general}"/>
+                    app:title="@{@string/pref_category_general}" />
 
                 <include
                     android:id="@+id/item_switch_use_api"
@@ -61,7 +61,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_general}"
                     app:desc="@{@string/pref_item_desc_switch_use_api}"
-                    app:title="@{@string/pref_item_title_switch_use_api}"/>
+                    app:title="@{@string/pref_item_title_switch_use_api}" />
 
                 <include
                     android:id="@+id/item_switch_change_api_priority"
@@ -70,14 +70,14 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_general}"
                     app:desc="@{@string/pref_item_desc_change_api_priority}"
-                    app:title="@{@string/pref_item_title_change_api_priority}"/>
+                    app:title="@{@string/pref_item_title_change_api_priority}" />
 
                 <include
                     android:id="@+id/category_share"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_share}"/>
+                    app:title="@{@string/pref_category_share}" />
 
                 <include
                     android:id="@+id/item_pattern_format"
@@ -86,7 +86,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_pattern}"
-                    app:title="@{@string/pref_item_title_pattern}"/>
+                    app:title="@{@string/pref_item_title_pattern}" />
 
                 <include
                     android:id="@+id/item_switch_bundle_artwork"
@@ -95,7 +95,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_switch_bundle_artwork}"
-                    app:title="@{@string/pref_item_title_switch_bundle_artwork}"/>
+                    app:title="@{@string/pref_item_title_switch_bundle_artwork}" />
 
                 <include
                     android:id="@+id/item_switch_copy_into_clipboard"
@@ -104,7 +104,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_switch_copy_into_clipboard}"
-                    app:title="@{@string/pref_item_title_switch_copy_into_clipboard}"/>
+                    app:title="@{@string/pref_item_title_switch_copy_into_clipboard}" />
 
                 <include
                     android:id="@+id/item_switch_auto_post_mastodon"
@@ -113,7 +113,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_switch_auto_post_mastodon}"
-                    app:title="@{@string/pref_item_title_switch_auto_post_mastodon}"/>
+                    app:title="@{@string/pref_item_title_switch_auto_post_mastodon}" />
 
                 <include
                     android:id="@+id/item_auth_mastodon"
@@ -122,7 +122,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_auth_mastodon}"
-                    app:title="@{@string/pref_item_title_auth_mastodon}"/>
+                    app:title="@{@string/pref_item_title_auth_mastodon}" />
 
                 <include
                     android:id="@+id/item_delay_mastodon"
@@ -131,14 +131,14 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_delay_mastodon}"
-                    app:title="@{@string/pref_item_title_delay_mastodon}"/>
+                    app:title="@{@string/pref_item_title_delay_mastodon}" />
 
                 <include
                     android:id="@+id/category_notification"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_notification}"/>
+                    app:title="@{@string/pref_category_notification}" />
 
                 <include
                     android:id="@+id/item_switch_reside"
@@ -147,7 +147,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_notification}"
                     app:desc="@{@string/pref_item_desc_switch_reside_notification}"
-                    app:title="@{@string/pref_item_title_switch_reside_notification}"/>
+                    app:title="@{@string/pref_item_title_switch_reside_notification}" />
 
                 <include
                     android:id="@+id/item_choose_color"
@@ -156,7 +156,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_notification}"
                     app:desc="@{@string/pref_item_desc_choose_color}"
-                    app:title="@{@string/pref_item_title_choose_color}"/>
+                    app:title="@{@string/pref_item_title_choose_color}" />
 
                 <include
                     android:id="@+id/item_switch_colorize_notification_bg"
@@ -165,14 +165,14 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_notification}"
                     app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
-                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
+                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}" />
 
                 <include
                     android:id="@+id/category_widget"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_widget}"/>
+                    app:title="@{@string/pref_category_widget}" />
 
                 <include
                     android:id="@+id/item_switch_show_artwork_in_widget"
@@ -181,7 +181,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_widget}"
                     app:desc="@{@string/pref_item_desc_switch_show_artwork_in_widget}"
-                    app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}"/>
+                    app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}" />
 
                 <include
                     android:id="@+id/item_switch_launch_gpm_on_click_widget_artwork"
@@ -190,14 +190,14 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_widget}"
                     app:desc="@{@string/pref_item_desc_switch_launch_gpm_on_click_widget_artwork}"
-                    app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}"/>
+                    app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}" />
 
                 <include
                     android:id="@+id/category_wear"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_wear}"/>
+                    app:title="@{@string/pref_category_wear}" />
 
                 <include
                     android:id="@+id/item_auth_twitter"
@@ -206,14 +206,14 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_wear}"
                     app:desc="@{@string/pref_item_desc_auth_twitter}"
-                    app:title="@{@string/pref_item_title_auth_twitter}"/>
+                    app:title="@{@string/pref_item_title_auth_twitter}" />
 
                 <include
                     android:id="@+id/category_others"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:title="@{@string/pref_category_others}"/>
+                    app:title="@{@string/pref_category_others}" />
 
                 <include
                     android:id="@+id/item_donate"
@@ -222,7 +222,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_others}"
                     app:desc="@{@string/pref_item_desc_donate}"
-                    app:title="@{@string/pref_item_title_donate}"/>
+                    app:title="@{@string/pref_item_title_donate}" />
 
             </LinearLayout>
         </ScrollView>
@@ -240,7 +240,29 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:srcCompat="@drawable/ic_app_icon"
-            app:tint="@android:color/white"/>
+            app:tint="@android:color/white" />
+
+        <FrameLayout
+            android:id="@+id/mask_inactive_app"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/colorMaskInactive"
+            android:clickable="true"
+            android:elevation="8dp"
+            android:focusable="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/pref_mask_inactive_app_desc"
+                android:textColor="@color/colorTextWeak" />
+        </FrameLayout>
 
     </android.support.constraint.ConstraintLayout>
 </layout>
