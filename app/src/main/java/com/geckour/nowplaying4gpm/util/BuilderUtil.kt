@@ -101,9 +101,12 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                         .getSharingText(trackInfo.coreElement).foldBreak()
 
         val thumb =
-                trackInfo.artworkUriString?.let {
-                    getBitmapFromUriString(context, it)
-                }
+                if (sharedPreferences.getSwitchState(
+                                PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION)) {
+                    trackInfo.artworkUriString?.let {
+                        getBitmapFromUriString(context, it)
+                    }
+                } else null
 
         setSmallIcon(R.drawable.ic_notification)
         setLargeIcon(thumb)
