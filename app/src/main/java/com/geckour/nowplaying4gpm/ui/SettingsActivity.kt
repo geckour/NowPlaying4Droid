@@ -215,11 +215,20 @@ class SettingsActivity : Activity(), JobHandler {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { state, summary ->
                     binding.summary = summary
 
-                    sharedPreferences.edit()
-                            .putBoolean(PrefKey.PREF_KEY_WHETHER_RESIDE.name, state)
-                            .apply()
                     if (state) requestUpdate()
                     else destroyNotification()
+                })
+            }
+        }
+
+        binding.itemSwitchShowArtworkInNotification.also { binding ->
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION) { _, summary ->
+                    binding.summary = summary
+
+                    requestUpdate()
                 })
             }
         }
