@@ -944,20 +944,23 @@ class SettingsActivity : Activity(), JobHandler {
     private fun onClickItemWithSwitch(extra: FrameLayout?) = (extra?.getChildAt(0) as? Switch)?.performClick()
 
     private fun getSwitch(prefKey: PrefKey,
-                          onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch =
-            Switch(this@SettingsActivity).apply {
-                setOnClickListener {
-                    sharedPreferences.edit()
-                            .putBoolean(prefKey.name, isChecked)
-                            .apply()
+                          onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch {
+        return Switch(this@SettingsActivity).apply {
+            fun getSummary(): String = getString(
+                    if (isChecked) R.string.pref_item_summary_switch_on
+                    else R.string.pref_item_summary_switch_off)
+            setOnClickListener {
+                sharedPreferences.edit()
+                        .putBoolean(prefKey.name, isChecked)
+                        .apply()
 
-                    onCheckStateChanged(isChecked,
-                            getString(
-                                    if (isChecked) R.string.pref_item_summary_switch_on
-                                    else R.string.pref_item_summary_switch_off))
-                }
-                isChecked = sharedPreferences.getSwitchState(prefKey)
+                onCheckStateChanged(isChecked,
+                        getSummary())
             }
+            isChecked = sharedPreferences.getSwitchState(prefKey)
+            onCheckStateChanged(isChecked, getSummary())
+        }
+    }
 
     private fun showErrorDialog(titleResId: Int, messageResId: Int, onDismiss: () -> Unit = {}) =
             AlertDialog.Builder(this)
