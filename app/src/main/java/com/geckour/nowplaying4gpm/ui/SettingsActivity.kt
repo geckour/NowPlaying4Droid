@@ -267,6 +267,8 @@ class SettingsActivity : Activity(), JobHandler {
                             if (checkState) View.GONE else View.VISIBLE
                     this@SettingsActivity.binding.itemDelayMastodon.maskInactive.visibility =
                             if (checkState) View.GONE else View.VISIBLE
+                    this@SettingsActivity.binding.itemVisibilityMastodon.maskInactive.visibility =
+                            if (checkState) View.GONE else View.VISIBLE
                 })
             }
         }
@@ -297,7 +299,17 @@ class SettingsActivity : Activity(), JobHandler {
             binding.summary = getString(R.string.pref_item_summary_delay_mastodon,
                     sharedPreferences.getDelayDurationPostMastodon())
             binding.root.setOnClickListener { onClickDelayMastodon() }
+        }
 
+        binding.itemVisibilityMastodon.also { binding ->
+            binding.maskInactive.visibility =
+                    if (sharedPreferences.getSwitchState(
+                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
+                        View.GONE
+                    else View.VISIBLE
+
+            binding.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
+            binding.root.setOnClickListener { onClickVisibilityMastodon() }
         }
 
         binding.itemSwitchColorizeNotificationBg.also { binding ->
@@ -755,6 +767,54 @@ class SettingsActivity : Activity(), JobHandler {
                         showErrorDialog(R.string.dialog_title_alert_invalid_duration_value,
                                 R.string.dialog_message_alert_invalid_duration_value)
                     }
+                }
+            }
+            dialog.dismiss()
+        }.show()
+    }
+
+    private fun onClickVisibilityMastodon() {
+        val chooseVisibilityBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
+                LayoutInflater.from(this),
+                R.layout.dialog_spinner,
+                null,
+                false
+        ).apply {
+            val arrayAdapter =
+                    object : ArrayAdapter<String>(
+                            this@SettingsActivity,
+                            android.R.layout.simple_spinner_item,
+                            Visibility.values().map { getString(it.getSummaryResId()) }) {
+                        override fun getDropDownView(position: Int,
+                                                     convertView: View?, parent: ViewGroup?): View =
+                                super.getDropDownView(position, convertView, parent).apply {
+                                    if (position == spinner.selectedItemPosition) {
+                                        (this as TextView).setTextColor(
+                                                getColor(R.color.colorPrimaryDark))
+                                    }
+                                }
+                    }.apply {
+                        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    }
+            spinner.apply {
+                adapter = arrayAdapter
+                setSelection(sharedPreferences.getVisibilityMastodon().ordinal)
+            }
+        }
+
+        AlertDialog.Builder(this).generate(
+                chooseVisibilityBinding.root,
+                getString(R.string.dialog_title_choose_color),
+                getString(R.string.dialog_message_choose_color)) { dialog, which ->
+            when (which) {
+                DialogInterface.BUTTON_POSITIVE -> {
+                    val visibilityIndex = chooseVisibilityBinding.spinner.selectedItemPosition
+                    sharedPreferences.edit()
+                            .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
+                            .apply()
+                    binding.itemVisibilityMastodon.summary =
+                            getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
+                    requestUpdate()
                 }
             }
             dialog.dismiss()

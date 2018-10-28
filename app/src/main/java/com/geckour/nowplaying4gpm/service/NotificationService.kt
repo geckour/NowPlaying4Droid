@@ -34,6 +34,7 @@ import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import com.sys1yagi.mastodon4j.MastodonClient
+import com.sys1yagi.mastodon4j.api.entity.Status
 import com.sys1yagi.mastodon4j.api.method.Media
 import com.sys1yagi.mastodon4j.api.method.Statuses
 import kotlinx.coroutines.experimental.*
@@ -400,7 +401,14 @@ class NotificationService : NotificationListenerService(), JobHandler {
                         null,
                         mediaId?.let { listOf(it) },
                         false,
-                        null)
+                        null,
+                        sharedPreferences.getVisibilityMastodon().let {
+                            when (it) {
+                                Visibility.PUBLIC -> Status.Visibility.Public
+                                Visibility.UNLISTED -> Status.Visibility.Unlisted
+                                Visibility.PRIVATE -> Status.Visibility.Private
+                            }
+                        })
                         .toJob(this@NotificationService)
             }
         }
