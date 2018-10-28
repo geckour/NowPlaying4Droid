@@ -48,7 +48,7 @@ class LicensesActivity : Activity() {
                     )
             )
             adapter = this@LicensesActivity.adapter
-            adapter.notifyDataSetChanged()
+            this@LicensesActivity.adapter.notifyDataSetChanged()
             setHasFixedSize(true)
         }
     }

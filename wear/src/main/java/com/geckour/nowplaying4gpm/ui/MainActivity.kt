@@ -126,7 +126,7 @@ class MainActivity : WearableActivity() {
 
     private fun requestTrackInfo() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
-            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+            val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
@@ -136,7 +136,7 @@ class MainActivity : WearableActivity() {
 
     private fun invokeShare() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
-            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+            val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
@@ -146,7 +146,7 @@ class MainActivity : WearableActivity() {
 
     private fun invokeShareOnHost(): Boolean {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
-            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+            val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
