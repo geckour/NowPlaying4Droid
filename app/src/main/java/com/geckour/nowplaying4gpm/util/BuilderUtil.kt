@@ -8,7 +8,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.preference.PreferenceManager
 import android.provider.MediaStore
-import android.support.v7.graphics.Palette
+import androidx.palette.graphics.Palette
 import android.view.View
 import android.widget.RemoteViews
 import com.geckour.nowplaying4gpm.R

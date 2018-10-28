@@ -1,7 +1,7 @@
 package com.geckour.nowplaying4gpm.ui
 
 import android.content.res.ColorStateList
-import android.databinding.DataBindingUtil
+import androidx.databinding.DataBindingUtil
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle

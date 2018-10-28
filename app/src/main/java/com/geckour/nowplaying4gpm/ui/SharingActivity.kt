@@ -9,7 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.support.v4.app.ShareCompat
+import androidx.core.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics

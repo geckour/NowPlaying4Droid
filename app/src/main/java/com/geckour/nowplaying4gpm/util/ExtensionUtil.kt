@@ -11,9 +11,9 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.preference.PreferenceManager
-import android.support.annotation.ColorInt
-import android.support.v4.content.ContextCompat
-import android.support.v7.graphics.Palette
+import androidx.annotation.ColorInt
+import androidx.core.content.ContextCompat
+import androidx.palette.graphics.Palette
 import android.view.View
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig

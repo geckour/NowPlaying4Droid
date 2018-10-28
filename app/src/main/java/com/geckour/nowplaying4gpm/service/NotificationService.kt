@@ -16,7 +16,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
