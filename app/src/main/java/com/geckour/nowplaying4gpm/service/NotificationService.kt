@@ -42,8 +42,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
+import kotlin.coroutines.CoroutineContext
 
-class NotificationService : NotificationListenerService(), JobHandler {
+class NotificationService : NotificationListenerService(), CoroutineScope {
 
     enum class Channel(val id: Int) {
         NOTIFICATION_CHANNEL_SHARE(180)
@@ -112,7 +113,10 @@ class NotificationService : NotificationListenerService(), JobHandler {
         TwitterApiClient(this, BuildConfig.TWITTER_CONSUMER_KEY,
                 BuildConfig.TWITTER_CONSUMER_SECRET)
     }
-    override val job: Job = Job()
+
+    private lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.IO
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var lastTrack: TrackCoreElement = TrackCoreElement.empty
@@ -140,6 +144,9 @@ class NotificationService : NotificationListenerService(), JobHandler {
 
     override fun onCreate() {
         super.onCreate()
+
+        job = Job()
+        setCrashlytics()
 
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_DESTROY_NOTIFICATION)
@@ -311,7 +318,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
                 val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
                         id,
-                        getShareWidgetViews(this@NotificationService,
+                        getShareWidgetViews(this@NotificationService, this@NotificationService,
                                 ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
@@ -367,7 +374,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
                                         PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
                             trackInfo.artworkUriString?.let {
                                 return@let try {
-                                    getBitmapFromUriString(this@NotificationService,
+                                    getBitmapFromUriString(this@NotificationService, this,
                                             it)?.let { bitmap ->
                                         ByteArrayOutputStream().apply {
                                             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
@@ -467,7 +474,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
                 .getSharingText(trackInfo.coreElement)
         val artwork =
                 trackInfo.artworkUriString?.let {
-                    getBitmapFromUriString(this@NotificationService, it)
+                    getBitmapFromUriString(this@NotificationService, this, it)
                 }
 
         val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
@@ -499,7 +506,8 @@ class NotificationService : NotificationListenerService(), JobHandler {
         }
 
         // Find from ContentResolver
-        getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+        getArtworkUriFromDevice(this@NotificationService, this@NotificationService,
+                coreElement)?.apply {
             sharedPreferences.refreshTempArtwork(this)
             return this
         }
@@ -507,8 +515,10 @@ class NotificationService : NotificationListenerService(), JobHandler {
         // Fetch from MediaMetadata's Uri field
         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
             this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                getBitmapFromUri(this@NotificationService, this)?.apply {
-                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
+                getBitmapFromUri(this@NotificationService, this@NotificationService,
+                        this)?.apply {
+                    refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
+                            this)?.apply {
                         return this
                     }
                 }
@@ -518,7 +528,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
         if (prioritizeApi) {
             // Find from Last.fm API
             if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                refreshArtworkUriFromLastFmApi(this@NotificationService,
+                refreshArtworkUriFromLastFmApi(this@NotificationService, this@NotificationService,
                         lastFmApiClient, coreElement)?.apply {
                     return this
                 }
@@ -532,14 +542,16 @@ class NotificationService : NotificationListenerService(), JobHandler {
                 else null
 
         if (metadataBitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap)?.apply {
+            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
+                    metadataBitmap)?.apply {
                 return this
             }
         }
 
         // Fetch from Notification's Bitmap
         if (bitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, bitmap)?.apply {
+            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
+                    bitmap)?.apply {
                 return this
             }
         }
@@ -547,7 +559,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
         if (prioritizeApi.not()) {
             // Find from Last.fm API
             if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                refreshArtworkUriFromLastFmApi(this@NotificationService,
+                refreshArtworkUriFromLastFmApi(this@NotificationService, this@NotificationService,
                         lastFmApiClient, coreElement)?.apply {
                     return this
                 }
@@ -558,7 +570,7 @@ class NotificationService : NotificationListenerService(), JobHandler {
     }
 
     private fun Notification.getArtworkBitmap(): Deferred<Bitmap?> =
-            async(this@NotificationService) {
+            async {
                 return@async (getLargeIcon()?.loadDrawable(this@NotificationService)
                         as? BitmapDrawable)
                         ?.bitmap
@@ -591,8 +603,8 @@ class NotificationService : NotificationListenerService(), JobHandler {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
                 && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
-                ui(this@NotificationService) {
-                    getNotification(this@NotificationService, trackInfo)?.apply {
+                launch(Dispatchers.Main) {
+                    getNotification(this@NotificationService, this, trackInfo)?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                         } else {

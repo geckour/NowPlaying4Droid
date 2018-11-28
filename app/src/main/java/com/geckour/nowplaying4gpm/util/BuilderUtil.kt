@@ -8,20 +8,21 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.preference.PreferenceManager
 import android.provider.MediaStore
-import android.support.v7.graphics.Palette
 import android.view.View
 import android.widget.RemoteViews
+import androidx.palette.graphics.Palette
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
+import kotlinx.coroutines.CoroutineScope
 
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackInfo: TrackInfo? = null): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, coroutineScope: CoroutineScope, isMin: Boolean = false, trackInfo: TrackInfo? = null): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -37,7 +38,8 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
 
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
                 && isMin.not()) {
-            val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())?.let {
+            val artwork = getBitmapFromUri(context, coroutineScope,
+                    info?.artworkUriString?.getUri())?.let {
                 Bitmap.createScaledBitmap(it, 600, 600, false)
             }
             if (summary != null && artwork != null) {
@@ -54,15 +56,21 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
                 ShareWidgetProvider.getPendingIntent(context,
                         ShareWidgetProvider.Action.SHARE))
 
+        val packageName =
+                if (sharedPreferences.getSwitchState(
+                                PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
+                    info?.playerPackageName
+                else null
+        val launchIntent = packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
         setOnClickPendingIntent(R.id.artwork,
-                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) && info?.playerPackageName != null)
-                    PendingIntent.getActivity(context,
-                            0,
-                            context.packageManager.getLaunchIntentForPackage(info.playerPackageName),
+                if (launchIntent != null) {
+                    PendingIntent.getActivity(context, 0,
+                            launchIntent,
                             PendingIntent.FLAG_CANCEL_CURRENT)
-                else
+                } else {
                     ShareWidgetProvider.getPendingIntent(context,
                             ShareWidgetProvider.Action.SHARE)
+                }
         )
 
         setOnClickPendingIntent(R.id.widget_button_setting,
@@ -71,7 +79,7 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
     }
 }
 
-suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notification? {
+suspend fun getNotification(context: Context, coroutineScope: CoroutineScope, trackInfo: TrackInfo): Notification? {
     if (trackInfo.coreElement.isAllNonNull.not()) return null
 
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -104,7 +112,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 if (sharedPreferences.getSwitchState(
                                 PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION)) {
                     trackInfo.artworkUriString?.let {
-                        getBitmapFromUriString(context, it)
+                        getBitmapFromUriString(context, coroutineScope, it)
                     }
                 } else null
 
@@ -122,7 +130,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
         )
         setOngoing(true)
         if (Build.VERSION.SDK_INT >= 24) {
-            setStyle(Notification.DecoratedMediaCustomViewStyle())
+            style = Notification.DecoratedMediaCustomViewStyle()
             addAction(actionOpenSetting)
         }
         thumb?.apply {

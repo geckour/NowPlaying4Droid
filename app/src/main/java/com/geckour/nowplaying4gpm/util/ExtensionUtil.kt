@@ -13,8 +13,8 @@ import android.net.Uri
 import android.preference.PreferenceManager
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
-import android.support.v7.graphics.Palette
 import android.view.View
+import androidx.palette.graphics.Palette
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -22,8 +22,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import timber.log.Timber
 import java.lang.reflect.Type
 import kotlin.math.absoluteValue
@@ -180,8 +179,6 @@ fun AlertDialog.Builder.generate(
     return create()
 }
 
-fun List<Job>.cancelAll() = forEach { it.cancel() }
-
 fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? = null,
                                    onGranted: (context: Context) -> Unit = {}) {
     if (ContextCompat.checkSelfPermission(this,
@@ -197,7 +194,7 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
     }
 }
 
-fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> = kotlinx.coroutines.experimental.async {
+fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> = GlobalScope.async(Dispatchers.IO) {
     if (this@similarity.isRecycled) {
         Timber.e(IllegalStateException("Bitmap is recycled"))
         return@async null
@@ -254,7 +251,7 @@ fun Palette.getOptimizedColor(context: Context): Int {
     }?.let { getColorFromPaletteColor(it) } ?: Color.WHITE
 }
 
-fun Activity.setCrashlytics() {
+fun Context.setCrashlytics() {
     if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
 }
 

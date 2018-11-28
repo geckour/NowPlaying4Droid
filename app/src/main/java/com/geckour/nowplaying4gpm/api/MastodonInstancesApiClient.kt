@@ -1,7 +1,7 @@
 package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.api.model.MastodonInstance
-import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

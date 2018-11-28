@@ -1,6 +1,5 @@
 package com.geckour.nowplaying4gpm.ui
 
-import android.app.Activity
 import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.content.ClipData
@@ -13,10 +12,10 @@ import androidx.core.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class SharingActivity : Activity(), JobHandler {
+class SharingActivity : ScopedActivity() {
 
     enum class IntentRequestCode {
         SHARE
@@ -31,14 +30,10 @@ class SharingActivity : Activity(), JobHandler {
                 }
     }
 
-    override val job: Job = Job()
-
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
-        setCrashlytics()
-
-        ui(this) { startShare(intent.requireUnlock()) }
+        launch { startShare(intent.requireUnlock()) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,11 +103,5 @@ class SharingActivity : Activity(), JobHandler {
         return if (this.hasExtra(ARGS_KEY_REQUIRE_UNLOCK))
             this.getBooleanExtra(ARGS_KEY_REQUIRE_UNLOCK, default)
         else default
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        job.cancel()
     }
 }
