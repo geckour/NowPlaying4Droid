@@ -5,15 +5,15 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
 import android.content.*
-import android.databinding.DataBindingUtil
+import androidx.databinding.DataBindingUtil
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
-import android.support.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsIntent
 import android.support.design.widget.Snackbar
-import android.support.v4.app.NotificationManagerCompat
+import androidx.core.app.NotificationManagerCompat
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -40,7 +40,7 @@ import com.sys1yagi.mastodon4j.api.entity.auth.AppRegistration
 import com.sys1yagi.mastodon4j.api.exception.Mastodon4jRequestException
 import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
-import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.Job
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import permissions.dispatcher.NeedsPermission

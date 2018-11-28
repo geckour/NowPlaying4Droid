@@ -12,7 +12,7 @@ import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getShareWidgetViews
 import com.geckour.nowplaying4gpm.util.ui
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.async
 
 class ShareWidgetProvider : AppWidgetProvider() {
 

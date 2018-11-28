@@ -6,7 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
-import android.support.v4.content.FileProvider
+import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
@@ -15,15 +15,15 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.experimental.CommonPool
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.CommonPool
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.android.UI
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.CoroutineContext
 
 fun <T> asyncOrNull(context: Context, coroutineContext: CoroutineContext = CommonPool,
                     onError: (Throwable) -> Unit = { Timber.e(it) },

@@ -2,7 +2,7 @@ package com.geckour.nowplaying4gpm.api
 
 import android.graphics.Bitmap
 import android.net.Uri
-import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.Deferred
 import twitter4j.Status
 import twitter4j.auth.AccessToken
 

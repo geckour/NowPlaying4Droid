@@ -1,11 +1,10 @@
 package com.geckour.nowplaying4gpm.ui
 
 import android.content.res.ColorStateList
-import android.databinding.DataBindingUtil
+import androidx.databinding.DataBindingUtil
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.support.wearable.activity.WearableActivity
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.AlphaAnimation
 import android.view.animation.AnimationSet
@@ -15,11 +14,11 @@ import com.geckour.nowplaying4gpm.databinding.ActivityMainBinding
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class MainActivity : WearableActivity() {
+class MainActivity : ScopedWearableActivity() {
 
     companion object {
         private const val PATH_TRACK_INFO_POST = "/track_info/post"
@@ -40,7 +39,7 @@ class MainActivity : WearableActivity() {
         it.forEach {
             when (it.type) {
                 DataEvent.TYPE_CHANGED -> {
-                    if (it.dataItem.uri.path.compareTo(PATH_TRACK_INFO_POST) == 0) {
+                    if (it.dataItem.uri.path?.compareTo(PATH_TRACK_INFO_POST) == 0) {
                         val dataMap = DataMapItem.fromDataItem(it.dataItem).dataMap
 
                         launch {
@@ -126,7 +125,7 @@ class MainActivity : WearableActivity() {
 
     private fun requestTrackInfo() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
-            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+            val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
@@ -136,7 +135,7 @@ class MainActivity : WearableActivity() {
 
     private fun invokeShare() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
-            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+            val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
@@ -146,7 +145,7 @@ class MainActivity : WearableActivity() {
 
     private fun invokeShareOnHost(): Boolean {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
-            val node = it.result.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
+            val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
                     ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)

@@ -1,7 +1,7 @@
 package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.api.model.MastodonInstanceList
-import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.Deferred
 import retrofit2.http.GET
 import retrofit2.http.Query
 

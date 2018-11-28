@@ -44,10 +44,8 @@
 -keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
 -keepnames class com.geckour.nowplaying4gpm.util.WidgetState { *; }
 
--keepattributes *Annotation*
--keepattributes SourceFile,LineNumberTable
--keep public class * extends java.lang.Exception
 
+#Glide
 -keep class * implements com.bumptech.glide.** { *; }
 -keep public class * implements com.bumptech.glide.module.GlideModule
 -keep public class * extends com.bumptech.glide.module.AppGlideModule
@@ -56,8 +54,29 @@
   public *;
 }
 
+
+#Twitter4J
 -keep class twitter4j.** { *; }
 -dontwarn javax.management.**
 -dontwarn org.apache.log4j.**
 -dontwarn org.slf4j.**
 -dontwarn java.lang.management.ManagementFactory
+
+
+# Crashlytics
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keep class com.crashlytics.** { *; }
+-dontwarn com.crashlytics.**
+
+
+# Coroutines
+
+# ServiceLoader support
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Most of volatile fields are updated with AFU and should not be mangled
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}

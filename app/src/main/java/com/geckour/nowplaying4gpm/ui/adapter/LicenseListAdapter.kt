@@ -11,7 +11,7 @@ import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 import com.geckour.nowplaying4gpm.util.ui
-import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.Job
 
 class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 

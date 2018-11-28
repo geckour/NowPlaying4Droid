@@ -4,17 +4,14 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
-apply plugin: 'kotlin-kapt'
-
 kotlin.experimental.coroutines 'enable'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 23
-        targetSdkVersion 27
         versionCode 4
         versionName "1.1.1"
         dataBinding.enabled = true
@@ -48,33 +45,32 @@ android {
             signingConfig signingConfigs.release
         }
     }
+
+    dataBinding.enabled = true
 }
 
 dependencies {
-    def coroutines_version = '0.23.3'
-    def android_support_version = '27.1.1'
-    def firebase_version = '16.0.1'
+    def coroutines_version = '1.0.1'
+    def firebase_version = '16.0.3'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.google.android.support:wearable:2.3.0'
-    implementation 'com.google.android.gms:play-services-wearable:15.0.1'
-    implementation "com.android.support:percent:$android_support_version"
-    implementation "com.android.support:support-v4:$android_support_version"
-    implementation "com.android.support:recyclerview-v7:$android_support_version"
-    implementation "com.android.support:appcompat-v7:$android_support_version"
-    implementation "com.android.support:wear:$android_support_version"
-    compileOnly 'com.google.android.wearable:wearable:2.3.0'
-    implementation "com.google.firebase:firebase-core:$firebase_version"
-    implementation "com.google.firebase:firebase-crash:$firebase_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation 'com.google.android.support:wearable:2.4.0'
+    implementation 'com.google.android.gms:play-services-wearable:16.0.1'
+    implementation 'androidx.percentlayout:percentlayout:1.0.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.wear:wear:1.0.0'
+    compileOnly 'com.google.android.wearable:wearable:2.4.0'
+    implementation("com.google.firebase:firebase-core:$firebase_version") {
+        exclude group: 'com.google.android.gms', module: 'play-services-basement'
+    }
     implementation('com.crashlytics.sdk.android:crashlytics:2.9.3') { transitive = true }
 
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
-
-    // Data Binding
-    kapt 'com.android.databinding:compiler:3.1.2'
 
     // Logging
     implementation 'com.jakewharton.timber:timber:4.7.1'

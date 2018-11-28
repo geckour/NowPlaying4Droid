@@ -11,8 +11,8 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.preference.PreferenceManager
-import android.support.annotation.ColorInt
-import android.support.v4.content.ContextCompat
+import androidx.annotation.ColorInt
+import androidx.core.content.ContextCompat
 import android.support.v7.graphics.Palette
 import android.view.View
 import com.crashlytics.android.Crashlytics
@@ -22,8 +22,8 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import timber.log.Timber
 import java.lang.reflect.Type
 import kotlin.math.absoluteValue

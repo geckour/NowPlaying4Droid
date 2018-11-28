@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import com.geckour.nowplaying4gpm.util.asyncOrNull
 import com.geckour.nowplaying4gpm.util.getUri
-import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.Deferred
 import twitter4j.StatusUpdate
 import twitter4j.Twitter
 import twitter4j.TwitterFactory
