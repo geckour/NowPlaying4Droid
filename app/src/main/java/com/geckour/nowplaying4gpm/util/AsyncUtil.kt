@@ -15,7 +15,10 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -23,7 +26,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 fun <T> CoroutineScope.asyncOrNull(
-        coroutineContext: CoroutineContext = EmptyCoroutineContext,
         onError: (Throwable) -> Unit = { Timber.e(it) },
         block: suspend CoroutineScope.() -> T) =
         async {
@@ -67,7 +69,8 @@ private suspend fun getArtworkUriFromDevice(context: Context, coroutineScope: Co
                         Uri.parse("content://media/external/audio/albumart"), it
                 )?.let {
                     try {
-                        context.contentResolver.openInputStream(it)?.close() ?: throw IllegalStateException()
+                        context.contentResolver.openInputStream(it)?.close()
+                                ?: throw IllegalStateException()
                         PreferenceManager.getDefaultSharedPreferences(context)
                                 .refreshTempArtwork(it)
                         it
@@ -96,7 +99,8 @@ suspend fun refreshArtworkUriFromLastFmApi(context: Context, coroutineScope: Cor
                                            client: LastFmApiClient,
                                            trackCoreElement: TrackCoreElement): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
-    val bitmap = getBitmapFromUrl(context, coroutineScope, url)?.let { it.copy(it.config, false) } ?: return null
+    val bitmap = getBitmapFromUrl(context, coroutineScope, url)?.let { it.copy(it.config, false) }
+            ?: return null
     val uri = refreshArtworkUriFromBitmap(context, coroutineScope, bitmap)
     bitmap.recycle()
 
@@ -113,7 +117,7 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, coroutineScope: Corout
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val dirName = "images"
             val fileName = "temp_artwork.jpg"
-            val dir = context.filesDir.let { File(it, dirName) }
+            val dir = File(context.filesDir, dirName)
             val file = File(dir, fileName)
 
             if (file.exists()) file.delete()
@@ -150,7 +154,7 @@ suspend fun getBitmapFromUri(context: Context, coroutineScope: CoroutineScope, u
                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                             .skipMemoryCache(true)
                             .signature { System.currentTimeMillis().toString() }
-            uri?.let {
+            uri.let {
                 coroutineScope.asyncOrNull {
                     Glide.with(context)
                             .asBitmap().load(uri).apply(glideOptions)
@@ -164,8 +168,8 @@ suspend fun getBitmapFromUri(context: Context, coroutineScope: CoroutineScope, u
 
 suspend fun getBitmapFromUriString(context: Context, coroutineScope: CoroutineScope, uriString: String): Bitmap? =
         try {
-            Uri.parse(uriString)
+            getBitmapFromUri(context, coroutineScope, Uri.parse(uriString))
         } catch (e: Throwable) {
             Timber.e(e)
             null
-        }?.let { getBitmapFromUri(context, coroutineScope, it) }
+        }

@@ -603,7 +603,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
                 && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
-                launch(Dispatchers.Main) {
+                launch(Dispatchers.IO) {
                     getNotification(this@NotificationService, this, trackInfo)?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
