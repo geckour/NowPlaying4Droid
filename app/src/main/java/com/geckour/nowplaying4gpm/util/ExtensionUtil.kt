@@ -113,6 +113,24 @@ enum class PaletteColor {
     }
 }
 
+enum class Visibility {
+    PUBLIC,
+    UNLISTED,
+    PRIVATE;
+
+    fun getSummaryResId(): Int =
+            when (this) {
+                PUBLIC -> R.string.mastodon_visibility_public
+                UNLISTED -> R.string.mastodon_visibility_unlisted
+                PRIVATE -> R.string.mastodon_visibility_private
+            }
+
+    companion object {
+        fun getFromIndex(index: Int): Visibility =
+                Visibility.values().getOrNull(index) ?: PUBLIC
+    }
+}
+
 fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
                 .let { splitList ->

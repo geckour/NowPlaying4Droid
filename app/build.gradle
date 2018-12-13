@@ -18,8 +18,8 @@ android {
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 24
-        versionCode 54
-        versionName "2.4.7"
+        versionCode 55
+        versionName "2.4.8"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -82,7 +82,7 @@ dependencies {
     def retrofit2_version = '2.4.0'
     def okhttp_version = '3.11.0'
     def glide_version = '4.8.0'
-    def firebase_version = '16.0.3'
+    def firebase_version = '16.0.4'
 
     wearApp project(':wear')
 
@@ -134,10 +134,10 @@ dependencies {
 
     // Wear
     implementation 'com.google.android.gms:play-services-wearable:16.0.1'
-    implementation 'org.twitter4j:twitter4j-core:4.0.4'
+    implementation 'org.twitter4j:twitter4j-core:4.0.7'
 
     // Mastodon
-    implementation 'com.github.sys1yagi.mastodon4j:mastodon4j:1.6.0'
+    implementation 'com.github.sys1yagi.mastodon4j:mastodon4j:1.7.0'
 }
 
 // Billing
