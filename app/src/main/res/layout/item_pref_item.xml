@@ -22,11 +22,10 @@
             type="Integer"/>
     </data>
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?android:attr/selectableItemBackground"
-        >
+        android:background="?android:attr/selectableItemBackground">
 
         <TextView
             android:id="@+id/text_title"
@@ -122,5 +121,5 @@
                 android:textColor="@color/colorShadowTextDark"
                 android:textSize="16sp"/>
         </FrameLayout>
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

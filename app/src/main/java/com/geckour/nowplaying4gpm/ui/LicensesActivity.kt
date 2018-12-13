@@ -1,17 +1,16 @@
 package com.geckour.nowplaying4gpm.ui
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.databinding.DataBindingUtil
+import androidx.databinding.DataBindingUtil
 import android.os.Bundle
-import android.support.v7.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.ui.adapter.LicenseListAdapter
 import com.geckour.nowplaying4gpm.databinding.ActivityLicensesBinding
-import com.geckour.nowplaying4gpm.util.setCrashlytics
 
-class LicensesActivity : Activity() {
+class LicensesActivity : ScopedActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
@@ -24,15 +23,13 @@ class LicensesActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setCrashlytics()
-
         binding = DataBindingUtil.setContentView(this, R.layout.activity_licenses)
 
         binding.toolbar.title = "${getString(R.string.activity_title_licenses)} - ${getString(R.string.app_name)}"
 
         binding.recyclerView.apply {
-            layoutManager = LinearLayoutManager(this@LicensesActivity, LinearLayoutManager.VERTICAL, false)
-            this@LicensesActivity.adapter = LicenseListAdapter(
+            layoutManager = LinearLayoutManager(this@LicensesActivity, RecyclerView.VERTICAL, false)
+            this@LicensesActivity.adapter = LicenseListAdapter(this@LicensesActivity,
                     listOf(
                             LicenseListAdapter.LicenseItem(getString(R.string.library_coroutines), getString(R.string.license_coroutines), false),
                             LicenseListAdapter.LicenseItem(getString(R.string.library_android_support), getString(R.string.license_android_support), false),
@@ -48,7 +45,7 @@ class LicensesActivity : Activity() {
                     )
             )
             adapter = this@LicensesActivity.adapter
-            adapter.notifyDataSetChanged()
+            this@LicensesActivity.adapter.notifyDataSetChanged()
             setHasFixedSize(true)
         }
     }

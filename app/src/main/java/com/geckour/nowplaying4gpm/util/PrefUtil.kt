@@ -19,9 +19,11 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD(false),
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
     PREF_KEY_DELAY_POST_MASTODON(2000L),
+    PREF_KEY_VISIBILITY_MASTODON,
     PREF_KEY_WHETHER_RESIDE(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION(true),
     PREF_KEY_CHOSEN_PALETTE_COLOR(PaletteColor.LIGHT_VIBRANT.ordinal),
+    PREF_KEY_CHOSEN_MASTODON_VISIBILITY(Visibility.PUBLIC.ordinal),
     PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET(true),
     PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK(true),
@@ -107,6 +109,13 @@ fun SharedPreferences.getDelayDurationPostMastodon(): Long =
             getLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name,
                     PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long)
         else PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long
+
+fun SharedPreferences.getVisibilityMastodon(): Visibility =
+        Visibility.values().getOrNull(
+                getInt(
+                        PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name,
+                        Visibility.PUBLIC.ordinal)
+        ) ?: Visibility.PUBLIC
 
 fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
     edit().putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration).apply()

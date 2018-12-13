@@ -39,6 +39,8 @@
     <string name="pref_item_title_delay_mastodon">Time margin of auto post</string>
     <string name="pref_item_desc_delay_mastodon">Set margin time to determine auto post for Mastodon</string>
     <string name="pref_item_summary_delay_mastodon" translatable="false">%1$d ms</string>
+    <string name="pref_item_title_visibility_mastodon">Visibility of auto post</string>
+    <string name="pref_item_desc_visibility_mastodon">Select visibility of auto post for Mastodon</string>
 
     <string name="pref_category_notification">Notification</string>
     <string name="pref_item_title_switch_reside_notification">Resident notification</string>
@@ -77,6 +79,11 @@
     <string name="palette_light_muted">Light Muted</string>
     <string name="palette_muted">Muted</string>
     <string name="palette_dark_muted">Dark Muted</string>
+
+
+    <string name="mastodon_visibility_private">Private</string>
+    <string name="mastodon_visibility_unlisted">Unlisted</string>
+    <string name="mastodon_visibility_public">Public</string>
 
 
     <string name="dialog_button_ok">OK</string>

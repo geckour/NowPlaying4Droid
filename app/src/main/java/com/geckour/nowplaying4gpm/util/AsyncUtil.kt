@@ -6,7 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
-import android.support.v4.content.FileProvider
+import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
@@ -15,20 +15,20 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.experimental.CommonPool
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
-fun <T> asyncOrNull(context: Context, coroutineContext: CoroutineContext = CommonPool,
-                    onError: (Throwable) -> Unit = { Timber.e(it) },
-                    block: suspend CoroutineScope.() -> T) =
-        async(context, coroutineContext) {
+fun <T> CoroutineScope.asyncOrNull(
+        onError: (Throwable) -> Unit = { Timber.e(it) },
+        block: suspend CoroutineScope.() -> T) =
+        async {
             try {
                 block()
             } catch (t: Throwable) {
@@ -37,34 +37,16 @@ fun <T> asyncOrNull(context: Context, coroutineContext: CoroutineContext = Commo
             }
         }
 
-fun <T> async(context: Context, coroutineContext: CoroutineContext = CommonPool,
-              block: suspend CoroutineScope.() -> T) =
-        kotlinx.coroutines.experimental.async(coroutineContext,
-                parent = (context as? JobHandler)?.job, block = block)
-
-
-fun ui(context: Context, block: suspend CoroutineScope.() -> Unit) =
-        launch(context, UI) { block() }
-
-fun <T> MastodonRequest<T>.toJob(context: Context): Deferred<T?> =
-        asyncOrNull(context) {
+fun <T> MastodonRequest<T>.toJob(coroutineScope: CoroutineScope): Deferred<T?> =
+        coroutineScope.asyncOrNull {
             execute()
         }
 
-fun launch(context: Context, coroutineContext: CoroutineContext = CommonPool, block: suspend CoroutineScope.() -> Unit) =
-        launch(coroutineContext, parent = (context as? JobHandler)?.job) {
-            try {
-                block()
-            } catch (t: Throwable) {
-                Timber.e(t)
-            }
-        }
-
-private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackCoreElement): Long? =
-        asyncOrNull(context) {
+private suspend fun getAlbumIdFromDevice(context: Context, coroutineScope: CoroutineScope, trackCoreElement: TrackCoreElement): Long? =
+        coroutineScope.asyncOrNull {
             if (trackCoreElement.isAllNonNull.not()) return@asyncOrNull null
 
-            val cursor = context.contentResolver.query(
+            return@asyncOrNull context.contentResolver.query(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                     arrayOf(MediaStore.Audio.Media.ALBUM_ID),
                     getContentQuerySelection(
@@ -73,21 +55,22 @@ private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: Tra
                             requireNotNull(trackCoreElement.album)),
                     null,
                     null
-            )
-
-            return@asyncOrNull (if (cursor.moveToNext()) {
-                cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-            } else null).apply { cursor.close() }
+            )?.use {
+                (if (it.moveToNext()) {
+                    it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                } else null).apply { it.close() }
+            }
         }.await()
 
-private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
+private suspend fun getArtworkUriFromDevice(context: Context, coroutineScope: CoroutineScope, albumId: Long?): Uri? =
         albumId?.let {
-            asyncOrNull(context) {
+            coroutineScope.asyncOrNull {
                 ContentUris.withAppendedId(
                         Uri.parse("content://media/external/audio/albumart"), it
-                ).let {
+                )?.let {
                     try {
-                        context.contentResolver.openInputStream(it).close()
+                        context.contentResolver.openInputStream(it)?.close()
+                                ?: throw IllegalStateException()
                         PreferenceManager.getDefaultSharedPreferences(context)
                                 .refreshTempArtwork(it)
                         it
@@ -99,8 +82,8 @@ private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): U
             }.await()
         }
 
-suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackCoreElement): Uri? =
-        getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackCoreElement))
+suspend fun getArtworkUriFromDevice(context: Context, coroutineScope: CoroutineScope, trackCoreElement: TrackCoreElement): Uri? =
+        getArtworkUriFromDevice(context, coroutineScope, getAlbumIdFromDevice(context, coroutineScope, trackCoreElement))
 
 private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient,
                                                trackCoreElement: TrackCoreElement,
@@ -112,18 +95,20 @@ private suspend fun getArtworkUrlFromLastFmApi(client: LastFmApiClient,
             it.find { it.size == size.rawStr } ?: it.lastOrNull()
         }?.url
 
-suspend fun refreshArtworkUriFromLastFmApi(context: Context, client: LastFmApiClient,
+suspend fun refreshArtworkUriFromLastFmApi(context: Context, coroutineScope: CoroutineScope,
+                                           client: LastFmApiClient,
                                            trackCoreElement: TrackCoreElement): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
-    val bitmap = getBitmapFromUrl(context, url)?.let { it.copy(it.config, false) } ?: return null
-    val uri = refreshArtworkUriFromBitmap(context, bitmap)
+    val bitmap = getBitmapFromUrl(context, coroutineScope, url)?.let { it.copy(it.config, false) }
+            ?: return null
+    val uri = refreshArtworkUriFromBitmap(context, coroutineScope, bitmap)
     bitmap.recycle()
 
     return uri
 }
 
-suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? =
-        asyncOrNull(context) {
+suspend fun refreshArtworkUriFromBitmap(context: Context, coroutineScope: CoroutineScope, bitmap: Bitmap): Uri? =
+        coroutineScope.asyncOrNull {
             if (bitmap.isRecycled) {
                 Timber.e(IllegalStateException("Bitmap is recycled"))
                 return@asyncOrNull null
@@ -132,7 +117,7 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? 
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val dirName = "images"
             val fileName = "temp_artwork.jpg"
-            val dir = context.filesDir.let { File(it, dirName) }
+            val dir = File(context.filesDir, dirName)
             val file = File(dir, fileName)
 
             if (file.exists()) file.delete()
@@ -148,10 +133,10 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? 
             }
         }.await()
 
-private suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
+private suspend fun getBitmapFromUrl(context: Context, coroutineScope: CoroutineScope, url: String?): Bitmap? =
         url?.let {
             try {
-                asyncOrNull(context) {
+                coroutineScope.asyncOrNull {
                     Glide.with(context)
                             .asBitmap().load(it)
                             .submit().get()
@@ -162,15 +147,15 @@ private suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
             }
         }
 
-suspend fun getBitmapFromUri(context: Context, uri: Uri?): Bitmap? =
+suspend fun getBitmapFromUri(context: Context, coroutineScope: CoroutineScope, uri: Uri?): Bitmap? =
         try {
             val glideOptions =
                     RequestOptions()
                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                             .skipMemoryCache(true)
                             .signature { System.currentTimeMillis().toString() }
-            uri?.let {
-                asyncOrNull(context) {
+            uri.let {
+                coroutineScope.asyncOrNull {
                     Glide.with(context)
                             .asBitmap().load(uri).apply(glideOptions)
                             .submit().get()
@@ -181,10 +166,10 @@ suspend fun getBitmapFromUri(context: Context, uri: Uri?): Bitmap? =
             null
         }
 
-suspend fun getBitmapFromUriString(context: Context, uriString: String): Bitmap? =
+suspend fun getBitmapFromUriString(context: Context, coroutineScope: CoroutineScope, uriString: String): Bitmap? =
         try {
-            Uri.parse(uriString)
+            getBitmapFromUri(context, coroutineScope, Uri.parse(uriString))
         } catch (e: Throwable) {
             Timber.e(e)
             null
-        }?.let { getBitmapFromUri(context, it) }
+        }

@@ -5,15 +5,14 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
 import android.content.*
-import android.databinding.DataBindingUtil
+import androidx.databinding.DataBindingUtil
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
-import android.support.customtabs.CustomTabsIntent
-import android.support.design.widget.Snackbar
-import android.support.v4.app.NotificationManagerCompat
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.app.NotificationManagerCompat
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +32,7 @@ import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.*
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.sys1yagi.mastodon4j.MastodonClient
 import com.sys1yagi.mastodon4j.api.Scope
@@ -40,7 +40,8 @@ import com.sys1yagi.mastodon4j.api.entity.auth.AppRegistration
 import com.sys1yagi.mastodon4j.api.exception.Mastodon4jRequestException
 import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
-import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import permissions.dispatcher.NeedsPermission
@@ -49,7 +50,7 @@ import permissions.dispatcher.RuntimePermissions
 import timber.log.Timber
 
 @RuntimePermissions
-class SettingsActivity : Activity(), JobHandler {
+class SettingsActivity : ScopedActivity() {
 
     enum class RequestCode {
         GRANT_NOTIFICATION_LISTENER,
@@ -85,12 +86,8 @@ class SettingsActivity : Activity(), JobHandler {
 
     private var showingNotificationServicePermissionDialog = false
 
-    override val job: Job = Job()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        setCrashlytics()
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
@@ -267,6 +264,8 @@ class SettingsActivity : Activity(), JobHandler {
                             if (checkState) View.GONE else View.VISIBLE
                     this@SettingsActivity.binding.itemDelayMastodon.maskInactive.visibility =
                             if (checkState) View.GONE else View.VISIBLE
+                    this@SettingsActivity.binding.itemVisibilityMastodon.maskInactive.visibility =
+                            if (checkState) View.GONE else View.VISIBLE
                 })
             }
         }
@@ -297,7 +296,17 @@ class SettingsActivity : Activity(), JobHandler {
             binding.summary = getString(R.string.pref_item_summary_delay_mastodon,
                     sharedPreferences.getDelayDurationPostMastodon())
             binding.root.setOnClickListener { onClickDelayMastodon() }
+        }
 
+        binding.itemVisibilityMastodon.also { binding ->
+            binding.maskInactive.visibility =
+                    if (sharedPreferences.getSwitchState(
+                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
+                        View.GONE
+                    else View.VISIBLE
+
+            binding.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
+            binding.root.setOnClickListener { onClickVisibilityMastodon() }
         }
 
         binding.itemSwitchColorizeNotificationBg.also { binding ->
@@ -322,7 +331,7 @@ class SettingsActivity : Activity(), JobHandler {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) { _, summary ->
                     binding.summary = summary
 
-                    launch(this@SettingsActivity) { updateWidget() }
+                    launch(Dispatchers.IO) { updateWidget() }
                 })
             }
         }
@@ -334,7 +343,7 @@ class SettingsActivity : Activity(), JobHandler {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) { _, summary ->
                     binding.summary = summary
 
-                    launch(this@SettingsActivity) { updateWidget() }
+                    launch(Dispatchers.IO) { updateWidget() }
                 })
             }
         }
@@ -348,7 +357,7 @@ class SettingsActivity : Activity(), JobHandler {
         binding.itemDonate.also { binding ->
             if (sharedPreferences.getDonateBillingState()) binding.root.visibility = View.GONE
             else binding.root.setOnClickListener {
-                ui(this@SettingsActivity) { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
+                launch { startBillingTransaction(BuildConfig.SKU_KEY_DONATE) }
             }
         }
 
@@ -423,7 +432,6 @@ class SettingsActivity : Activity(), JobHandler {
         super.onDestroy()
 
         billingService?.apply { unbindService(serviceConnection) }
-        job.cancel()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -485,7 +493,7 @@ class SettingsActivity : Activity(), JobHandler {
 
         if (verifier == null) onAuthTwitterError()
         else {
-            launch(this@SettingsActivity) {
+            launch(Dispatchers.IO) {
                 val accessToken = twitterApiClient.getAccessToken(verifier).await()
 
                 if (accessToken == null) onAuthTwitterError()
@@ -528,7 +536,7 @@ class SettingsActivity : Activity(), JobHandler {
                                 addNetworkInterceptor(StethoInterceptor())
                             }
                         }, Gson())
-                ui(this@SettingsActivity) {
+                launch {
                     val accessToken = try {
                         Apps(mastodonApiClientBuilder.build())
                                 .getAccessToken(
@@ -553,7 +561,7 @@ class SettingsActivity : Activity(), JobHandler {
                                 .await()
                                 ?.userName ?: run {
                             onAuthMastodonError()
-                            return@ui
+                            return@launch
                         }
                         val userInfo =
                                 MastodonUserInfo(accessToken, this@apply.instanceName, userName)
@@ -614,7 +622,7 @@ class SettingsActivity : Activity(), JobHandler {
                 val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
                         id,
-                        getShareWidgetViews(this@SettingsActivity,
+                        getShareWidgetViews(this@SettingsActivity, this@SettingsActivity,
                                 ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
@@ -642,7 +650,7 @@ class SettingsActivity : Activity(), JobHandler {
     }
 
     private fun onClickAuthTwitter() {
-        launch(this@SettingsActivity) {
+        launch(Dispatchers.IO) {
             val uri = twitterApiClient.getRequestOAuthUri().await() ?: return@launch
 
             CustomTabsIntent.Builder()
@@ -663,7 +671,7 @@ class SettingsActivity : Activity(), JobHandler {
             editText.setText(sharedPreferences.getMastodonUserInfo()?.instanceName)
             editText.setSelection(editText.text.length)
 
-            ui(this@SettingsActivity) {
+            launch {
                 val instances = MastodonInstancesApiClient().getList()
                 editText.setAdapter(ArrayAdapter<String>(this@SettingsActivity,
                         android.R.layout.simple_dropdown_item_1line,
@@ -679,7 +687,7 @@ class SettingsActivity : Activity(), JobHandler {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val instance = instanceNameInputDialogBinding.editText.text.toString()
                     if (instance.isNotBlank()) {
-                        ui(this@SettingsActivity) {
+                        launch {
                             val mastodonApiClient =
                                     MastodonClient.Builder(instance, OkHttpClient.Builder().apply {
                                         if (BuildConfig.DEBUG) {
@@ -702,7 +710,7 @@ class SettingsActivity : Activity(), JobHandler {
                                 null
                             } ?: run {
                                 onAuthMastodonError()
-                                return@ui
+                                return@launch
                             }
                             this@SettingsActivity.mastodonRegistrationInfo = registrationInfo
 
@@ -761,9 +769,57 @@ class SettingsActivity : Activity(), JobHandler {
         }.show()
     }
 
+    private fun onClickVisibilityMastodon() {
+        val chooseVisibilityBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
+                LayoutInflater.from(this),
+                R.layout.dialog_spinner,
+                null,
+                false
+        ).apply {
+            val arrayAdapter =
+                    object : ArrayAdapter<String>(
+                            this@SettingsActivity,
+                            android.R.layout.simple_spinner_item,
+                            Visibility.values().map { getString(it.getSummaryResId()) }) {
+                        override fun getDropDownView(position: Int,
+                                                     convertView: View?, parent: ViewGroup?): View =
+                                super.getDropDownView(position, convertView, parent).apply {
+                                    if (position == spinner.selectedItemPosition) {
+                                        (this as TextView).setTextColor(
+                                                getColor(R.color.colorPrimaryDark))
+                                    }
+                                }
+                    }.apply {
+                        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    }
+            spinner.apply {
+                adapter = arrayAdapter
+                setSelection(sharedPreferences.getVisibilityMastodon().ordinal)
+            }
+        }
+
+        AlertDialog.Builder(this).generate(
+                chooseVisibilityBinding.root,
+                getString(R.string.dialog_title_choose_color),
+                getString(R.string.dialog_message_choose_color)) { dialog, which ->
+            when (which) {
+                DialogInterface.BUTTON_POSITIVE -> {
+                    val visibilityIndex = chooseVisibilityBinding.spinner.selectedItemPosition
+                    sharedPreferences.edit()
+                            .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
+                            .apply()
+                    binding.itemVisibilityMastodon.summary =
+                            getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
+                    requestUpdate()
+                }
+            }
+            dialog.dismiss()
+        }.show()
+    }
+
     private suspend fun startBillingTransaction(skuName: String) {
         billingService?.let {
-            BillingApiClient(it).apply {
+            BillingApiClient(this, it).apply {
                 val sku =
                         getSkuDetails(this@SettingsActivity, skuName).firstOrNull()
                                 ?: run {
@@ -781,7 +837,7 @@ class SettingsActivity : Activity(), JobHandler {
             }
 
             startIntentSenderForResult(
-                    BillingApiClient(it)
+                    BillingApiClient(this, it)
                             .getBuyIntent(this@SettingsActivity, skuName)
                             ?.intentSender,
                     RequestCode.BILLING.ordinal,
@@ -884,20 +940,23 @@ class SettingsActivity : Activity(), JobHandler {
     private fun onClickItemWithSwitch(extra: FrameLayout?) = (extra?.getChildAt(0) as? Switch)?.performClick()
 
     private fun getSwitch(prefKey: PrefKey,
-                          onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch =
-            Switch(this@SettingsActivity).apply {
-                setOnClickListener {
-                    sharedPreferences.edit()
-                            .putBoolean(prefKey.name, isChecked)
-                            .apply()
+                          onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch {
+        return Switch(this@SettingsActivity).apply {
+            fun getSummary(): String = getString(
+                    if (isChecked) R.string.pref_item_summary_switch_on
+                    else R.string.pref_item_summary_switch_off)
+            setOnClickListener {
+                sharedPreferences.edit()
+                        .putBoolean(prefKey.name, isChecked)
+                        .apply()
 
-                    onCheckStateChanged(isChecked,
-                            getString(
-                                    if (isChecked) R.string.pref_item_summary_switch_on
-                                    else R.string.pref_item_summary_switch_off))
-                }
-                isChecked = sharedPreferences.getSwitchState(prefKey)
+                onCheckStateChanged(isChecked,
+                        getSummary())
             }
+            isChecked = sharedPreferences.getSwitchState(prefKey)
+            onCheckStateChanged(isChecked, getSummary())
+        }
+    }
 
     private fun showErrorDialog(titleResId: Int, messageResId: Int, onDismiss: () -> Unit = {}) =
             AlertDialog.Builder(this)

@@ -11,10 +11,13 @@ import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getShareWidgetViews
-import com.geckour.nowplaying4gpm.util.ui
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
-class ShareWidgetProvider : AppWidgetProvider() {
+class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
     enum class Action {
         SHARE,
@@ -34,6 +37,20 @@ class ShareWidgetProvider : AppWidgetProvider() {
             val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
             return maxWidth < 232
         }
+    }
+
+    private var job: Job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.IO
+
+    override fun onEnabled(context: Context?) {
+        super.onEnabled(context)
+        job = Job()
+    }
+
+    override fun onDisabled(context: Context?) {
+        super.onDisabled(context)
+        job.cancel()
     }
 
     override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
@@ -57,7 +74,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
         when (intent.action) {
             Action.SHARE.name -> {
-                ui(context) { context.startActivity(SharingActivity.getIntent(context)) }
+                launch(Dispatchers.Main) { context.startActivity(SharingActivity.getIntent(context)) }
             }
 
             Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))
@@ -65,7 +82,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
     }
 
     private fun updateWidget(context: Context, vararg ids: Int) =
-            async {
+            launch {
                 if (ids.isNotEmpty()) {
                     val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
                             .getCurrentTrackInfo()
@@ -75,7 +92,7 @@ class ShareWidgetProvider : AppWidgetProvider() {
                             val widgetOptions = this.getAppWidgetOptions(id)
                             updateAppWidget(
                                     id,
-                                    getShareWidgetViews(context, isMin(widgetOptions), trackInfo)
+                                    getShareWidgetViews(context, this@launch, isMin(widgetOptions), trackInfo)
                             )
                         }
                     }

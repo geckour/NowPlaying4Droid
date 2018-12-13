@@ -2,7 +2,7 @@ package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.model.AlbumWrapper
-import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.Deferred
 import retrofit2.http.GET
 import retrofit2.http.Query
 

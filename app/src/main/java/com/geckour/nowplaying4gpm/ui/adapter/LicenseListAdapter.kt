@@ -1,19 +1,19 @@
 package com.geckour.nowplaying4gpm.ui.adapter
 
 import android.preference.PreferenceManager
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseBinding
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
-import com.geckour.nowplaying4gpm.util.ui
-import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
-class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class LicenseListAdapter(private val coroutineScope: CoroutineScope, private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     enum class ViewType {
         NORMAL,
@@ -60,8 +60,6 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
         }
     }
 
-    private val jobs: ArrayList<Job> = ArrayList()
-
     class NormalItemViewHolder(val binding: ItemLicenseBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: LicenseItem) {
@@ -77,7 +75,7 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
     inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind() {
-            ui(binding.root.context) {
+            coroutineScope.launch {
                 Glide.with(binding.button)
                         .load(binding.button.context.getString(R.string.easter_egg_icon_url))
                         .into(binding.button)
