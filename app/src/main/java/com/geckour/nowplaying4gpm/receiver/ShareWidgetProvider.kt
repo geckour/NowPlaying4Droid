@@ -39,9 +39,19 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         }
     }
 
-    private lateinit var job: Job
+    private var job: Job = Job()
     override val coroutineContext: CoroutineContext
         get() = job + Dispatchers.IO
+
+    override fun onEnabled(context: Context?) {
+        super.onEnabled(context)
+        job = Job()
+    }
+
+    override fun onDisabled(context: Context?) {
+        super.onDisabled(context)
+        job.cancel()
+    }
 
     override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
