@@ -5,19 +5,19 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
 import android.content.*
-import androidx.databinding.DataBindingUtil
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.preference.PreferenceManager
-import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.app.NotificationManagerCompat
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.app.NotificationManagerCompat
+import androidx.databinding.DataBindingUtil
 import com.android.vending.billing.IInAppBillingService
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.App
@@ -42,6 +42,7 @@ import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import permissions.dispatcher.NeedsPermission
@@ -544,7 +545,7 @@ class SettingsActivity : ScopedActivity() {
                                         this@apply.clientSecret,
                                         App.MASTODON_CALLBACK,
                                         token)
-                                .toJob(this@SettingsActivity)
+                                .toJob(this@SettingsActivity + Dispatchers.IO)
                                 .await()
                     } catch (e: Mastodon4jRequestException) {
                         Timber.e(e)
@@ -557,7 +558,7 @@ class SettingsActivity : ScopedActivity() {
                                 .accessToken(accessToken.accessToken)
                                 .build())
                                 .getVerifyCredentials()
-                                .toJob(this@SettingsActivity)
+                                .toJob(this@SettingsActivity + Dispatchers.IO)
                                 .await()
                                 ?.userName ?: run {
                             onAuthMastodonError()
@@ -703,7 +704,7 @@ class SettingsActivity : ScopedActivity() {
                                         App.MASTODON_CALLBACK,
                                         mastodonScope,
                                         App.MASTODON_WEB_URL)
-                                        .toJob(this@SettingsActivity)
+                                        .toJob(this@SettingsActivity + Dispatchers.IO)
                                         .await()
                             } catch (e: Mastodon4jRequestException) {
                                 Timber.e(e)

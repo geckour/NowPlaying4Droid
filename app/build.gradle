@@ -8,8 +8,6 @@ apply plugin: 'kotlin-kapt'
 
 apply plugin: 'io.fabric'
 
-kotlin.experimental.coroutines 'enable'
-
 kapt.mapDiagnosticLocations = true
 
 android {
