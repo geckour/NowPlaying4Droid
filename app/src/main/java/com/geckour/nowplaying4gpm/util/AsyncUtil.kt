@@ -17,18 +17,15 @@ import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.sys1yagi.mastodon4j.MastodonRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 fun <T> CoroutineScope.asyncOrNull(
         onError: (Throwable) -> Unit = { Timber.e(it) },
         block: suspend CoroutineScope.() -> T) =
-        async {
+        this.async {
             try {
                 block()
             } catch (t: Throwable) {

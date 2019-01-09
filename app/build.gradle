@@ -8,8 +8,6 @@ apply plugin: 'kotlin-kapt'
 
 apply plugin: 'io.fabric'
 
-kotlin.experimental.coroutines 'enable'
-
 kapt.mapDiagnosticLocations = true
 
 android {
@@ -18,8 +16,8 @@ android {
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 24
-        versionCode 56
-        versionName "2.4.9"
+        versionCode 57
+        versionName "2.4.10"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -88,20 +86,20 @@ dependencies {
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation 'com.google.android.material:material:1.1.0-alpha01'
+    implementation 'com.google.android.material:material:1.1.0-alpha02'
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.legacy:legacy-support-v13:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
     implementation 'androidx.browser:browser:1.0.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
     implementation("com.google.firebase:firebase-core:$firebase_version") {
         exclude group: 'com.google.android.gms', module: 'play-services-basement'
     }
     implementation('com.crashlytics.sdk.android:crashlytics:2.9.3') { transitive = true }
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test:runner:1.1.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
+    androidTestImplementation 'androidx.test:runner:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
 
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"

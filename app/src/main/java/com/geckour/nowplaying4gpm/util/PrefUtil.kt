@@ -44,7 +44,8 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
         }.apply()
 
 fun SharedPreferences.getFormatPattern(context: Context): String =
-        getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, context.getString(R.string.default_sharing_text_pattern))
+        getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
+                context.getString(R.string.default_sharing_text_pattern))
 
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit().putString(
@@ -79,17 +80,15 @@ fun SharedPreferences.getSharingText(context: Context): String? {
     val trackInfo = getCurrentTrackInfo() ?: return null
 
     if (trackInfo.coreElement.isAllNonNull.not()) return null
-    return getFormatPattern(context).getSharingText(trackInfo.coreElement)
+    return getFormatPattern(context).getSharingText(trackInfo)
 }
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
             Gson().fromJsonOrNull(
-                    getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-                            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.defaultValue as? String),
-                    TrackInfo::class.java) {
-                refreshCurrentTrackInfo(TrackInfo.empty)
-            }
+                    getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
+                    TrackInfo::class.java
+            ) { refreshCurrentTrackInfo(TrackInfo.empty) }
         } else null
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
