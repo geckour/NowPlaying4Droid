@@ -5,10 +5,11 @@ import java.io.Serializable
 data class TrackInfo(
         val coreElement: TrackCoreElement,
         val artworkUriString: String?,
-        val playerPackageName: String?
+        val playerPackageName: String?,
+        val playerAppName: String?
 ) : Serializable {
     companion object {
-        val empty: TrackInfo = TrackInfo(TrackCoreElement.empty, null, null)
+        val empty: TrackInfo = TrackInfo(TrackCoreElement.empty, null, null, null)
     }
 }
 

@@ -253,7 +253,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 val artworkUri = metadata.storeArtworkUri(coreElement,
                         notification?.getArtworkBitmap()?.await(),
                         sharedPreferences.getSwitchState(PrefKey.PREF_KEY_CHANGE_API_PRIORITY))
-                onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName))
+                onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName, packageName.getAppName(this@NotificationService)))
                 playerChangedFlag = false
             }
         }
@@ -284,7 +284,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String) {
         sharedPreferences.refreshTempArtwork(null)
         currentTrack = coreElement
-        reflectTrackInfo(TrackInfo(coreElement, null, packageName), false)
+        reflectTrackInfo(TrackInfo(coreElement, null, packageName, packageName.getAppName(this)), false)
     }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
@@ -331,7 +331,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             val subject =
                     if (trackInfo.coreElement.isAllNonNull) {
                         sharedPreferences.getFormatPattern(this@NotificationService)
-                                .getSharingText(trackInfo.coreElement)
+                                .getSharingText(trackInfo)
                     } else null
             val artwork = trackInfo.artworkUriString?.getUri()
 
@@ -368,7 +368,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 val subject =
                         if (trackInfo.coreElement.isAllNonNull) {
                             sharedPreferences.getFormatPattern(this@NotificationService)
-                                    .getSharingText(trackInfo.coreElement)
+                                    .getSharingText(trackInfo)
                         } else null ?: return@launch
                 val artwork =
                         if (sharedPreferences.getSwitchState(
@@ -479,7 +479,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         val subject = sharedPreferences.getFormatPattern(this)
-                .getSharingText(trackInfo.coreElement)
+                .getSharingText(trackInfo)
         val artwork =
                 trackInfo.artworkUriString?.let {
                     getBitmapFromUriString(this@NotificationService, this, it)

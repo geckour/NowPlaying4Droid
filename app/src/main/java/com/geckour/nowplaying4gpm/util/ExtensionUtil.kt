@@ -1,7 +1,6 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -11,18 +10,21 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.preference.PreferenceManager
+import android.view.View
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
-import android.view.View
 import androidx.palette.graphics.Palette
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import timber.log.Timber
 import java.lang.reflect.Type
 import kotlin.math.absoluteValue
@@ -131,8 +133,8 @@ enum class Visibility {
     }
 }
 
-fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
-        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "\\\\n")
+fun String.getSharingText(trackInfo: TrackInfo): String =
+        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "\\\\n")
                 .let { splitList ->
                     val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
                             .filter { it.second == "'" }
@@ -166,9 +168,10 @@ fun String.getSharingText(trackCoreElement: TrackCoreElement): String =
                         else when (it) {
                             "'" -> ""
                             "''" -> "'"
-                            "TI" -> trackCoreElement.title ?: ""
-                            "AR" -> trackCoreElement.artist ?: ""
-                            "AL" -> trackCoreElement.album ?: ""
+                            "TI" -> trackInfo.coreElement.title ?: ""
+                            "AR" -> trackInfo.coreElement.artist ?: ""
+                            "AL" -> trackInfo.coreElement.album ?: ""
+                            "PN" -> trackInfo.playerAppName ?: ""
                             "\\n" -> "\n"
                             else -> it
                         }
@@ -284,3 +287,12 @@ fun <T> Gson.fromJsonOrNull(json: String, type: Type,
 
 fun String.foldBreak(): String =
         this.replace(Regex("[\r\n]"), " ")
+
+fun String.getAppName(context: Context): String? =
+        try {
+            context.packageManager.let {
+                it.getApplicationLabel(it.getApplicationInfo(this, 0)).toString()
+            }
+        } catch (t: PackageManager.NameNotFoundException) {
+            null
+        }

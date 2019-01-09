@@ -82,7 +82,7 @@
     <string name="dialog_button_ng">キャンセル</string>
 
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
-    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nエスケープ: \' \' で囲む\n改行: \\n</string>
+    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\nプレイヤー名: PN\nエスケープ: \' \' で囲む\n改行: \\n</string>
     <string name="dialog_title_mastodon_instance">Mastodonのインスタンスを選択</string>
     <string name="dialog_title_mastodon_delay">遅延時間を入力</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
