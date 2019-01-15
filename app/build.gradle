@@ -37,6 +37,10 @@ android {
         it.buildConfigField "String", keyNameSkuDonate, getKey(keyNameSkuDonate)
         def keyNameMastodonInstancesSecret = "MASTODON_INSTANCES_SECRET"
         it.buildConfigField "String", keyNameMastodonInstancesSecret, getKey(keyNameMastodonInstancesSecret)
+        def keyNameSpotifyClientId = "SPOTIFY_CLIENT_ID"
+        it.buildConfigField "String", keyNameSpotifyClientId, getKey(keyNameSpotifyClientId)
+        def keyNameSpotifyClientSecret = "SPOTIFY_CLIENT_SECRET"
+        it.buildConfigField "String", keyNameSpotifyClientSecret, getKey(keyNameSpotifyClientSecret)
     }
 
     signingConfigs {

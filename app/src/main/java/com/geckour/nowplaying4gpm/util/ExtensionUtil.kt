@@ -172,6 +172,8 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                             "AR" -> trackInfo.coreElement.artist ?: ""
                             "AL" -> trackInfo.coreElement.album ?: ""
                             "PN" -> trackInfo.playerAppName ?: ""
+                            "SF" -> trackInfo.spotifyUrl ?: ""
+                            "AM" -> trackInfo.appleMusicUrl ?: ""
                             "\\n" -> "\n"
                             else -> it
                         }
