@@ -6,10 +6,16 @@ data class TrackInfo(
         val coreElement: TrackCoreElement,
         val artworkUriString: String?,
         val playerPackageName: String?,
-        val playerAppName: String?
+        val playerAppName: String?,
+        val spotifyUrl: String?
 ) : Serializable {
     companion object {
-        val empty: TrackInfo = TrackInfo(TrackCoreElement.empty, null, null, null)
+        val empty: TrackInfo =
+                TrackInfo(TrackCoreElement.empty,
+                        null,
+                        null,
+                        null,
+                        null)
     }
 }
 
@@ -28,4 +34,9 @@ data class TrackCoreElement(
 
     val isAllNonNull: Boolean =
             title != null && artist != null && album != null
+
+    val spotifySearchQuery: String? =
+            if (this.isAllNonNull)
+                "track:\"$title\" artist:\"$artist\" album:\"$album\""
+            else null
 }

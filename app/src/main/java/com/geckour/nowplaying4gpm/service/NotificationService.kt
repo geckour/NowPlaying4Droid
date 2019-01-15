@@ -21,6 +21,7 @@ import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
+import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
@@ -110,6 +111,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
+    private val spotifyApiClient: SpotifyApiClient = SpotifyApiClient()
     private val twitterApiClient: TwitterApiClient by lazy {
         TwitterApiClient(this, BuildConfig.TWITTER_CONSUMER_KEY,
                 BuildConfig.TWITTER_CONSUMER_SECRET)
@@ -249,11 +251,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             currentTrackSetJob?.cancelAndJoin()
 
             currentTrackSetJob = launch {
-                onQuickUpdate(coreElement, packageName)
+                val spotifyUrl =
+                        if (sharedPreferences.getFormatPattern(this@NotificationService).containsSpotifyPattern)
+                            spotifyApiClient.getSpotifyUrl(this@NotificationService, coreElement)
+                        else null
+                onQuickUpdate(coreElement, packageName, spotifyUrl)
                 val artworkUri = metadata.storeArtworkUri(coreElement,
                         notification?.getArtworkBitmap()?.await(),
                         sharedPreferences.getSwitchState(PrefKey.PREF_KEY_CHANGE_API_PRIORITY))
-                onUpdate(TrackInfo(coreElement, artworkUri?.toString(), packageName, packageName.getAppName(this@NotificationService)))
+                onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
+                        packageName, packageName.getAppName(this@NotificationService),
+                        spotifyUrl))
                 playerChangedFlag = false
             }
         }
@@ -281,10 +289,16 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 TrackCoreElement(track, artist, album)
             }
 
-    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String) {
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?) {
         sharedPreferences.refreshTempArtwork(null)
         currentTrack = coreElement
-        reflectTrackInfo(TrackInfo(coreElement, null, packageName, packageName.getAppName(this)), false)
+
+        reflectTrackInfo(
+                TrackInfo(coreElement, null,
+                        packageName, packageName.getAppName(this),
+                        spotifyUrl),
+                false
+        )
     }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {

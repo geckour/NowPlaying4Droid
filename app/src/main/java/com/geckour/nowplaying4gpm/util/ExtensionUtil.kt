@@ -134,7 +134,28 @@ enum class Visibility {
 }
 
 fun String.getSharingText(trackInfo: TrackInfo): String =
-        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "\\\\n")
+        this.splitConsideringEscape().joinToString("") {
+            return@joinToString Regex("^'(.+)'$").let { regex ->
+                if (it.matches(regex)) it.replace(regex, "$1")
+                else when (it) {
+                    "'" -> ""
+                    "''" -> "'"
+                    "TI" -> trackInfo.coreElement.title ?: ""
+                    "AR" -> trackInfo.coreElement.artist ?: ""
+                    "AL" -> trackInfo.coreElement.album ?: ""
+                    "PN" -> trackInfo.playerAppName ?: ""
+                    "SU" -> trackInfo.spotifyUrl ?: ""
+                    "\\n" -> "\n"
+                    else -> it
+                }
+            }
+        }
+
+val String.containsSpotifyPattern: Boolean
+    get() = this.splitConsideringEscape().contains("SU")
+
+private fun String.splitConsideringEscape(): List<String> =
+        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "SU", "\\\\n")
                 .let { splitList ->
                     val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
                             .filter { it.second == "'" }
@@ -161,20 +182,6 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                                         else splitList.lastIndex,
                                         splitList.size
                                 ))
-                    }
-                }.joinToString("") {
-                    return@joinToString Regex("^'(.+)'$").let { regex ->
-                        if (it.matches(regex)) it.replace(regex, "$1")
-                        else when (it) {
-                            "'" -> ""
-                            "''" -> "'"
-                            "TI" -> trackInfo.coreElement.title ?: ""
-                            "AR" -> trackInfo.coreElement.artist ?: ""
-                            "AL" -> trackInfo.coreElement.album ?: ""
-                            "PN" -> trackInfo.playerAppName ?: ""
-                            "\\n" -> "\n"
-                            else -> it
-                        }
                     }
                 }
 
