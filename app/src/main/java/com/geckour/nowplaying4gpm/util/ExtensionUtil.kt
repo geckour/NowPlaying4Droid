@@ -144,7 +144,7 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                     "AR" -> trackInfo.coreElement.artist ?: ""
                     "AL" -> trackInfo.coreElement.album ?: ""
                     "PN" -> trackInfo.playerAppName ?: ""
-                    "SF" -> trackInfo.spotifyUrl ?: ""
+                    "SU" -> trackInfo.spotifyUrl ?: ""
                     "\\n" -> "\n"
                     else -> it
                 }
@@ -152,10 +152,10 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
         }
 
 val String.containsSpotifyPattern: Boolean
-    get() = this.splitConsideringEscape().contains("SF")
+    get() = this.splitConsideringEscape().contains("SU")
 
 private fun String.splitConsideringEscape(): List<String> =
-        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "\\\\n")
+        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "SU", "\\\\n")
                 .let { splitList ->
                     val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
                             .filter { it.second == "'" }
