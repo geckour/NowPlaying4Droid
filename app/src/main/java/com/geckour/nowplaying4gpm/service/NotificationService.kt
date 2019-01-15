@@ -253,7 +253,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             currentTrackSetJob = launch {
                 val spotifyUrl =
                         if (sharedPreferences.getFormatPattern(this@NotificationService).containsSpotifyPattern)
-                            spotifyApiClient.getSpotifyUrl(this@NotificationService, coreElement)
+                            spotifyApiClient.getSpotifyUrl(coreElement)
                         else null
                 onQuickUpdate(coreElement, packageName, spotifyUrl)
                 val artworkUri = metadata.storeArtworkUri(coreElement,
