@@ -134,6 +134,27 @@ enum class Visibility {
 }
 
 fun String.getSharingText(trackInfo: TrackInfo): String =
+        this.splitConsideringEscape().joinToString("") {
+            return@joinToString Regex("^'(.+)'$").let { regex ->
+                if (it.matches(regex)) it.replace(regex, "$1")
+                else when (it) {
+                    "'" -> ""
+                    "''" -> "'"
+                    "TI" -> trackInfo.coreElement.title ?: ""
+                    "AR" -> trackInfo.coreElement.artist ?: ""
+                    "AL" -> trackInfo.coreElement.album ?: ""
+                    "PN" -> trackInfo.playerAppName ?: ""
+                    "SF" -> trackInfo.spotifyUrl ?: ""
+                    "\\n" -> "\n"
+                    else -> it
+                }
+            }
+        }
+
+val String.containsSpotifyPattern: Boolean
+    get() = this.splitConsideringEscape().contains("SF")
+
+private fun String.splitConsideringEscape(): List<String> =
         this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "\\\\n")
                 .let { splitList ->
                     val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
@@ -161,22 +182,6 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                                         else splitList.lastIndex,
                                         splitList.size
                                 ))
-                    }
-                }.joinToString("") {
-                    return@joinToString Regex("^'(.+)'$").let { regex ->
-                        if (it.matches(regex)) it.replace(regex, "$1")
-                        else when (it) {
-                            "'" -> ""
-                            "''" -> "'"
-                            "TI" -> trackInfo.coreElement.title ?: ""
-                            "AR" -> trackInfo.coreElement.artist ?: ""
-                            "AL" -> trackInfo.coreElement.album ?: ""
-                            "PN" -> trackInfo.playerAppName ?: ""
-                            "SF" -> trackInfo.spotifyUrl ?: ""
-                            "AM" -> trackInfo.appleMusicUrl ?: ""
-                            "\\n" -> "\n"
-                            else -> it
-                        }
                     }
                 }
 

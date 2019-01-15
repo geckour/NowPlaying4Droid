@@ -251,15 +251,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             currentTrackSetJob?.cancelAndJoin()
 
             currentTrackSetJob = launch {
-                val spotifyUrl = spotifyApiClient.getSpotifyUrl(this@NotificationService, coreElement)
-                val appleMusicUrl: String? = null
-                onQuickUpdate(coreElement, packageName, spotifyUrl, appleMusicUrl)
+                val spotifyUrl =
+                        if (sharedPreferences.getFormatPattern(this@NotificationService).containsSpotifyPattern)
+                            spotifyApiClient.getSpotifyUrl(this@NotificationService, coreElement)
+                        else null
+                onQuickUpdate(coreElement, packageName, spotifyUrl)
                 val artworkUri = metadata.storeArtworkUri(coreElement,
                         notification?.getArtworkBitmap()?.await(),
                         sharedPreferences.getSwitchState(PrefKey.PREF_KEY_CHANGE_API_PRIORITY))
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
                         packageName, packageName.getAppName(this@NotificationService),
-                        spotifyUrl, appleMusicUrl))
+                        spotifyUrl))
                 playerChangedFlag = false
             }
         }
@@ -287,14 +289,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 TrackCoreElement(track, artist, album)
             }
 
-    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?, appleMusicUrl: String?) {
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?) {
         sharedPreferences.refreshTempArtwork(null)
         currentTrack = coreElement
 
         reflectTrackInfo(
                 TrackInfo(coreElement, null,
                         packageName, packageName.getAppName(this),
-                        spotifyUrl, appleMusicUrl),
+                        spotifyUrl),
                 false
         )
     }

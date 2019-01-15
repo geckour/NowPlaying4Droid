@@ -7,13 +7,11 @@ data class TrackInfo(
         val artworkUriString: String?,
         val playerPackageName: String?,
         val playerAppName: String?,
-        val spotifyUrl: String?,
-        val appleMusicUrl: String?
+        val spotifyUrl: String?
 ) : Serializable {
     companion object {
         val empty: TrackInfo =
                 TrackInfo(TrackCoreElement.empty,
-                        null,
                         null,
                         null,
                         null,
