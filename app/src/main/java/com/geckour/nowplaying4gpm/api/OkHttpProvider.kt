@@ -19,20 +19,19 @@ object OkHttpProvider {
 
     var spotifyAuthToken: String? = null
 
-    val spotifyAuthClient: OkHttpClient =
-            clientBuilder
-                    .addInterceptor {
-                        val tokenString = Base64.encodeToString(
-                                "${BuildConfig.SPOTIFY_CLIENT_ID}:${BuildConfig.SPOTIFY_CLIENT_SECRET}"
-                                        .toByteArray(),
-                                Base64.URL_SAFE or Base64.NO_WRAP
-                        )
-                        return@addInterceptor it.proceed(it.request()
-                                .newBuilder().header("Authorization", "Basic $tokenString")
-                                .build())
-                    }
-                    .applyDebugger()
-                    .build()
+    val spotifyAuthClient: OkHttpClient = clientBuilder
+            .addInterceptor {
+                val tokenString = Base64.encodeToString(
+                        "${BuildConfig.SPOTIFY_CLIENT_ID}:${BuildConfig.SPOTIFY_CLIENT_SECRET}"
+                                .toByteArray(),
+                        Base64.URL_SAFE or Base64.NO_WRAP
+                )
+                return@addInterceptor it.proceed(it.request()
+                        .newBuilder().header("Authorization", "Basic $tokenString")
+                        .build())
+            }
+            .applyDebugger()
+            .build()
 
     val spotifyApiClient: OkHttpClient
         get() = spotifyAuthToken?.let { token ->
@@ -43,7 +42,8 @@ object OkHttpProvider {
                                         "Bearer $token")
                                 .build())
                     }
-                    .applyDebugger().build()
+                    .applyDebugger()
+                    .build()
         } ?: throw IllegalStateException("Init auth token first.")
 
     val mastodonInstancesClient: OkHttpClient = clientBuilder
