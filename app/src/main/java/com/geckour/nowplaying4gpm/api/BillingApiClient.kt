@@ -34,7 +34,7 @@ class BillingApiClient(private val coroutineScope: CoroutineScope, private val s
                 BILLING_TYPE,
                 null
         ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
-    }.await() ?: listOf()
+    }.await() ?: emptyList()
 
     suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = coroutineScope.asyncOrNull {
         service.getSkuDetails(
@@ -50,10 +50,10 @@ class BillingApiClient(private val coroutineScope: CoroutineScope, private val s
             if (it.getInt(BUNDLE_KEY_RESPONSE_CODE) == ResponseCode.RESPONSE_OK.code) {
                 it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST)?.map {
                     Gson().fromJson(it, SkuDetail::class.java)
-                } ?: listOf()
-            } else listOf()
+                } ?: emptyList()
+            } else emptyList()
         }
-    }.await() ?: listOf()
+    }.await() ?: emptyList()
 
     fun getBuyIntent(context: Context, sku: String): PendingIntent? =
             service.getBuyIntent(API_VERSION, context.packageName, sku, BILLING_TYPE, null)?.let {
