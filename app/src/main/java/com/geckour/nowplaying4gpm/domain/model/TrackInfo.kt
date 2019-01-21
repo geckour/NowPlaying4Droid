@@ -37,6 +37,6 @@ data class TrackCoreElement(
 
     val spotifySearchQuery: String? =
             if (this.isAllNonNull)
-                "\"$title\" \"$artist\" album:\"$album\""
+                "track:\"$title\" \"$artist\" album:\"$album\""
             else null
 }
