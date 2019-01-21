@@ -4,6 +4,7 @@ import com.geckour.nowplaying4gpm.api.model.MastodonInstance
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import timber.log.Timber
 
 class MastodonInstancesApiClient {
 
@@ -15,5 +16,11 @@ class MastodonInstancesApiClient {
             .build()
             .create(MastodonInstancesApiService::class.java)
 
-    suspend fun getList(): List<MastodonInstance> = service.getInstancesList().await().value
+    suspend fun getList(): List<MastodonInstance> =
+            try {
+                service.getInstancesList().await().value
+            } catch (t: Throwable) {
+                Timber.e(t)
+                emptyList()
+            }
 }

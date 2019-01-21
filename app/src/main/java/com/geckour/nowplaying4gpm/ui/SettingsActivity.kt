@@ -801,8 +801,8 @@ class SettingsActivity : ScopedActivity() {
 
         AlertDialog.Builder(this).generate(
                 chooseVisibilityBinding.root,
-                getString(R.string.dialog_title_choose_color),
-                getString(R.string.dialog_message_choose_color)) { dialog, which ->
+                getString(R.string.dialog_title_mastodon_visibility),
+                getString(R.string.dialog_message_mastodon_visibility)) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val visibilityIndex = chooseVisibilityBinding.spinner.selectedItemPosition

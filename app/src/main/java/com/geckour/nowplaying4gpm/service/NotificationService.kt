@@ -251,10 +251,31 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             currentTrackSetJob?.cancelAndJoin()
 
             currentTrackSetJob = launch {
+                val contains = sharedPreferences
+                        .getFormatPattern(this@NotificationService)
+                        .containsSpotifyPattern
                 val spotifyUrl =
-                        if (sharedPreferences.getFormatPattern(this@NotificationService).containsSpotifyPattern)
+                        if (contains) {
+                            FirebaseAnalytics.getInstance(application)
+                                    .logEvent(
+                                            FirebaseAnalytics.Event.SELECT_CONTENT,
+                                            Bundle().apply {
+                                                putString(FirebaseAnalytics.Param.ITEM_NAME,
+                                                        "Generated share sentence contains Spotify specifier")
+                                            }
+                                    )
                             spotifyApiClient.getSpotifyUrl(coreElement)
-                        else null
+                        } else {
+                            FirebaseAnalytics.getInstance(application)
+                                    .logEvent(
+                                            FirebaseAnalytics.Event.SELECT_CONTENT,
+                                            Bundle().apply {
+                                                putString(FirebaseAnalytics.Param.ITEM_NAME,
+                                                        "Generated share sentence without Spotify specifier")
+                                            }
+                                    )
+                            null
+                        }
                 onQuickUpdate(coreElement, packageName, spotifyUrl)
                 val artworkUri = metadata.storeArtworkUri(coreElement,
                         notification?.getArtworkBitmap()?.await(),
