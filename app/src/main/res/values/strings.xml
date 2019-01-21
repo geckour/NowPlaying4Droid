@@ -93,6 +93,8 @@
     <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nPlayer name: PN\nSpotify URL: SU\nescape sequence: Wrap by \' \'\nline break: \\n</string>
     <string name="dialog_title_mastodon_instance">Select Mastodon instance</string>
     <string name="dialog_title_mastodon_delay">Input delay duration</string>
+    <string name="dialog_title_mastodon_visibility">Visibility of Mastodon</string>
+    <string name="dialog_message_mastodon_visibility">Select visibility of auto post for Mastodon</string>
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_title_alert_no_metadata">Failure to share</string>

@@ -10,7 +10,10 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import androidx.core.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.util.PrefKey
+import com.geckour.nowplaying4gpm.util.getSharingText
+import com.geckour.nowplaying4gpm.util.getSwitchState
+import com.geckour.nowplaying4gpm.util.getTempArtworkUri
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -80,8 +83,9 @@ class SharingActivity : ScopedActivity() {
                     }
                     .createChooserIntent()
                     .apply {
-                        if (sharedPreferences.getSwitchState(
-                                        PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD)) {
+                        val copyIntoClipboard = sharedPreferences.getSwitchState(
+                                PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD)
+                        if (copyIntoClipboard) {
                             getSystemService(ClipboardManager::class.java).primaryClip =
                                     ClipData.newPlainText(packageName, sharingText)
                         }
