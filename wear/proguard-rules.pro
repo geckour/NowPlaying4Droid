@@ -21,8 +21,6 @@
 #-renamesourcefileattribute SourceFile
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 
--dontwarn android.databinding.adapters.CardViewBindingAdapter
-
 -keepattributes Signature
 
 -keepattributes *Annotation*
@@ -39,6 +37,10 @@
 -keep public class android.support.v7.widget.** { *; }
 -keep public class android.support.v7.internal.widget.** { *; }
 -keep public class android.support.v7.internal.view.menu.** { *; }
+
+
+#CardView
+-dontwarn android.databinding.adapters.CardViewBindingAdapter
 
 
 #Crashlytics

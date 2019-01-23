@@ -21,8 +21,6 @@
 #-renamesourcefileattribute SourceFile
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 
--dontwarn android.databinding.adapters.CardViewBindingAdapter
-
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 -keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
@@ -43,6 +41,10 @@
 
 -keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
 -keepnames class com.geckour.nowplaying4gpm.util.WidgetState { *; }
+
+
+#CardView
+-dontwarn android.databinding.adapters.CardViewBindingAdapter
 
 
 #Glide
