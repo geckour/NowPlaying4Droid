@@ -123,12 +123,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var lastTrack: TrackCoreElement = TrackCoreElement.empty
+    private var refreshMetadataJob: Job? = null
     private var currentTrackClearJob: Job? = null
     private var currentTrackSetJob: Job? = null
     private var postMastodonJob: Job? = null
 
     private var playerChangedFlag = false
     private var chatteringCancelFlag = false
+
+    private var currentSbn: StatusBarNotification? = null
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
@@ -194,8 +197,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationPosted(sbn)
 
         if (sbn != null && sbn.packageName != packageName) {
+            currentSbn = sbn
             fetchMetadata(sbn.packageName)?.apply {
-                launch { onMetadataChanged(this@apply, sbn.packageName, sbn.notification) }
+                refreshMetadataJob = launch { onMetadataChanged(this@apply, sbn.packageName, sbn.notification) }
             }
         }
     }
@@ -204,8 +208,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationRemoved(sbn)
         if (sbn == null) return
 
-        val currentTrackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
-        if (sbn.packageName == currentTrackInfo.playerPackageName) onMetadataCleared()
+        if (sbn.packageName == currentSbn?.packageName) onMetadataCleared()
     }
 
     private fun fetchMetadata(packageName: String): MediaMetadata? =
@@ -220,6 +223,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             }
 
     private fun onMetadataCleared() {
+        refreshMetadataJob?.cancel()
         currentTrackClearJob?.cancel()
 
         sharedPreferences.refreshTempArtwork(null)
