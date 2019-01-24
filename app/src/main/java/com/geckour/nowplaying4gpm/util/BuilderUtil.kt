@@ -80,8 +80,6 @@ suspend fun getShareWidgetViews(context: Context, coroutineScope: CoroutineScope
 }
 
 suspend fun getNotification(context: Context, coroutineScope: CoroutineScope, trackInfo: TrackInfo): Notification? {
-    if (trackInfo.coreElement.isAllNonNull.not()) return null
-
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     val notificationBuilder =

@@ -206,6 +206,18 @@ class SettingsActivity : ScopedActivity() {
 
         binding.itemChooseColor.root.setOnClickListener { onClickItemChooseColor() }
 
+        binding.itemSwitchStrictMatchPattern.also { binding ->
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE) { _, summary ->
+                    binding.summary = summary
+
+                    requestUpdate()
+                })
+            }
+        }
+
         binding.itemSwitchReside.also { binding ->
             binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
             binding.extra.apply {
@@ -783,7 +795,7 @@ class SettingsActivity : ScopedActivity() {
                             android.R.layout.simple_spinner_item,
                             Visibility.values().map { getString(it.getSummaryResId()) }) {
                         override fun getDropDownView(position: Int,
-                                                     convertView: View?, parent: ViewGroup?): View =
+                                                     convertView: View?, parent: ViewGroup): View =
                                 super.getDropDownView(position, convertView, parent).apply {
                                     if (position == spinner.selectedItemPosition) {
                                         (this as TextView).setTextColor(
@@ -903,7 +915,7 @@ class SettingsActivity : ScopedActivity() {
                             android.R.layout.simple_spinner_item,
                             PaletteColor.values().map { getString(it.getSummaryResId()) }) {
                         override fun getDropDownView(position: Int,
-                                                     convertView: View?, parent: ViewGroup?): View =
+                                                     convertView: View?, parent: ViewGroup): View =
                                 super.getDropDownView(position, convertView, parent).apply {
                                     if (position == spinner.selectedItemPosition) {
                                         (this as TextView).setTextColor(

@@ -89,8 +89,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         if (context == null) return
 
                         val trackInfo =
-                                if (this.extras != null && extras.containsKey(BUNDLE_KEY_TRACK_INFO))
-                                    extras.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo?
+                                if (this.extras?.containsKey(BUNDLE_KEY_TRACK_INFO) == true)
+                                    extras?.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo?
                                             ?: TrackInfo.empty
                                 else TrackInfo.empty
 
@@ -230,7 +230,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         val info = TrackInfo.empty
         currentTrack = info.coreElement
-        currentTrackClearJob = launch { reflectTrackInfo(info) }
+        currentTrackClearJob = launch { onUpdate(info) }
 
         getSystemService(NotificationManager::class.java).destroyNotification()
     }
@@ -239,8 +239,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                           packageName: String, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
 
-        if (coreElement.isAllNonNull &&
-                coreElement != currentTrack &&
+        if (coreElement != currentTrack &&
                 playerChangedFlag.not() &&
                 chatteringCancelFlag.not()) {
             launch {
@@ -257,7 +256,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             currentTrackSetJob = launch {
                 val contains = sharedPreferences
                         .getFormatPattern(this@NotificationService)
-                        .containsSpotifyPattern
+                        .containsPattern(FormatPattern.SPOTIFY_URL)
                 val spotifyUrl =
                         if (contains) {
                             FirebaseAnalytics.getInstance(application)
@@ -280,14 +279,18 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                     )
                             null
                         }
-                onQuickUpdate(coreElement, packageName, spotifyUrl)
+
+                if (onQuickUpdate(coreElement, packageName, spotifyUrl).not()) {
+                    onMetadataCleared()
+                    return@launch
+                }
+
                 val artworkUri = metadata.storeArtworkUri(coreElement,
                         notification?.getArtworkBitmap()?.await(),
                         sharedPreferences.getSwitchState(PrefKey.PREF_KEY_CHANGE_API_PRIORITY))
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
                         packageName, packageName.getAppName(this@NotificationService),
                         spotifyUrl))
-                playerChangedFlag = false
             }
         }
     }
@@ -314,19 +317,29 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 TrackCoreElement(track, artist, album)
             }
 
-    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?) {
+    private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?): Boolean {
         sharedPreferences.refreshTempArtwork(null)
+        val trackInfo = TrackInfo(coreElement, null,
+                packageName, packageName.getAppName(this),
+                spotifyUrl)
+
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
+                && trackInfo.isSatisfiedSpecifier(sharedPreferences.getFormatPattern(this)).apply { Timber.d("np4d satisfied: $this") }.not()) {
+            return false
+        }
+
         currentTrack = coreElement
 
         reflectTrackInfo(
-                TrackInfo(coreElement, null,
-                        packageName, packageName.getAppName(this),
-                        spotifyUrl),
+                trackInfo,
                 false
         )
+
+        return true
     }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
+        playerChangedFlag = false
         reflectTrackInfo(trackInfo)
         lastTrack = trackInfo.coreElement
     }
