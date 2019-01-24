@@ -1,5 +1,7 @@
 package com.geckour.nowplaying4gpm.domain.model
 
+import com.geckour.nowplaying4gpm.util.FormatPattern
+import com.geckour.nowplaying4gpm.util.containedPatterns
 import java.io.Serializable
 
 data class TrackInfo(
@@ -17,6 +19,18 @@ data class TrackInfo(
                         null,
                         null)
     }
+
+    fun isSatisfiedSpecifier(sharingFormatText: String): Boolean =
+            sharingFormatText.containedPatterns.all {
+                when (it) {
+                    FormatPattern.TITLE -> this.coreElement.title != null
+                    FormatPattern.ARTIST -> this.coreElement.artist != null
+                    FormatPattern.ALBUM -> this.coreElement.album != null
+                    FormatPattern.PLAYER_NAME -> this.playerAppName != null
+                    FormatPattern.SPOTIFY_URL -> this.spotifyUrl != null
+                    else -> true
+                }
+            }
 }
 
 data class ArtworkInfo(

@@ -133,57 +133,82 @@ enum class Visibility {
     }
 }
 
+enum class FormatPattern(val value: String) {
+    S_QUOTE("'"),
+    S_QUOTE_DOUBLE("''"),
+    TITLE("TI"),
+    ARTIST("AR"),
+    ALBUM("AL"),
+    PLAYER_NAME("PN"),
+    SPOTIFY_URL("SU"),
+    NEW_LINE("\\n")
+}
+
 fun String.getSharingText(trackInfo: TrackInfo): String =
         this.splitConsideringEscape().joinToString("") {
             return@joinToString Regex("^'(.+)'$").let { regex ->
                 if (it.matches(regex)) it.replace(regex, "$1")
                 else when (it) {
-                    "'" -> ""
-                    "''" -> "'"
-                    "TI" -> trackInfo.coreElement.title ?: ""
-                    "AR" -> trackInfo.coreElement.artist ?: ""
-                    "AL" -> trackInfo.coreElement.album ?: ""
-                    "PN" -> trackInfo.playerAppName ?: ""
-                    "SU" -> trackInfo.spotifyUrl ?: ""
-                    "\\n" -> "\n"
+                    FormatPattern.S_QUOTE.value -> ""
+                    FormatPattern.S_QUOTE_DOUBLE.value -> "'"
+                    FormatPattern.TITLE.value -> trackInfo.coreElement.title ?: ""
+                    FormatPattern.ARTIST.value -> trackInfo.coreElement.artist ?: ""
+                    FormatPattern.ALBUM.value -> trackInfo.coreElement.album ?: ""
+                    FormatPattern.PLAYER_NAME.value -> trackInfo.playerAppName ?: ""
+                    FormatPattern.SPOTIFY_URL.value -> trackInfo.spotifyUrl ?: ""
+                    FormatPattern.NEW_LINE.value -> "\n"
                     else -> it
                 }
             }
         }
 
-val String.containsSpotifyPattern: Boolean
-    get() = this.splitConsideringEscape().contains("SU")
+fun String.containsPattern(pattern: FormatPattern): Boolean =
+        this.splitConsideringEscape().contains(pattern.value)
+
+val String.containedPatterns: List<FormatPattern>
+    get() =
+        this.splitConsideringEscape().mapNotNull { delimiter ->
+            FormatPattern.values().firstOrNull { it.value == delimiter }
+        }
 
 private fun String.splitConsideringEscape(): List<String> =
-        this.splitIncludeDelimiter("''", "'", "TI", "AR", "AL", "PN", "SU", "\\\\n")
-                .let { splitList ->
-                    val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
-                            .filter { it.second == "'" }
-                            .apply { if (lastIndex < 0) return@let splitList }
+        this.splitIncludeDelimiter(
+                FormatPattern.S_QUOTE_DOUBLE.value,
+                FormatPattern.S_QUOTE.value,
+                FormatPattern.TITLE.value,
+                FormatPattern.ARTIST.value,
+                FormatPattern.ALBUM.value,
+                FormatPattern.PLAYER_NAME.value,
+                FormatPattern.SPOTIFY_URL.value,
+                "\\\\n"
+        ).let { splitList ->
+            val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
+                    .filter { it.second == "'" }
+                    .apply { if (lastIndex < 0) return@let splitList }
 
-                    return@let ArrayList<String>().apply {
-                        for (i in 0 until escapes.lastIndex step 2) {
-                            this.addAll(
-                                    splitList.subList(
-                                            if (i == 0) 0 else escapes[i - 1].first + 1,
-                                            escapes[i].first))
+            return@let ArrayList<String>().apply {
+                for (i in 0 until escapes.lastIndex step 2) {
+                    this.addAll(
+                            splitList.subList(
+                                    if (i == 0) 0 else escapes[i - 1].first + 1,
+                                    escapes[i].first))
 
-                            this.add(
-                                    splitList.subList(
-                                            escapes[i].first,
-                                            escapes[i + 1].first + 1
-                                    ).joinToString(""))
-                        }
-
-                        this.addAll(
-                                splitList.subList(
-                                        if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex)
-                                            escapes[escapes.lastIndex].first + 1
-                                        else splitList.lastIndex,
-                                        splitList.size
-                                ))
-                    }
+                    this.add(
+                            splitList.subList(
+                                    escapes[i].first,
+                                    escapes[i + 1].first + 1
+                            ).joinToString(""))
                 }
+
+                this.addAll(
+                        splitList.subList(
+                                if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex)
+                                    escapes[escapes.lastIndex].first + 1
+                                else splitList.lastIndex,
+                                splitList.size
+                        ))
+            }
+        }
 
 fun String.splitIncludeDelimiter(vararg delimiters: String) =
         delimiters.joinToString("|")

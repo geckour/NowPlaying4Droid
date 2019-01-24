@@ -15,6 +15,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_USE_API(false),
     PREF_KEY_CHANGE_API_PRIORITY(false),
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT("#NowPlaying TI - AR (AL)"),
+    PREF_KEY_STRICT_MATCH_PATTERN_MODE(false),
     PREF_KEY_WHETHER_BUNDLE_ARTWORK(true),
     PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD(false),
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
@@ -53,12 +54,13 @@ private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
             Gson().toJson(ArtworkInfo(artworkUri?.toString()))).apply()
 }
 
-fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? =
-        if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
-            Gson().fromJsonOrNull(
-                    getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null),
-                    ArtworkInfo::class.java)
-        } else null
+fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
+    return if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
+        Gson().fromJsonOrNull(
+                getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null) ?: return null,
+                ArtworkInfo::class.java)
+    } else null
+}
 
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
     val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
@@ -79,17 +81,17 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
 fun SharedPreferences.getSharingText(context: Context): String? {
     val trackInfo = getCurrentTrackInfo() ?: return null
 
-    if (trackInfo.coreElement.isAllNonNull.not()) return null
     return getFormatPattern(context).getSharingText(trackInfo)
 }
 
-fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? =
-        if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
-            Gson().fromJsonOrNull(
-                    getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null),
-                    TrackInfo::class.java
-            ) { refreshCurrentTrackInfo(TrackInfo.empty) }
-        } else null
+fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
+    return if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
+        Gson().fromJsonOrNull(
+                getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null) ?: return null,
+                TrackInfo::class.java
+        ) { refreshCurrentTrackInfo(TrackInfo.empty) }
+    } else null
+}
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
         PaletteColor.values().getOrNull(
@@ -129,26 +131,28 @@ fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
     edit().putString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, Gson().toJson(accessToken)).apply()
 }
 
-fun SharedPreferences.getTwitterAccessToken(): AccessToken? =
-        if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
-            Gson().fromJsonOrNull(
-                    getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-                            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String),
-                    AccessToken::class.java)
-        else null
+fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
+    return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
+        Gson().fromJsonOrNull(
+                getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
+                        PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String) ?: return null,
+                AccessToken::class.java)
+    else null
+}
 
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
     edit().putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, Gson().toJson(userInfo))
             .apply()
 }
 
-fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? =
-        if (contains(PrefKey.PREF_KEY_MASTODON_USER_INFO.name))
-            Gson().fromJsonOrNull(
-                    getString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
-                            PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String),
-                    MastodonUserInfo::class.java)
-        else null
+fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
+    return if (contains(PrefKey.PREF_KEY_MASTODON_USER_INFO.name))
+        Gson().fromJsonOrNull(
+                getString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
+                        PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String) ?: return null,
+                MastodonUserInfo::class.java)
+    else null
+}
 
 fun SharedPreferences.setAlertTwitterAuthFlag(flag: Boolean) {
     edit().putBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name, flag).apply()

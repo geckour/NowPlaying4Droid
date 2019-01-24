@@ -89,6 +89,15 @@
                     app:title="@{@string/pref_item_title_pattern}" />
 
                 <include
+                    android:id="@+id/item_switch_strict_match_pattern"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_strict_match_pattern}"
+                    app:title="@{@string/pref_item_title_strict_match_pattern}" />
+
+                <include
                     android:id="@+id/item_switch_bundle_artwork"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
