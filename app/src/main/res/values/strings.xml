@@ -122,6 +122,7 @@
 
 
     <string name="snackbar_text_success_auth_twitter">Succeeded to authenticate the Twitter account.</string>
+    <string name="snackbar_text_failure_auth_twitter">Failed to authenticate the Twitter account.</string>
     <string name="snackbar_text_success_auth_mastodon">Succeeded to authenticate the Mastodon account.</string>
 
     <string name="share_title">Choose where to share…</string>

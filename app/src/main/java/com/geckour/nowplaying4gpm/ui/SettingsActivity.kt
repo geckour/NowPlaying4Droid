@@ -78,8 +78,7 @@ class SettingsActivity : ScopedActivity() {
     private var billingService: IInAppBillingService? = null
 
     private val twitterApiClient =
-            TwitterApiClient(this,
-                    BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
+            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
 
 
     private val mastodonScope = Scope(Scope.Name.ALL)
@@ -507,7 +506,7 @@ class SettingsActivity : ScopedActivity() {
         if (verifier == null) onAuthTwitterError()
         else {
             launch(Dispatchers.IO) {
-                val accessToken = twitterApiClient.getAccessToken(verifier).await()
+                val accessToken = twitterApiClient.getAccessToken(verifier)
 
                 if (accessToken == null) onAuthTwitterError()
                 else {
@@ -664,7 +663,10 @@ class SettingsActivity : ScopedActivity() {
 
     private fun onClickAuthTwitter() {
         launch(Dispatchers.IO) {
-            val uri = twitterApiClient.getRequestOAuthUri().await() ?: return@launch
+            val uri = twitterApiClient.getRequestOAuthUri() ?: run {
+                Snackbar.make(binding.root, R.string.snackbar_text_failure_auth_twitter, Snackbar.LENGTH_SHORT)
+                return@launch
+            }
 
             CustomTabsIntent.Builder()
                     .setShowTitle(true)

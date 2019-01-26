@@ -113,8 +113,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val spotifyApiClient: SpotifyApiClient = SpotifyApiClient()
     private val twitterApiClient: TwitterApiClient by lazy {
-        TwitterApiClient(this, BuildConfig.TWITTER_CONSUMER_KEY,
-                BuildConfig.TWITTER_CONSUMER_SECRET)
+        TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
     }
 
     private lateinit var job: Job

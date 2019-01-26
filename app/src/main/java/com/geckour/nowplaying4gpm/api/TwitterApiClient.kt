@@ -2,10 +2,8 @@ package com.geckour.nowplaying4gpm.api
 
 import android.graphics.Bitmap
 import android.net.Uri
-import com.geckour.nowplaying4gpm.util.asyncOrNull
 import com.geckour.nowplaying4gpm.util.getUri
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
+import timber.log.Timber
 import twitter4j.StatusUpdate
 import twitter4j.Twitter
 import twitter4j.TwitterFactory
@@ -14,8 +12,7 @@ import twitter4j.auth.RequestToken
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
-class TwitterApiClient(private val coroutineScope: CoroutineScope,
-                       consumerKey: String, consumerSecret: String) : TwitterApiService {
+class TwitterApiClient(consumerKey: String, consumerSecret: String) : TwitterApiService {
 
     companion object {
         const val TWITTER_CALLBACK = "np4gpm://twitter.callback"
@@ -27,20 +24,27 @@ class TwitterApiClient(private val coroutineScope: CoroutineScope,
 
     private var requestToken: RequestToken? = null
 
-    override fun getRequestOAuthUri(): Deferred<Uri?> = coroutineScope.asyncOrNull {
-        requestToken = twitter.getOAuthRequestToken(TWITTER_CALLBACK)
-        requestToken?.authorizationURL?.getUri()
+    override suspend fun getRequestOAuthUri(): Uri? {
+        try {
+            requestToken = twitter.getOAuthRequestToken(TWITTER_CALLBACK)
+        } catch (t: Throwable) {
+            Timber.e(t)
+        }
+        return requestToken?.authorizationURL?.getUri()
     }
 
-    override fun getAccessToken(verifier: String): Deferred<AccessToken?> =
-            coroutineScope.asyncOrNull {
+    override suspend fun getAccessToken(verifier: String): AccessToken? =
+            try {
                 if (requestToken == null) null
                 else twitter.getOAuthAccessToken(requestToken, verifier)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                null
             }
 
-    override fun post(accessToken: AccessToken,
+    override suspend fun post(accessToken: AccessToken,
                       subject: String, artwork: Bitmap?, artworkTitle: String?) =
-            coroutineScope.asyncOrNull {
+            try {
                 twitter.oAuthAccessToken = accessToken
                 val status = StatusUpdate(subject)
                         .apply {
@@ -53,5 +57,8 @@ class TwitterApiClient(private val coroutineScope: CoroutineScope,
                             }
                         }
                 twitter.updateStatus(status)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                null
             }
 }
