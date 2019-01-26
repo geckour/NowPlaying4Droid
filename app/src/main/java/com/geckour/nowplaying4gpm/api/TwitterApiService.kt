@@ -7,7 +7,7 @@ import twitter4j.Status
 import twitter4j.auth.AccessToken
 
 interface TwitterApiService {
-    fun getRequestOAuthUri(): Deferred<Uri?>
-    fun getAccessToken(verifier: String): Deferred<AccessToken?>
-    fun post(accessToken: AccessToken, subject: String, artwork: Bitmap?, artworkTitle: String?): Deferred<Status?>
+    suspend fun getRequestOAuthUri(): Uri?
+    suspend fun getAccessToken(verifier: String): AccessToken?
+    suspend fun post(accessToken: AccessToken, subject: String, artwork: Bitmap?, artworkTitle: String?): Status?
 }

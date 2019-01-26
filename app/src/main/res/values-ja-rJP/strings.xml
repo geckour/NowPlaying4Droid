@@ -113,6 +113,7 @@
 
 
     <string name="snackbar_text_success_auth_twitter">Twitterアカウントの認証に成功しました</string>
+    <string name="snackbar_text_failure_auth_twitter">Twitterアカウントの認証に失敗しました</string>
     <string name="snackbar_text_success_auth_mastodon">Mastodonアカウントの認証に成功しました</string>
 
     <string name="share_title">共有先を選択…</string>

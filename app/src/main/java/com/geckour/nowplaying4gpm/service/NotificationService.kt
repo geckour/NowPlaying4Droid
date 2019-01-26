@@ -113,8 +113,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val spotifyApiClient: SpotifyApiClient = SpotifyApiClient()
     private val twitterApiClient: TwitterApiClient by lazy {
-        TwitterApiClient(this, BuildConfig.TWITTER_CONSUMER_KEY,
-                BuildConfig.TWITTER_CONSUMER_SECRET)
+        TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
     }
 
     private lateinit var job: Job
@@ -182,7 +181,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onListenerConnected() {
         super.onListenerConnected()
 
-        activeNotifications.forEach { onNotificationPosted(it) }
+        try {
+            activeNotifications.forEach { onNotificationPosted(it) }
+        } catch (t: Throwable) {
+            Timber.e(t)
+        }
 
         Wearable.getMessageClient(this).addListener(onMessageReceived)
     }
@@ -197,8 +200,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationPosted(sbn)
 
         if (sbn != null && sbn.packageName != packageName) {
-            currentSbn = sbn
             fetchMetadata(sbn.packageName)?.apply {
+                currentSbn = sbn
                 refreshMetadataJob = launch { onMetadataChanged(this@apply, sbn.packageName, sbn.notification) }
             }
         }
@@ -223,6 +226,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             }
 
     private fun onMetadataCleared() {
+        currentSbn = null
+
         refreshMetadataJob?.cancel()
         currentTrackClearJob?.cancel()
 

@@ -14,6 +14,8 @@ import com.geckour.nowplaying4gpm.databinding.ActivityMainBinding
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -48,7 +50,7 @@ class MainActivity : ScopedWearableActivity() {
 
                             val artwork =
                                     if (dataMap.containsKey(KEY_ARTWORK))
-                                        dataMap.getAsset(KEY_ARTWORK).loadBitmap()
+                                        dataMap.getAsset(KEY_ARTWORK).loadBitmap().await()
                                     else null
                             onUpdateTrackInfo(TrackInfo(subject, artwork))
                         }
@@ -110,14 +112,14 @@ class MainActivity : ScopedWearableActivity() {
         Wearable.getMessageClient(this).removeListener(onMessageReceived)
     }
 
-    private suspend fun Asset.loadBitmap(): Bitmap? =
-            async {
+    private fun Asset.loadBitmap(): Deferred<Bitmap?> =
+            async(Dispatchers.IO) {
                 Tasks.await(Wearable.getDataClient(this@MainActivity)
                         .getFdForAsset(this@loadBitmap)
                 ).inputStream?.let {
                     BitmapFactory.decodeStream(it)
                 }
-            }.await()
+            }
 
     private fun onUpdateTrackInfo(trackInfo: TrackInfo?) {
         binding.info = trackInfo

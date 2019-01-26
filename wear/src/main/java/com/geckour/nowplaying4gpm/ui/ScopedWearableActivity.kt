@@ -9,7 +9,7 @@ import kotlin.coroutines.CoroutineContext
 
 abstract class ScopedWearableActivity : WearableActivity(), CoroutineScope {
 
-    protected lateinit var job: Job
+    private lateinit var job: Job
     override val coroutineContext: CoroutineContext
         get() = job + Dispatchers.Main
 
