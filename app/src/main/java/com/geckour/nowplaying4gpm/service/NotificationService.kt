@@ -181,10 +181,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onListenerConnected() {
         super.onListenerConnected()
 
-        try {
-            activeNotifications.forEach { onNotificationPosted(it) }
-        } catch (t: Throwable) {
-            Timber.e(t)
+        if (currentSbn == null) {
+            try {
+                activeNotifications.forEach { onNotificationPosted(it) }
+            } catch (t: Throwable) {
+                Timber.e(t)
+            }
         }
 
         Wearable.getMessageClient(this).addListener(onMessageReceived)
@@ -247,11 +249,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (coreElement != currentTrack &&
                 playerChangedFlag.not() &&
                 chatteringCancelFlag.not()) {
-            launch {
-                chatteringCancelFlag = true
-                delay(200)
-                chatteringCancelFlag = false
-            }
+            chatteringCancelFlag = true
+            delay(200)
+            chatteringCancelFlag = false
+
             if (sharedPreferences.getCurrentTrackInfo()?.equals(packageName)?.not() == true) {
                 playerChangedFlag = true
             }
