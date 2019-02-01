@@ -292,8 +292,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 }
 
                 val artworkUri = metadata.storeArtworkUri(coreElement,
-                        notification?.getArtworkBitmap()?.await(),
-                        sharedPreferences.getSwitchState(PrefKey.PREF_KEY_CHANGE_API_PRIORITY))
+                        notification?.getArtworkBitmap()?.await())
                 onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
                         packageName, packageName.getAppName(this@NotificationService),
                         spotifyUrl))
@@ -561,8 +560,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun MediaMetadata.storeArtworkUri(coreElement: TrackCoreElement,
-                                                      bitmap: Bitmap?,
-                                                      prioritizeApi: Boolean = false): Uri? {
+                                                      notificationBitmap: Bitmap?): Uri? {
         // Check whether arg metadata and current metadata are the same or not
         val cacheInfo = sharedPreferences.getCurrentTrackInfo()
         if (coreElement.isAllNonNull
@@ -571,63 +569,55 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             return sharedPreferences.getTempArtworkUri(this@NotificationService)
         }
 
-        // Find from ContentResolver
-        getArtworkUriFromDevice(this@NotificationService, this@NotificationService,
-                coreElement)?.apply {
-            sharedPreferences.refreshTempArtwork(this)
-            return this
-        }
-
-        // Fetch from MediaMetadata's Uri field
-        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
-            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                getBitmapFromUri(this@NotificationService, this@NotificationService,
-                        this)?.apply {
-                    refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
-                            this)?.apply {
-                        return this
+        sharedPreferences.getArtworkResolveOrder().forEach {
+            if (it.enabled) {
+                when (it.key) {
+                    ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
+                        Timber.d("np4d artwork resolve method: $it")
+                        getArtworkUriFromDevice(this@NotificationService, this@NotificationService,
+                                coreElement)?.apply {
+                            sharedPreferences.refreshTempArtwork(this)
+                            return this
+                        }
                     }
-                }
-            }
-        }
+                    ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
+                        Timber.d("np4d artwork resolve method: $it")
+                        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
+                            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
+                                getBitmapFromUri(this@NotificationService, this@NotificationService,
+                                        this)?.apply {
+                                    refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
+                                            this)?.apply { return this }
+                                }
+                            }
+                        }
+                    }
+                    ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_BITMAP -> {
+                        Timber.d("np4d artwork resolve method: $it")
+                        val metadataBitmap =
+                                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
+                                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                                else null
 
-        if (prioritizeApi) {
-            // Find from Last.fm API
-            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                refreshArtworkUriFromLastFmApi(this@NotificationService, this@NotificationService,
-                        lastFmApiClient, coreElement)?.apply {
-                    return this
-                }
-            }
-        }
-
-        // Fetch from MediaMetadata's Bitmap field
-        val metadataBitmap =
-                if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART))
-                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                else null
-
-        if (metadataBitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
-                    metadataBitmap)?.apply {
-                return this
-            }
-        }
-
-        // Fetch from Notification's Bitmap
-        if (bitmap != null) {
-            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
-                    bitmap)?.apply {
-                return this
-            }
-        }
-
-        if (prioritizeApi.not()) {
-            // Find from Last.fm API
-            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                refreshArtworkUriFromLastFmApi(this@NotificationService, this@NotificationService,
-                        lastFmApiClient, coreElement)?.apply {
-                    return this
+                        if (metadataBitmap != null) {
+                            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
+                                    metadataBitmap)?.apply { return this }
+                        }
+                    }
+                    ArtworkResolveMethod.ArtworkResolveMethodKey.NOTIFICATION_BITMAP -> {
+                        Timber.d("np4d artwork resolve method: $it")
+                        if (notificationBitmap != null) {
+                            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
+                                    notificationBitmap)?.apply { return this }
+                        }
+                    }
+                    ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
+                        Timber.d("np4d artwork resolve method: $it")
+                        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+                            refreshArtworkUriFromLastFmApi(this@NotificationService, this@NotificationService,
+                                    lastFmApiClient, coreElement)?.apply { return this }
+                        }
+                    }
                 }
             }
         }

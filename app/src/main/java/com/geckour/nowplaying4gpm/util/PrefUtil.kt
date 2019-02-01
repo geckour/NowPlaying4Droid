@@ -8,12 +8,13 @@ import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import timber.log.Timber
 import twitter4j.auth.AccessToken
 
 enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_USE_API(false),
-    PREF_KEY_CHANGE_API_PRIORITY(false),
+    PREF_KEY_ARTWORK_RESOLVE_ORDER(),
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT("#NowPlaying TI - AR (AL)"),
     PREF_KEY_STRICT_MATCH_PATTERN_MODE(false),
     PREF_KEY_WHETHER_BUNDLE_ARTWORK(true),
@@ -37,6 +38,19 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE
 }
 
+data class ArtworkResolveMethod(
+        val key: ArtworkResolveMethodKey,
+        val enabled: Boolean
+) {
+    enum class ArtworkResolveMethodKey(val strResId: Int) {
+        CONTENT_RESOLVER(R.string.dialog_list_item_content_resolver),
+        MEDIA_METADATA_URI(R.string.dialog_list_item_media_metadata_uri),
+        MEDIA_METADATA_BITMAP(R.string.dialog_list_item_media_metadata_bitmap),
+        NOTIFICATION_BITMAP(R.string.dialog_list_item_notification_bitmap),
+        LAST_FM(R.string.dialog_list_item_last_fm)
+    }
+}
+
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
         edit().apply {
             putString(
@@ -44,9 +58,25 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
                     Gson().toJson(trackInfo))
         }.apply()
 
+fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
+        edit().apply {
+            putString(
+                    PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
+                    Gson().toJson(order)
+            )
+        }.apply()
+
+fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
+        getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
+            val type = object : TypeToken<List<ArtworkResolveMethod>>() {}.type
+            Gson().fromJson<List<ArtworkResolveMethod>>(it, type)
+        } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
+                .values()
+                .map { ArtworkResolveMethod(it, true) }
+
 fun SharedPreferences.getFormatPattern(context: Context): String =
-        getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name,
-                context.getString(R.string.default_sharing_text_pattern))
+        getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
+                ?: context.getString(R.string.default_sharing_text_pattern)
 
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit().putString(
