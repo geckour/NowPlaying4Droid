@@ -39,8 +39,8 @@
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
 
+-keepnames enum com.geckour.nowplaying4gpm.util.** { *; }
 -keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
--keepnames class com.geckour.nowplaying4gpm.util.WidgetState { *; }
 
 
 #CardView
