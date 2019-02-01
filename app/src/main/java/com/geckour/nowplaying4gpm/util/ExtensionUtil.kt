@@ -328,3 +328,9 @@ fun String.getAppName(context: Context): String? =
         } catch (t: PackageManager.NameNotFoundException) {
             null
         }
+
+fun <T> MutableList<T>.swap(from: Int, to: Int) {
+    val tmp = this[to]
+    this[to] = this[from]
+    this[from] = tmp
+}

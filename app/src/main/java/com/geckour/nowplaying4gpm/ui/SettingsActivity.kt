@@ -31,6 +31,7 @@ import com.geckour.nowplaying4gpm.databinding.*
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
+import com.geckour.nowplaying4gpm.ui.adapter.ArtworkResolveMethodListAdapter
 import com.geckour.nowplaying4gpm.util.*
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -165,40 +166,18 @@ class SettingsActivity : ScopedActivity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { state, summary ->
                     binding.summary = summary
-                    this@SettingsActivity.binding
-                            .itemSwitchChangeApiPriority
-                            .maskInactive
-                            .visibility =
-                            if (sharedPreferences.getDonateBillingState() &&
-                                    state.not())
-                                View.VISIBLE
-                            else View.GONE
                     requestUpdate()
                 })
             }
         }
 
-        binding.itemSwitchChangeApiPriority.also { binding ->
+        binding.itemChangeArtworkResolveOrder.also { binding ->
             binding.maskInactiveDonate.visibility =
                     if (sharedPreferences.getDonateBillingState())
                         View.GONE
                     else View.VISIBLE
 
-            binding.maskInactive.visibility =
-                    if (sharedPreferences.getDonateBillingState() &&
-                            sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API).not())
-                        View.VISIBLE
-                    else View.GONE
-
-            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
-
-            binding.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_CHANGE_API_PRIORITY) { _, summary ->
-                    binding.summary = summary
-                    requestUpdate()
-                })
-            }
+            binding.root.setOnClickListener { onClickChangeArtworkResolveOrder() }
         }
 
         binding.itemPatternFormat.root.setOnClickListener { onClickItemPatternFormat() }
@@ -661,6 +640,34 @@ class SettingsActivity : ScopedActivity() {
         } else onGranted()
     }
 
+    private fun onClickChangeArtworkResolveOrder() {
+        val adapter = ArtworkResolveMethodListAdapter(sharedPreferences
+                .getArtworkResolveOrder()
+                .toMutableList())
+        val artworkResolveMethodDialogBinding = DialogArtworkMethodBinding.inflate(
+                LayoutInflater.from(this),
+                null,
+                false
+        ).apply {
+            recyclerView.adapter = adapter
+            adapter.itemTouchHolder.attachToRecyclerView(recyclerView)
+        }
+
+        AlertDialog.Builder(this).generate(
+                artworkResolveMethodDialogBinding.root,
+                getString(R.string.dialog_title_artwork_resolve_order),
+                getString(R.string.dialog_message_artwork_resolve_order)
+        ) { dialog, which ->
+            when (which) {
+                DialogInterface.BUTTON_POSITIVE -> {
+                    val order = adapter.items
+                    sharedPreferences.setArtworkResolveOrder(order)
+                }
+            }
+            dialog.dismiss()
+        }.show()
+    }
+
     private fun onClickAuthTwitter() {
         launch(Dispatchers.IO) {
             val uri = twitterApiClient.getRequestOAuthUri() ?: run {
@@ -862,9 +869,9 @@ class SettingsActivity : ScopedActivity() {
     }
 
     private fun onClickFab() {
-        val text = sharedPreferences.getSharingText(this)
-
-        if (text == null) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
+                && sharedPreferences.getCurrentTrackInfo()
+                        ?.isSatisfiedSpecifier(sharedPreferences.getFormatPattern(this)) != true) {
             showErrorDialog(
                     R.string.dialog_title_alert_no_metadata,
                     R.string.dialog_message_alert_no_metadata)
@@ -988,11 +995,7 @@ class SettingsActivity : ScopedActivity() {
         binding.itemDonate.root.visibility = if (s) View.GONE else View.VISIBLE
         binding.itemSwitchUseApi.maskInactiveDonate.visibility =
                 if (s) View.GONE else View.VISIBLE
-        binding.itemSwitchChangeApiPriority.maskInactiveDonate.visibility =
+        binding.itemChangeArtworkResolveOrder.maskInactiveDonate.visibility =
                 if (s) View.GONE else View.VISIBLE
-        binding.itemSwitchChangeApiPriority.maskInactive.visibility =
-                if (s && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API).not())
-                    View.VISIBLE
-                else View.GONE
     }
 }

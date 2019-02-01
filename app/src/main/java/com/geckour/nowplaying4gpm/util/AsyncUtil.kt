@@ -10,17 +10,25 @@ import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
+import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.sys1yagi.mastodon4j.MastodonRequest
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+
+fun getExceptionHandler(onError: (Throwable) -> Unit = { Timber.e(it) }): CoroutineExceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            onError(throwable)
+            Crashlytics.logException(throwable)
+        }
 
 fun <T> CoroutineScope.asyncOrNull(
         onError: (Throwable) -> Unit = { Timber.e(it) },
@@ -30,6 +38,7 @@ fun <T> CoroutineScope.asyncOrNull(
                 block()
             } catch (t: Throwable) {
                 onError(t)
+                Crashlytics.logException(t)
                 null
             }
         }
