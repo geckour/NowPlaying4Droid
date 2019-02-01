@@ -869,9 +869,9 @@ class SettingsActivity : ScopedActivity() {
     }
 
     private fun onClickFab() {
-        val text = sharedPreferences.getSharingText(this)
-
-        if (text == null) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
+                && sharedPreferences.getCurrentTrackInfo()
+                        ?.isSatisfiedSpecifier(sharedPreferences.getFormatPattern(this)) != true) {
             showErrorDialog(
                     R.string.dialog_title_alert_no_metadata,
                     R.string.dialog_message_alert_no_metadata)

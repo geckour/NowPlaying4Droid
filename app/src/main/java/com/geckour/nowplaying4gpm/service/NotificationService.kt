@@ -335,10 +335,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         currentTrack = coreElement
 
-        reflectTrackInfo(
-                trackInfo,
-                false
-        )
+        reflectTrackInfo(trackInfo, false)
 
         return true
     }
