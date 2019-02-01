@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.api
 
+import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import retrofit2.Retrofit
@@ -29,6 +30,7 @@ class SpotifyApiClient {
             authService.getToken().await().accessToken
         } catch (t: Throwable) {
             Timber.e(t)
+            Crashlytics.logException(t)
             null
         }
         OkHttpProvider.spotifyAuthToken = token
@@ -42,6 +44,7 @@ class SpotifyApiClient {
                 service.searchSpotifyItem(it).await().tracks?.items?.firstOrNull()?.urls?.get("spotify")
             } catch (t: Throwable) {
                 Timber.e(t)
+                Crashlytics.logException(t)
                 null
             }
         }

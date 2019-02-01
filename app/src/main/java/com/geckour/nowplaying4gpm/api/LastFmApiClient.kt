@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.api
 
+import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.api.model.Album
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import retrofit2.Retrofit
@@ -21,6 +22,7 @@ class LastFmApiClient {
                 service.searchAlbum(album, artist).await().album
             } catch (t: Throwable) {
                 Timber.e(t)
+                Crashlytics.logException(t)
                 null
             }
 }

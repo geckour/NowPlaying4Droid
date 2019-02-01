@@ -2,6 +2,7 @@ package com.geckour.nowplaying4gpm.ui
 
 import android.app.Activity
 import android.os.Bundle
+import com.geckour.nowplaying4gpm.util.getExceptionHandler
 import com.geckour.nowplaying4gpm.util.setCrashlytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,9 +11,9 @@ import kotlin.coroutines.CoroutineContext
 
 abstract class ScopedActivity : Activity(), CoroutineScope {
 
-    protected lateinit var job: Job
+    private lateinit var job: Job
     override val coroutineContext: CoroutineContext
-        get() = job + Dispatchers.Main
+        get() = job + getExceptionHandler() + Dispatchers.Main
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

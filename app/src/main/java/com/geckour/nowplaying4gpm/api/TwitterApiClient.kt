@@ -2,6 +2,7 @@ package com.geckour.nowplaying4gpm.api
 
 import android.graphics.Bitmap
 import android.net.Uri
+import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.util.getUri
 import timber.log.Timber
 import twitter4j.StatusUpdate
@@ -39,11 +40,12 @@ class TwitterApiClient(consumerKey: String, consumerSecret: String) : TwitterApi
                 else twitter.getOAuthAccessToken(requestToken, verifier)
             } catch (t: Throwable) {
                 Timber.e(t)
+                Crashlytics.logException(t)
                 null
             }
 
     override suspend fun post(accessToken: AccessToken,
-                      subject: String, artwork: Bitmap?, artworkTitle: String?) =
+                              subject: String, artwork: Bitmap?, artworkTitle: String?) =
             try {
                 twitter.oAuthAccessToken = accessToken
                 val status = StatusUpdate(subject)
@@ -59,6 +61,7 @@ class TwitterApiClient(consumerKey: String, consumerSecret: String) : TwitterApi
                 twitter.updateStatus(status)
             } catch (t: Throwable) {
                 Timber.e(t)
+                Crashlytics.logException(t)
                 null
             }
 }

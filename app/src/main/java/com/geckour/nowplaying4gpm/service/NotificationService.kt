@@ -118,7 +118,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
-        get() = job + Dispatchers.IO
+        get() = job  + getExceptionHandler() + Dispatchers.IO
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var lastTrack: TrackCoreElement = TrackCoreElement.empty
