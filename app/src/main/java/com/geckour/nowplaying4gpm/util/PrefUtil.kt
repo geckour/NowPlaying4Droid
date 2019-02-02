@@ -16,6 +16,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_USE_API(false),
     PREF_KEY_ARTWORK_RESOLVE_ORDER(),
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT("#NowPlaying TI - AR (AL)"),
+    PREF_KEY_FORMAT_PATTERN_MODIFIERS(null),
     PREF_KEY_STRICT_MATCH_PATTERN_MODE(false),
     PREF_KEY_WHETHER_BUNDLE_ARTWORK(true),
     PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD(false),
@@ -51,6 +52,12 @@ data class ArtworkResolveMethod(
     }
 }
 
+data class FormatPatternModifier(
+        val key: FormatPattern,
+        val prefix: String? = null,
+        val suffix: String? = null
+)
+
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
         edit().apply {
             putString(
@@ -73,6 +80,26 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
         } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
                 .values()
                 .map { ArtworkResolveMethod(it, true) }
+
+fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
+        edit().apply {
+            putString(
+                    PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
+                    Gson().toJson(modifiers)
+            )
+        }.apply()
+
+fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
+        getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
+            val type = object : TypeToken<List<FormatPatternModifier>>() {}.type
+            val stored = Gson().fromJson<List<FormatPatternModifier>>(json, type)
+            FormatPattern.replaceablePatterns
+                    .map { pattern ->
+                        val modifier = stored.firstOrNull { it.key == pattern }
+                        FormatPatternModifier(pattern, modifier?.prefix, modifier?.suffix)
+                    }
+        } ?: FormatPattern.replaceablePatterns
+                .map { FormatPatternModifier(it) }
 
 fun SharedPreferences.getFormatPattern(context: Context): String =
         getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
@@ -111,7 +138,7 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
 fun SharedPreferences.getSharingText(context: Context): String? {
     val trackInfo = getCurrentTrackInfo() ?: return null
 
-    return getFormatPattern(context).getSharingText(trackInfo)
+    return getFormatPattern(context).getSharingText(trackInfo, getFormatPatternModifiers())
 }
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
@@ -165,7 +192,8 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
         Gson().fromJsonOrNull(
                 getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-                        PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String) ?: return null,
+                        PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String)
+                        ?: return null,
                 AccessToken::class.java)
     else null
 }

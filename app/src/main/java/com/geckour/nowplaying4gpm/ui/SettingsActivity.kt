@@ -14,6 +14,7 @@ import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.*
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.NotificationManagerCompat
@@ -33,6 +34,7 @@ import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.adapter.ArtworkResolveMethodListAdapter
+import com.geckour.nowplaying4gpm.ui.adapter.FormatPatternModifierListAdapter
 import com.geckour.nowplaying4gpm.util.*
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -44,7 +46,6 @@ import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import permissions.dispatcher.NeedsPermission
@@ -183,38 +184,13 @@ class SettingsActivity : ScopedActivity() {
 
         binding.itemPatternFormat.root.setOnClickListener { onClickItemPatternFormat() }
 
-        binding.itemChooseColor.root.setOnClickListener { onClickItemChooseColor() }
+        binding.itemFormatPatternModifiers.root.setOnClickListener { onClickFormatPatternModifiers() }
 
         binding.itemSwitchStrictMatchPattern.also { binding ->
             binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
             binding.extra.apply {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE) { _, summary ->
-                    binding.summary = summary
-
-                    requestUpdate()
-                })
-            }
-        }
-
-        binding.itemSwitchReside.also { binding ->
-            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
-            binding.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { state, summary ->
-                    binding.summary = summary
-
-                    if (state) requestUpdate()
-                    else destroyNotification()
-                })
-            }
-        }
-
-        binding.itemSwitchShowArtworkInNotification.also { binding ->
-            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
-            binding.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION) { _, summary ->
                     binding.summary = summary
 
                     requestUpdate()
@@ -300,6 +276,33 @@ class SettingsActivity : ScopedActivity() {
             binding.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
             binding.root.setOnClickListener { onClickVisibilityMastodon() }
         }
+
+        binding.itemSwitchReside.also { binding ->
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { state, summary ->
+                    binding.summary = summary
+
+                    if (state) requestUpdate()
+                    else destroyNotification()
+                })
+            }
+        }
+
+        binding.itemSwitchShowArtworkInNotification.also { binding ->
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION) { _, summary ->
+                    binding.summary = summary
+
+                    requestUpdate()
+                })
+            }
+        }
+
+        binding.itemChooseColor.root.setOnClickListener { onClickItemChooseColor() }
 
         binding.itemSwitchColorizeNotificationBg.also { binding ->
             if (Build.VERSION.SDK_INT < 26) binding.root.visibility = View.GONE
@@ -666,8 +669,40 @@ class SettingsActivity : ScopedActivity() {
                     sharedPreferences.setArtworkResolveOrder(order)
                 }
             }
+            requestUpdate()
             dialog.dismiss()
         }.show()
+    }
+
+    private fun onClickFormatPatternModifiers() {
+        val adapter = FormatPatternModifierListAdapter(sharedPreferences
+                .getFormatPatternModifiers()
+                .toMutableList())
+        val formatPatternModifiersDialogBinding = DialogFormatPatternModifiersBinding.inflate(
+                LayoutInflater.from(this),
+                null,
+                false
+        ).apply { recyclerView.adapter = adapter }
+
+        val dialog = AlertDialog.Builder(this).generate(
+                formatPatternModifiersDialogBinding.root,
+                getString(R.string.dialog_title_format_pattern_modifier),
+                getString(R.string.dialog_message_format_pattern_modifier)
+        ) { dialog, which ->
+            when (which) {
+                DialogInterface.BUTTON_POSITIVE -> {
+                    val modifiers = adapter.items
+                    sharedPreferences.setFormatPatternModifiers(modifiers)
+                }
+            }
+            requestUpdate()
+            dialog.dismiss()
+        }
+        dialog.show()
+        dialog.window?.apply {
+            clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        }
     }
 
     private fun onClickAuthTwitter() {
