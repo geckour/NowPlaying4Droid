@@ -27,7 +27,7 @@ class BillingApiClient(private val coroutineScope: CoroutineScope, private val s
         const val QUERY_KEY_SKU_DETAILS = "ITEM_ID_LIST"
     }
 
-    suspend fun getPurchasedItems(context: Context): List<String> = coroutineScope.asyncOrNull {
+    suspend fun getPurchasedItems(context: Context): List<String> = asyncOrNull {
         service.getPurchases(
                 API_VERSION,
                 context.packageName,
@@ -36,7 +36,7 @@ class BillingApiClient(private val coroutineScope: CoroutineScope, private val s
         ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
     }.await() ?: emptyList()
 
-    suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = coroutineScope.asyncOrNull {
+    suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = asyncOrNull {
         service.getSkuDetails(
                 API_VERSION,
                 context.packageName,
