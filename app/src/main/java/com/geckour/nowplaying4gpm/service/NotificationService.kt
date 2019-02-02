@@ -318,8 +318,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         if (it.containsKey(MediaMetadata.METADATA_KEY_ALBUM))
                             it.getString(MediaMetadata.METADATA_KEY_ALBUM)
                         else null
+                val composer: String? =
+                        if (it.containsKey(MediaMetadata.METADATA_KEY_COMPOSER))
+                            it.getString(MediaMetadata.METADATA_KEY_COMPOSER)
+                        else null
 
-                TrackCoreElement(track, artist, album)
+                TrackCoreElement(track, artist, album, composer)
             }
 
     private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?): Boolean {
