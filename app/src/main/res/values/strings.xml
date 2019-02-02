@@ -27,6 +27,8 @@
     <string name="pref_category_share">Share</string>
     <string name="pref_item_title_pattern">Specify formatting pattern of a sentence to post</string>
     <string name="pref_item_desc_pattern">Track name: TI, Artist name: AR, Album name: AL</string>
+    <string name="pref_item_title_pattern_modifiers">Specify modifier of formatting patterns</string>
+    <string name="pref_item_desc_pattern_modifiers">Specify prefix / suffix for each patterns</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
     <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are satisfied</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
@@ -91,6 +93,10 @@
     <string name="dialog_button_ok">OK</string>
     <string name="dialog_button_ng">Cancel</string>
 
+    <string name="dialog_title_format_pattern_modifier">Specify modifier of formatting patterns</string>
+    <string name="dialog_message_format_pattern_modifier">Specify prefix / suffix for each identifier</string>
+    <string name="dialog_hint_format_pattern_prefix">prefix</string>
+    <string name="dialog_hint_format_pattern_suffix">suffix</string>
     <string name="dialog_title_artwork_resolve_order">Specify resolving order of artwork</string>
     <string name="dialog_message_artwork_resolve_order">Reorder by D\'n\'D, toggle enabled by switch</string>
     <string name="dialog_title_pattern_format">Specify formatting pattern of a sentence to post</string>

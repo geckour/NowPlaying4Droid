@@ -389,7 +389,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             val subject =
                     if (trackInfo.coreElement.isAllNonNull) {
                         sharedPreferences.getFormatPattern(this@NotificationService)
-                                .getSharingText(trackInfo)
+                                .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
                     } else null
             val artwork = trackInfo.artworkUriString?.getUri()
 
@@ -426,7 +426,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 val subject =
                         if (trackInfo.coreElement.isAllNonNull) {
                             sharedPreferences.getFormatPattern(this@NotificationService)
-                                    .getSharingText(trackInfo)
+                                    .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
                         } else null ?: return@launch
                 val artwork =
                         if (sharedPreferences.getSwitchState(
@@ -536,7 +536,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         val subject = sharedPreferences.getFormatPattern(this)
-                .getSharingText(trackInfo)
+                .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
         val artwork =
                 trackInfo.artworkUriString?.let {
                     getBitmapFromUriString(this@NotificationService, it)

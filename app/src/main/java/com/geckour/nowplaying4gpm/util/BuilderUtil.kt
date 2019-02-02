@@ -30,7 +30,8 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
         val summary =
                 if (info?.coreElement?.isAllNonNull == true) {
                     sharedPreferences.getFormatPattern(context)
-                            .getSharingText(info).foldBreak()
+                            .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
+                            .foldBreak()
                 } else null
 
         setTextViewText(R.id.widget_summary_share,
@@ -103,7 +104,8 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 }
         val notificationText =
                 sharedPreferences.getFormatPattern(context)
-                        .getSharingText(trackInfo).foldBreak()
+                        .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
+                        .foldBreak()
 
         val thumb =
                 if (sharedPreferences.getSwitchState(

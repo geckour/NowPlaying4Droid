@@ -142,27 +142,49 @@ enum class FormatPattern(val value: String) {
     COMPOSER("CO"),
     PLAYER_NAME("PN"),
     SPOTIFY_URL("SU"),
-    NEW_LINE("\\n")
+    NEW_LINE("\\n");
+
+    companion object {
+        val replaceablePatterns: List<FormatPattern> =
+                values().toMutableList().apply {
+                    removeAll(listOf(S_QUOTE, S_QUOTE_DOUBLE, NEW_LINE))
+                }
+    }
 }
 
-fun String.getSharingText(trackInfo: TrackInfo): String =
+fun String.getSharingText(trackInfo: TrackInfo, modifiers: List<FormatPatternModifier>): String =
         this.splitConsideringEscape().joinToString("") {
             return@joinToString Regex("^'(.+)'$").let { regex ->
                 if (it.matches(regex)) it.replace(regex, "$1")
                 else when (it) {
                     FormatPattern.S_QUOTE.value -> ""
                     FormatPattern.S_QUOTE_DOUBLE.value -> "'"
-                    FormatPattern.TITLE.value -> trackInfo.coreElement.title ?: ""
-                    FormatPattern.ARTIST.value -> trackInfo.coreElement.artist ?: ""
-                    FormatPattern.ALBUM.value -> trackInfo.coreElement.album ?: ""
-                    FormatPattern.COMPOSER.value -> trackInfo.coreElement.composer ?: ""
-                    FormatPattern.PLAYER_NAME.value -> trackInfo.playerAppName ?: ""
-                    FormatPattern.SPOTIFY_URL.value -> trackInfo.spotifyUrl ?: ""
+                    FormatPattern.TITLE.value -> trackInfo.coreElement.title
+                            ?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.ARTIST.value -> trackInfo.coreElement.artist
+                            ?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.ALBUM.value -> trackInfo.coreElement.album
+                            ?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.COMPOSER.value -> trackInfo.coreElement.composer
+                            ?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.PLAYER_NAME.value -> trackInfo.playerAppName
+                            ?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.SPOTIFY_URL.value -> trackInfo.spotifyUrl
+                            ?.getReplacerWithModifier(modifiers, it) ?: ""
                     FormatPattern.NEW_LINE.value -> "\n"
                     else -> it
                 }
             }
         }
+
+fun String.getReplacerWithModifier(modifiers: List<FormatPatternModifier>, identifier: String): String =
+        "${modifiers.getPrefix(identifier)}$this${modifiers.getSuffix(identifier)}"
+
+fun List<FormatPatternModifier>.getPrefix(value: String): String =
+        this.firstOrNull { m -> m.key.value == value }?.prefix ?: ""
+
+fun List<FormatPatternModifier>.getSuffix(value: String): String =
+        this.firstOrNull { m -> m.key.value == value }?.suffix ?: ""
 
 fun String.containsPattern(pattern: FormatPattern): Boolean =
         this.splitConsideringEscape().contains(pattern.value)
