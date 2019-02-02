@@ -22,7 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-suspend fun getShareWidgetViews(context: Context, coroutineScope: CoroutineScope, isMin: Boolean = false, trackInfo: TrackInfo? = null): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackInfo: TrackInfo? = null): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -38,8 +38,7 @@ suspend fun getShareWidgetViews(context: Context, coroutineScope: CoroutineScope
 
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
                 && isMin.not()) {
-            val artwork = getBitmapFromUri(context, coroutineScope,
-                    info?.artworkUriString?.getUri())?.let {
+            val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())?.let {
                 Bitmap.createScaledBitmap(it, 600, 600, false)
             }
             if (summary != null && artwork != null) {
@@ -79,7 +78,7 @@ suspend fun getShareWidgetViews(context: Context, coroutineScope: CoroutineScope
     }
 }
 
-suspend fun getNotification(context: Context, coroutineScope: CoroutineScope, trackInfo: TrackInfo): Notification? {
+suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notification? {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     val notificationBuilder =
@@ -110,7 +109,7 @@ suspend fun getNotification(context: Context, coroutineScope: CoroutineScope, tr
                 if (sharedPreferences.getSwitchState(
                                 PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION)) {
                     trackInfo.artworkUriString?.let {
-                        getBitmapFromUriString(context, coroutineScope, it)
+                        getBitmapFromUriString(context, it)
                     }
                 } else null
 

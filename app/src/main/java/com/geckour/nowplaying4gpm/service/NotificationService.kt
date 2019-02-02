@@ -118,7 +118,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
-        get() = job  + getExceptionHandler() + Dispatchers.IO
+        get() = job + getExceptionHandler() + Dispatchers.IO
 
     private var currentTrack: TrackCoreElement = TrackCoreElement.empty
     private var lastTrack: TrackCoreElement = TrackCoreElement.empty
@@ -318,8 +318,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         if (it.containsKey(MediaMetadata.METADATA_KEY_ALBUM))
                             it.getString(MediaMetadata.METADATA_KEY_ALBUM)
                         else null
+                val composer: String? =
+                        if (it.containsKey(MediaMetadata.METADATA_KEY_COMPOSER))
+                            it.getString(MediaMetadata.METADATA_KEY_COMPOSER)
+                        else null
 
-                TrackCoreElement(track, artist, album)
+                TrackCoreElement(track, artist, album, composer)
             }
 
     private suspend fun onQuickUpdate(coreElement: TrackCoreElement, packageName: String, spotifyUrl: String?): Boolean {
@@ -373,7 +377,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
                         id,
-                        getShareWidgetViews(this@NotificationService, this@NotificationService,
+                        getShareWidgetViews(this@NotificationService,
                                 ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
@@ -429,8 +433,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                         PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
                             trackInfo.artworkUriString?.let {
                                 return@let try {
-                                    getBitmapFromUriString(this@NotificationService, this,
-                                            it)?.let { bitmap ->
+                                    getBitmapFromUriString(this@NotificationService, it)?.let { bitmap ->
                                         ByteArrayOutputStream().apply {
                                             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
                                         }.toByteArray()
@@ -453,7 +456,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     Media(mastodonClient).postMedia(
                             MultipartBody.Part.createFormData("file", "artwork.jpg",
                                     RequestBody.create(MediaType.get("image/jpeg"), it)))
-                            .toJob(this@NotificationService)
+                            .toJob()
                             .await()
                             ?.id
                 }
@@ -470,7 +473,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                 Visibility.PRIVATE -> Status.Visibility.Private
                             }
                         })
-                        .toJob(this@NotificationService)
+                        .toJob()
             }
         }
     }
@@ -536,7 +539,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 .getSharingText(trackInfo)
         val artwork =
                 trackInfo.artworkUriString?.let {
-                    getBitmapFromUriString(this@NotificationService, this, it)
+                    getBitmapFromUriString(this@NotificationService, it)
                 }
 
         val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
@@ -571,8 +574,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 when (it.key) {
                     ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
                         Timber.d("np4d artwork resolve method: $it")
-                        getArtworkUriFromDevice(this@NotificationService, this@NotificationService,
-                                coreElement)?.apply {
+                        getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
                             sharedPreferences.refreshTempArtwork(this)
                             return this
                         }
@@ -581,10 +583,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         Timber.d("np4d artwork resolve method: $it")
                         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
                             this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                                getBitmapFromUri(this@NotificationService, this@NotificationService,
-                                        this)?.apply {
-                                    refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
-                                            this)?.apply { return this }
+                                getBitmapFromUri(this@NotificationService, this)?.apply {
+                                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
+                                        return this
+                                    }
                                 }
                             }
                         }
@@ -597,21 +599,23 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                 else null
 
                         if (metadataBitmap != null) {
-                            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
-                                    metadataBitmap)?.apply { return this }
+                            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap)?.apply {
+                                return this
+                            }
                         }
                     }
                     ArtworkResolveMethod.ArtworkResolveMethodKey.NOTIFICATION_BITMAP -> {
                         Timber.d("np4d artwork resolve method: $it")
                         if (notificationBitmap != null) {
-                            refreshArtworkUriFromBitmap(this@NotificationService, this@NotificationService,
-                                    notificationBitmap)?.apply { return this }
+                            refreshArtworkUriFromBitmap(this@NotificationService, notificationBitmap)?.apply {
+                                return this
+                            }
                         }
                     }
                     ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
                         Timber.d("np4d artwork resolve method: $it")
                         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                            refreshArtworkUriFromLastFmApi(this@NotificationService, this@NotificationService,
+                            refreshArtworkUriFromLastFmApi(this@NotificationService,
                                     lastFmApiClient, coreElement)?.apply { return this }
                         }
                     }
@@ -657,7 +661,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 && trackInfo.coreElement.isAllNonNull) {
             checkStoragePermission {
                 launch(Dispatchers.IO) {
-                    getNotification(this@NotificationService, this, trackInfo)?.apply {
+                    getNotification(this@NotificationService, trackInfo)?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                         } else {

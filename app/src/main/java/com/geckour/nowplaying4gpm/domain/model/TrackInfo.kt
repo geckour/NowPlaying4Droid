@@ -26,6 +26,7 @@ data class TrackInfo(
                     FormatPattern.TITLE -> this.coreElement.title != null
                     FormatPattern.ARTIST -> this.coreElement.artist != null
                     FormatPattern.ALBUM -> this.coreElement.album != null
+                    FormatPattern.COMPOSER -> this.coreElement.composer != null
                     FormatPattern.PLAYER_NAME -> this.playerAppName != null
                     FormatPattern.SPOTIFY_URL -> this.spotifyUrl != null
                     else -> true
@@ -40,10 +41,11 @@ data class ArtworkInfo(
 data class TrackCoreElement(
         val title: String?,
         val artist: String?,
-        val album: String?
+        val album: String?,
+        val composer: String?
 ) : Serializable {
     companion object {
-        val empty: TrackCoreElement = TrackCoreElement(null, null, null)
+        val empty: TrackCoreElement = TrackCoreElement(null, null, null, null)
     }
 
     val isAllNonNull: Boolean =

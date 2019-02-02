@@ -92,7 +92,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
                             val widgetOptions = this.getAppWidgetOptions(id)
                             updateAppWidget(
                                     id,
-                                    getShareWidgetViews(context, this@launch, isMin(widgetOptions), trackInfo)
+                                    getShareWidgetViews(context, isMin(widgetOptions), trackInfo)
                             )
                         }
                     }

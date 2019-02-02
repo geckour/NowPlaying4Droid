@@ -139,6 +139,7 @@ enum class FormatPattern(val value: String) {
     TITLE("TI"),
     ARTIST("AR"),
     ALBUM("AL"),
+    COMPOSER("CO"),
     PLAYER_NAME("PN"),
     SPOTIFY_URL("SU"),
     NEW_LINE("\\n")
@@ -154,6 +155,7 @@ fun String.getSharingText(trackInfo: TrackInfo): String =
                     FormatPattern.TITLE.value -> trackInfo.coreElement.title ?: ""
                     FormatPattern.ARTIST.value -> trackInfo.coreElement.artist ?: ""
                     FormatPattern.ALBUM.value -> trackInfo.coreElement.album ?: ""
+                    FormatPattern.COMPOSER.value -> trackInfo.coreElement.composer ?: ""
                     FormatPattern.PLAYER_NAME.value -> trackInfo.playerAppName ?: ""
                     FormatPattern.SPOTIFY_URL.value -> trackInfo.spotifyUrl ?: ""
                     FormatPattern.NEW_LINE.value -> "\n"
@@ -178,6 +180,7 @@ private fun String.splitConsideringEscape(): List<String> =
                 FormatPattern.TITLE.value,
                 FormatPattern.ARTIST.value,
                 FormatPattern.ALBUM.value,
+                FormatPattern.COMPOSER.value,
                 FormatPattern.PLAYER_NAME.value,
                 FormatPattern.SPOTIFY_URL.value,
                 "\\\\n"

@@ -19,6 +19,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.NotificationManagerCompat
 import androidx.databinding.DataBindingUtil
 import com.android.vending.billing.IInAppBillingService
+import com.crashlytics.android.Crashlytics
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
@@ -164,7 +165,7 @@ class SettingsActivity : ScopedActivity() {
 
             binding.extra.apply {
                 visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { state, summary ->
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
                     binding.summary = summary
                     requestUpdate()
                 })
@@ -527,7 +528,7 @@ class SettingsActivity : ScopedActivity() {
                                 addNetworkInterceptor(StethoInterceptor())
                             }
                         }, Gson())
-                launch {
+                launch(Dispatchers.IO) {
                     val accessToken = try {
                         Apps(mastodonApiClientBuilder.build())
                                 .getAccessToken(
@@ -535,10 +536,11 @@ class SettingsActivity : ScopedActivity() {
                                         this@apply.clientSecret,
                                         App.MASTODON_CALLBACK,
                                         token)
-                                .toJob(this@SettingsActivity + Dispatchers.IO)
+                                .toJob()
                                 .await()
                     } catch (e: Mastodon4jRequestException) {
                         Timber.e(e)
+                        Crashlytics.logException(e)
                         null
                     }
 
@@ -548,7 +550,7 @@ class SettingsActivity : ScopedActivity() {
                                 .accessToken(accessToken.accessToken)
                                 .build())
                                 .getVerifyCredentials()
-                                .toJob(this@SettingsActivity + Dispatchers.IO)
+                                .toJob()
                                 .await()
                                 ?.userName ?: run {
                             onAuthMastodonError()
@@ -613,7 +615,7 @@ class SettingsActivity : ScopedActivity() {
                 val widgetOptions = this.getAppWidgetOptions(id)
                 updateAppWidget(
                         id,
-                        getShareWidgetViews(this@SettingsActivity, this@SettingsActivity,
+                        getShareWidgetViews(this@SettingsActivity,
                                 ShareWidgetProvider.isMin(widgetOptions), trackInfo)
                 )
             }
@@ -709,7 +711,7 @@ class SettingsActivity : ScopedActivity() {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val instance = instanceNameInputDialogBinding.editText.text.toString()
                     if (instance.isNotBlank()) {
-                        launch {
+                        launch(Dispatchers.IO) {
                             val mastodonApiClient =
                                     MastodonClient.Builder(instance, OkHttpClient.Builder().apply {
                                         if (BuildConfig.DEBUG) {
@@ -725,10 +727,11 @@ class SettingsActivity : ScopedActivity() {
                                         App.MASTODON_CALLBACK,
                                         mastodonScope,
                                         App.MASTODON_WEB_URL)
-                                        .toJob(this@SettingsActivity + Dispatchers.IO)
+                                        .toJob()
                                         .await()
                             } catch (e: Mastodon4jRequestException) {
                                 Timber.e(e)
+                                Crashlytics.logException(e)
                                 null
                             } ?: run {
                                 onAuthMastodonError()
