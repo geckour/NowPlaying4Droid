@@ -5,15 +5,19 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseBinding
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class LicenseListAdapter(private val coroutineScope: CoroutineScope, private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    companion object {
+        private const val easterEggIconUrl = "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
+    }
 
     enum class ViewType {
         NORMAL,
@@ -75,9 +79,9 @@ class LicenseListAdapter(private val coroutineScope: CoroutineScope, private val
     inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind() {
-            coroutineScope.launch {
+            GlobalScope.launch(Dispatchers.IO) {
                 Glide.with(binding.button)
-                        .load(binding.button.context.getString(R.string.easter_egg_icon_url))
+                        .load(easterEggIconUrl)
                         .into(binding.button)
             }
             binding.buttonCover.setOnClickListener { toggleDonateState() }
