@@ -135,11 +135,10 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
     setTempArtworkInfo(artworkUri)
 }
 
-fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): String? {
-    trackInfo ?: return null
-
-    return getFormatPattern(context).getSharingText(trackInfo, getFormatPatternModifiers())
-}
+fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): String? =
+        if (readyForShare(context, trackInfo))
+            getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
+        else null
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
     return if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {

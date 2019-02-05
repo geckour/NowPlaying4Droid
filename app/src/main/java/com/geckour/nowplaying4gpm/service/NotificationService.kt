@@ -411,12 +411,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun postMastodon(trackInfo: TrackInfo) {
-        if (sharedPreferences.readyForShare(this)
-                && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)
-                && trackInfo.coreElement != lastTrack) {
+        if (trackInfo.coreElement != lastTrack
+                && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
             postMastodonJob?.cancel()
             postMastodonJob = launch {
                 delay(sharedPreferences.getDelayDurationPostMastodon())
+
+                val subject = sharedPreferences.getSharingText(this@NotificationService, trackInfo)
+                        ?: return@launch
 
                 FirebaseAnalytics.getInstance(application).logEvent(
                         FirebaseAnalytics.Event.SELECT_CONTENT,
@@ -425,8 +427,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         }
                 )
 
-                val subject = sharedPreferences.getSharingText(this@NotificationService, trackInfo)
-                        ?: return@launch
                 val artwork =
                         if (sharedPreferences.getSwitchState(
                                         PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
@@ -530,15 +530,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 )
 
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
-        if (sharedPreferences.readyForShare(this, trackInfo)) {
+
+        val subject = sharedPreferences.getSharingText(this, trackInfo) ?: run {
             onFailureShareToTwitter(sourceNodeId)
             return
         }
 
         requireNotNull(trackInfo)
 
-        val subject = sharedPreferences.getFormatPattern(this)
-                .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
         val artwork =
                 trackInfo.artworkUriString?.let {
                     getBitmapFromUriString(this@NotificationService, it)
