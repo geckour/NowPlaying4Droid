@@ -334,8 +334,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 packageName, packageName.getAppName(this),
                 spotifyUrl)
 
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
-                && trackInfo.isSatisfiedSpecifier(sharedPreferences.getFormatPattern(this)).apply { Timber.d("np4d satisfied: $this") }.not()) {
+        if (sharedPreferences.readyForShare(this, trackInfo).not()) {
             return false
         }
 
@@ -412,8 +411,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun postMastodon(trackInfo: TrackInfo) {
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON) &&
-                trackInfo.coreElement != lastTrack) {
+        if (sharedPreferences.readyForShare(this)
+                && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)
+                && trackInfo.coreElement != lastTrack) {
             postMastodonJob?.cancel()
             postMastodonJob = launch {
                 delay(sharedPreferences.getDelayDurationPostMastodon())
@@ -425,11 +425,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         }
                 )
 
-                val subject =
-                        if (trackInfo.coreElement.isAllNonNull) {
-                            sharedPreferences.getFormatPattern(this@NotificationService)
-                                    .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-                        } else null ?: return@launch
+                val subject = sharedPreferences.getSharingText(this@NotificationService, trackInfo)
+                        ?: return@launch
                 val artwork =
                         if (sharedPreferences.getSwitchState(
                                         PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
@@ -532,10 +529,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         }
                 )
 
-        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: run {
+        val trackInfo = sharedPreferences.getCurrentTrackInfo()
+        if (sharedPreferences.readyForShare(this, trackInfo)) {
             onFailureShareToTwitter(sourceNodeId)
             return
         }
+
+        requireNotNull(trackInfo)
 
         val subject = sharedPreferences.getFormatPattern(this)
                 .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())

@@ -135,8 +135,8 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
     setTempArtworkInfo(artworkUri)
 }
 
-fun SharedPreferences.getSharingText(context: Context): String? {
-    val trackInfo = getCurrentTrackInfo() ?: return null
+fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): String? {
+    trackInfo ?: return null
 
     return getFormatPattern(context).getSharingText(trackInfo, getFormatPatternModifiers())
 }
@@ -231,3 +231,9 @@ fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
             getString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name,
                     PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.defaultValue as? String)
         else null
+
+fun SharedPreferences.readyForShare(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): Boolean {
+    return trackInfo != null &&
+            (!getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE) ||
+                    trackInfo.isSatisfiedSpecifier(getFormatPattern(context)))
+}
