@@ -176,6 +176,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         getSystemService(NotificationManager::class.java).destroyNotification()
         job.cancel()
+
+        requestRebind(ComponentName(this, NotificationService::class.java))
     }
 
     override fun onListenerConnected() {
