@@ -907,9 +907,7 @@ class SettingsActivity : ScopedActivity() {
     }
 
     private fun onClickFab() {
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
-                && sharedPreferences.getCurrentTrackInfo()
-                        ?.isSatisfiedSpecifier(sharedPreferences.getFormatPattern(this)) != true) {
+        if (sharedPreferences.readyForShare(this).not()) {
             showErrorDialog(
                     R.string.dialog_title_alert_no_metadata,
                     R.string.dialog_message_alert_no_metadata)

@@ -2,18 +2,13 @@ package com.geckour.nowplaying4gpm.ui
 
 import android.app.KeyguardManager
 import android.app.PendingIntent
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.os.Bundle
 import android.preference.PreferenceManager
 import androidx.core.app.ShareCompat
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.util.PrefKey
-import com.geckour.nowplaying4gpm.util.getSharingText
-import com.geckour.nowplaying4gpm.util.getSwitchState
-import com.geckour.nowplaying4gpm.util.getTempArtworkUri
+import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.util.*
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -33,10 +28,17 @@ class SharingActivity : ScopedActivity() {
                 }
     }
 
+    private val sharedPreferences: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(this)
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
-        launch { startShare(intent.requireUnlock()) }
+        val trackInfo = sharedPreferences.getCurrentTrackInfo()
+        if (sharedPreferences.readyForShare(this, trackInfo)) {
+            launch { startShare(intent.requireUnlock(), trackInfo) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +48,7 @@ class SharingActivity : ScopedActivity() {
         finish()
     }
 
-    private fun startShare(requireUnlock: Boolean) {
+    private fun startShare(requireUnlock: Boolean, trackInfo: TrackInfo?) {
         FirebaseAnalytics.getInstance(application)
                 .logEvent(
                         FirebaseAnalytics.Event.SELECT_CONTENT,
@@ -64,10 +66,8 @@ class SharingActivity : ScopedActivity() {
                 }
 
         if (requireUnlock.not() || keyguardManager?.isDeviceLocked != true) {
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-
             val sharingText: String =
-                    sharedPreferences.getSharingText(this) ?: return
+                    sharedPreferences.getSharingText(this, trackInfo) ?: return
             val artworkUri =
                     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
                         sharedPreferences.getTempArtworkUri(this)
