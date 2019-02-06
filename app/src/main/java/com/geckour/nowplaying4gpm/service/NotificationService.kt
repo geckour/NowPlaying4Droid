@@ -341,7 +341,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
         reflectTrackInfo(trackInfo)
-        postMastodon(trackInfo)
+        if (trackInfo != TrackInfo.empty) postMastodon(trackInfo)
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
