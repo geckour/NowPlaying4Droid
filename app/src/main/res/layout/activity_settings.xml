@@ -161,6 +161,15 @@
                     app:title="@{@string/pref_item_title_visibility_mastodon}" />
 
                 <include
+                    android:id="@+id/item_switch_success_notification_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_success_notification_mastodon}"
+                    app:title="@{@string/pref_item_title_success_notification_mastodon}" />
+
+                <include
                     android:id="@+id/category_notification"
                     layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
