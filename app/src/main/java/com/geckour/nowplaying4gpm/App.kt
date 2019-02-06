@@ -16,7 +16,7 @@ class App : Application() {
         const val MASTODON_CLIENT_NAME = "NowPlaying4Droid"
         const val MASTODON_CALLBACK = "np4gpm://mastodon.callback"
         const val MASTODON_WEB_URL = "https://github.com/geckour/NowPlaying4Droid"
-        private const val SHOTCUT_ID_INVOKE_SHARE = "shortcut_id_invoke_share"
+        private const val SHORTCUT_ID_INVOKE_SHARE = "shortcut_id_invoke_share"
     }
 
     override fun onCreate() {
@@ -28,7 +28,7 @@ class App : Application() {
         }
 
         if (Build.VERSION.SDK_INT >= 25) {
-            val shortcutInfo = ShortcutInfo.Builder(this, SHOTCUT_ID_INVOKE_SHARE)
+            val shortcutInfo = ShortcutInfo.Builder(this, SHORTCUT_ID_INVOKE_SHARE)
                     .setIcon(Icon.createWithResource(this, R.mipmap.ic_launcher_round))
                     .setShortLabel(getString(R.string.shortcut_invoke_share))
                     .setIntent(SharingActivity.getIntent(this.applicationContext).apply {
