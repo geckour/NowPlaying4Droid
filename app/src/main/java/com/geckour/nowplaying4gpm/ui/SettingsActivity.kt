@@ -234,6 +234,8 @@ class SettingsActivity : ScopedActivity() {
                             if (checkState) View.GONE else View.VISIBLE
                     this@SettingsActivity.binding.itemVisibilityMastodon.maskInactive.visibility =
                             if (checkState) View.GONE else View.VISIBLE
+                    this@SettingsActivity.binding.itemSwitchSuccessNotificationMastodon.maskInactive.visibility =
+                            if (checkState) View.GONE else View.VISIBLE
                 })
             }
         }
@@ -275,6 +277,22 @@ class SettingsActivity : ScopedActivity() {
 
             binding.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
             binding.root.setOnClickListener { onClickVisibilityMastodon() }
+        }
+
+        binding.itemSwitchSuccessNotificationMastodon.also { binding ->
+            binding.maskInactive.visibility =
+                    if (sharedPreferences.getSwitchState(
+                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
+                        View.GONE
+                    else View.VISIBLE
+
+            binding.root.setOnClickListener { onClickItemWithSwitch(binding.extra) }
+            binding.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON) { _, summary ->
+                    binding.summary = summary
+                })
+            }
         }
 
         binding.itemSwitchReside.also { binding ->
