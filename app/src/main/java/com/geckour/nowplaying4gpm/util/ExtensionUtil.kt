@@ -265,7 +265,22 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
         onGranted(this)
     } else {
         onNotGranted?.invoke(this)
-                ?: this@checkStoragePermission.startActivity(
+                ?: startActivity(
+                        SettingsActivity.getIntent(this).apply {
+                            flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
+                        })
+    }
+}
+
+suspend fun Context.checkStoragePermissionAsync(onNotGranted: (suspend (Context) -> Unit)? = null,
+                                   onGranted: suspend (Context) -> Unit = {}) {
+    if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)
+            == PackageManager.PERMISSION_GRANTED) {
+        onGranted(this)
+    } else {
+        onNotGranted?.invoke(this)
+                ?: startActivity(
                         SettingsActivity.getIntent(this).apply {
                             flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
                         })

@@ -40,6 +40,7 @@
 -keep class * implements com.google.gson.JsonDeserializer
 
 -keepnames enum com.geckour.nowplaying4gpm.util.** { *; }
+-keepnames enum com.geckour.nowplaying4gpm.service.** { *; }
 -keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
 
 

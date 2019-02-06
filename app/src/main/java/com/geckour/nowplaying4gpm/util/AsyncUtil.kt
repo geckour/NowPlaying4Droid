@@ -137,14 +137,19 @@ suspend fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? 
             }
         }
 
-private suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
+suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
         url?.let {
             try {
-                asyncOrNull {
+                val glideOptions =
+                        RequestOptions()
+                                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                .skipMemoryCache(true)
+                                .signature { System.currentTimeMillis().toString() }
+                withContext(Dispatchers.IO) {
                     Glide.with(context)
-                            .asBitmap().load(it)
+                            .asBitmap().load(it).apply(glideOptions)
                             .submit().get()
-                }.await()
+                }
             } catch (t: Throwable) {
                 Timber.e(t)
                 Crashlytics.logException(t)
