@@ -2,7 +2,6 @@ package com.geckour.nowplaying4gpm.service
 
 import android.app.KeyguardManager
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.*
@@ -16,9 +15,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import androidx.annotation.RequiresApi
 import com.geckour.nowplaying4gpm.BuildConfig
-import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
@@ -49,13 +46,13 @@ import kotlin.coroutines.CoroutineContext
 class NotificationService : NotificationListenerService(), CoroutineScope {
 
     enum class Channel(val id: Int) {
-        NOTIFICATION_CHANNEL_SHARE(180)
+        NOTIFICATION_CHANNEL_SHARE(180),
+        NOTIFICATION_CHANNEL_NOTIFY(190)
     }
 
     companion object {
         const val ACTION_DESTROY_NOTIFICATION = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_INVOKE_UPDATE = "com.geckour.nowplaying4gpm.invokeupdate"
-        private const val BUNDLE_KEY_TRACK_INFO = "bundle_key_track_info"
         private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
         private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
         private const val WEAR_PATH_POST_TWITTER = "/post/twitter"
@@ -67,11 +64,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
-        fun sendRequestInvokeUpdate(context: Context, trackInfo: TrackInfo?) {
+        fun sendRequestInvokeUpdate(context: Context) {
             context.checkStoragePermission {
                 it.sendBroadcast(Intent().apply {
                     action = ACTION_INVOKE_UPDATE
-                    putExtra(BUNDLE_KEY_TRACK_INFO, trackInfo)
                 })
             }
         }
@@ -88,13 +84,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     ACTION_INVOKE_UPDATE -> {
                         if (context == null) return
 
-                        val trackInfo =
-                                if (this.extras?.containsKey(BUNDLE_KEY_TRACK_INFO) == true)
-                                    extras?.get(BUNDLE_KEY_TRACK_INFO) as? TrackInfo?
-                                            ?: TrackInfo.empty
-                                else TrackInfo.empty
-
-                        launch { onUpdate(trackInfo) }
+                        launch {
+                            reflectTrackInfo(sharedPreferences.getCurrentTrackInfo()
+                                    ?: return@launch)
+                        }
                     }
 
                     Intent.ACTION_USER_PRESENT -> {
@@ -120,17 +113,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = job + getExceptionHandler() + Dispatchers.IO
 
-    private var currentTrack: TrackCoreElement = TrackCoreElement.empty
-    private var lastTrack: TrackCoreElement = TrackCoreElement.empty
     private var refreshMetadataJob: Job? = null
     private var currentTrackClearJob: Job? = null
     private var currentTrackSetJob: Job? = null
     private var postMastodonJob: Job? = null
 
-    private var playerChangedFlag = false
-    private var chatteringCancelFlag = false
-
     private var currentSbn: StatusBarNotification? = null
+    private var currentMetadata: MediaMetadata? = null
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
@@ -159,10 +148,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(receiver, intentFilter)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createDefaultChannel()
-        }
     }
 
     override fun onDestroy() {
@@ -177,7 +162,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         getSystemService(NotificationManager::class.java).destroyNotification()
         job.cancel()
 
-        requestRebind(ComponentName(this, NotificationService::class.java))
+        startService(Intent(this, NotificationService::class.java))
     }
 
     override fun onListenerConnected() {
@@ -185,7 +170,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         if (currentSbn == null) {
             try {
-                activeNotifications.forEach { onNotificationPosted(it) }
+                activeNotifications.sortedBy { it.postTime }
+                        .lastOrNull { fetchMetadata(it.packageName) != null }
+                        .apply { onNotificationPosted(this) }
             } catch (t: Throwable) {
                 Timber.e(t)
             }
@@ -198,6 +185,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onListenerDisconnected()
 
         Wearable.getMessageClient(this).removeListener(onMessageReceived)
+
+        requestRebind()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -205,8 +194,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         if (sbn != null && sbn.packageName != packageName) {
             fetchMetadata(sbn.packageName)?.apply {
-                currentSbn = sbn
-                refreshMetadataJob = launch { onMetadataChanged(this@apply, sbn.packageName, sbn.notification) }
+                refreshMetadataJob?.cancel()
+                refreshMetadataJob = launch {
+                    currentSbn = sbn
+                    onMetadataChanged(this@apply, sbn.notification)
+                }
             }
         }
     }
@@ -216,6 +208,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sbn == null) return
 
         if (sbn.packageName == currentSbn?.packageName) onMetadataCleared()
+    }
+
+    private fun requestRebind() {
+        requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
 
     private fun fetchMetadata(packageName: String): MediaMetadata? =
@@ -238,67 +234,67 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sharedPreferences.refreshTempArtwork(null)
 
         val info = TrackInfo.empty
-        currentTrack = info.coreElement
         currentTrackClearJob = launch { onUpdate(info) }
 
         getSystemService(NotificationManager::class.java).destroyNotification()
     }
 
-    private suspend fun onMetadataChanged(metadata: MediaMetadata,
-                                          packageName: String, notification: Notification? = null) {
+    private suspend fun onMetadataChanged(metadata: MediaMetadata, notification: Notification? = null) {
         val coreElement = metadata.getTrackCoreElement()
 
-        if (coreElement != currentTrack &&
-                playerChangedFlag.not() &&
-                chatteringCancelFlag.not()) {
-            chatteringCancelFlag = true
-            delay(200)
-            chatteringCancelFlag = false
+        if ((currentMetadata == null && currentTrackSetJob?.isActive != true)
+                || (currentMetadata != null && metadata != currentMetadata)) {
+            currentMetadata = metadata
 
-            if (sharedPreferences.getCurrentTrackInfo()?.equals(packageName)?.not() == true) {
-                playerChangedFlag = true
-            }
             currentTrackClearJob?.cancelAndJoin()
             currentTrackSetJob?.cancelAndJoin()
 
-            currentTrackSetJob = launch {
-                val contains = sharedPreferences
-                        .getFormatPattern(this@NotificationService)
-                        .containsPattern(FormatPattern.SPOTIFY_URL)
-                val spotifyUrl =
-                        if (contains) {
-                            FirebaseAnalytics.getInstance(application)
-                                    .logEvent(
-                                            FirebaseAnalytics.Event.SELECT_CONTENT,
-                                            Bundle().apply {
-                                                putString(FirebaseAnalytics.Param.ITEM_NAME,
-                                                        "Generated share sentence contains Spotify specifier")
-                                            }
-                                    )
-                            spotifyApiClient.getSpotifyUrl(coreElement)
-                        } else {
-                            FirebaseAnalytics.getInstance(application)
-                                    .logEvent(
-                                            FirebaseAnalytics.Event.SELECT_CONTENT,
-                                            Bundle().apply {
-                                                putString(FirebaseAnalytics.Param.ITEM_NAME,
-                                                        "Generated share sentence without Spotify specifier")
-                                            }
-                                    )
-                            null
-                        }
+            setCurrentTrack(metadata, notification, coreElement)
+        }
+    }
 
-                if (onQuickUpdate(coreElement, packageName, spotifyUrl).not()) {
-                    onMetadataCleared()
-                    return@launch
-                }
+    private fun setCurrentTrack(
+            metadata: MediaMetadata,
+            notification: Notification?,
+            coreElement: TrackCoreElement = metadata.getTrackCoreElement()
+    ) {
+        currentTrackSetJob = launch {
+            val contains = sharedPreferences
+                    .getFormatPattern(this@NotificationService)
+                    .containsPattern(FormatPattern.SPOTIFY_URL)
+            val spotifyUrl =
+                    if (contains) {
+                        FirebaseAnalytics.getInstance(application)
+                                .logEvent(
+                                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                                        Bundle().apply {
+                                            putString(FirebaseAnalytics.Param.ITEM_NAME,
+                                                    "Generated share sentence contains Spotify specifier")
+                                        }
+                                )
+                        spotifyApiClient.getSpotifyUrl(coreElement)
+                    } else {
+                        FirebaseAnalytics.getInstance(application)
+                                .logEvent(
+                                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                                        Bundle().apply {
+                                            putString(FirebaseAnalytics.Param.ITEM_NAME,
+                                                    "Generated share sentence without Spotify specifier")
+                                        }
+                                )
+                        null
+                    }
 
-                val artworkUri = metadata.storeArtworkUri(coreElement,
-                        notification?.getArtworkBitmap()?.await())
-                onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
-                        packageName, packageName.getAppName(this@NotificationService),
-                        spotifyUrl))
+            if (onQuickUpdate(coreElement, packageName, spotifyUrl).not()) {
+                onMetadataCleared()
+                return@launch
             }
+
+            val artworkUri = metadata.storeArtworkUri(coreElement,
+                    notification?.getArtworkBitmap()?.await())
+            onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
+                    packageName, packageName.getAppName(this@NotificationService),
+                    spotifyUrl))
         }
     }
 
@@ -338,17 +334,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             return false
         }
 
-        currentTrack = coreElement
-
         reflectTrackInfo(trackInfo, false)
 
         return true
     }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
-        playerChangedFlag = false
         reflectTrackInfo(trackInfo)
-        lastTrack = trackInfo.coreElement
+        postMastodon(trackInfo)
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
@@ -357,7 +350,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         updateNotification(info)
         if (withArtwork) {
             updateWear(info)
-            postMastodon(info)
         }
     }
 
@@ -365,7 +357,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sharedPreferences.refreshCurrentTrackInfo(trackInfo)
     }
 
-    private fun updateNotification(trackInfo: TrackInfo) {
+    private suspend fun updateNotification(trackInfo: TrackInfo) {
         getSystemService(NotificationManager::class.java).showNotification(trackInfo)
     }
 
@@ -386,33 +378,30 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun updateWear(trackInfo: TrackInfo) {
-        launch {
-            val subject =
-                    if (trackInfo.coreElement.isAllNonNull) {
-                        sharedPreferences.getFormatPattern(this@NotificationService)
-                                .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-                    } else null
-            val artwork = trackInfo.artworkUriString?.getUri()
+        val subject =
+                if (trackInfo.coreElement.isAllNonNull) {
+                    sharedPreferences.getFormatPattern(this@NotificationService)
+                            .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
+                } else null
+        val artwork = trackInfo.artworkUriString?.getUri()
 
-            Wearable.getDataClient(this@NotificationService)
-                    .putDataItem(
-                            PutDataMapRequest.create(WEAR_PATH_TRACK_INFO_POST)
-                                    .apply {
-                                        dataMap.apply {
-                                            putString(WEAR_KEY_SUBJECT, subject)
-                                            if (artwork != null) {
-                                                putAsset(WEAR_KEY_ARTWORK,
-                                                        Asset.createFromUri(artwork))
-                                            }
+        Wearable.getDataClient(this@NotificationService)
+                .putDataItem(
+                        PutDataMapRequest.create(WEAR_PATH_TRACK_INFO_POST)
+                                .apply {
+                                    dataMap.apply {
+                                        putString(WEAR_KEY_SUBJECT, subject)
+                                        if (artwork != null) {
+                                            putAsset(WEAR_KEY_ARTWORK,
+                                                    Asset.createFromUri(artwork))
                                         }
-                                    }.asPutDataRequest()
-                    )
-        }
+                                    }
+                                }.asPutDataRequest()
+                )
     }
 
     private fun postMastodon(trackInfo: TrackInfo) {
-        if (trackInfo.coreElement != lastTrack
-                && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
             postMastodonJob?.cancel()
             postMastodonJob = launch {
                 delay(sharedPreferences.getDelayDurationPostMastodon())
@@ -459,7 +448,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                             .await()
                             ?.id
                 }
-                Statuses(mastodonClient).postStatus(
+                val result = Statuses(mastodonClient).postStatus(
                         subject,
                         null,
                         mediaId?.let { listOf(it) },
@@ -473,6 +462,21 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                             }
                         })
                         .toJob()
+                        .await() ?: return@launch
+
+                showShortNotify(result)
+            }
+        }
+    }
+
+    private fun showShortNotify(status: Status) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
+            launch {
+                getSystemService(NotificationManager::class.java).apply {
+                    showNotification(status)
+                    delay(2500)
+                    cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
+                }
             }
         }
     }
@@ -642,37 +646,29 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         }
             }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createDefaultChannel() {
-        val name = getString(R.string.notification_channel_name_share)
-        val description = getString(R.string.notification_channel_description_share)
-
-        val channel =
-                NotificationChannel(
-                        Channel.NOTIFICATION_CHANNEL_SHARE.name,
-                        name,
-                        NotificationManager.IMPORTANCE_LOW
-                ).apply { this.description = description }
-
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-    }
-
-    private fun NotificationManager.showNotification(trackInfo: TrackInfo) {
+    private suspend fun NotificationManager.showNotification(trackInfo: TrackInfo) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
-                && trackInfo.coreElement.isAllNonNull) {
-            checkStoragePermission {
-                launch(Dispatchers.IO) {
-                    getNotification(this@NotificationService, trackInfo)?.apply {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
-                        } else {
-                            this@showNotification.notify(
-                                    Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
-                        }
+                && sharedPreferences.readyForShare(this@NotificationService, trackInfo)) {
+            checkStoragePermissionAsync {
+                getNotification(this@NotificationService, trackInfo)?.apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                    } else {
+                        notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
                     }
                 }
             }
         } else this.destroyNotification()
+    }
+
+    private suspend fun NotificationManager.showNotification(status: Status) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
+            checkStoragePermissionAsync {
+                getNotification(this@NotificationService, status)?.apply {
+                    notify(Channel.NOTIFICATION_CHANNEL_NOTIFY.id, this)
+                }
+            }
+        }
     }
 
     private fun NotificationManager.destroyNotification() {
@@ -681,5 +677,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         } else {
             this.cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
         }
+        this.cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
     }
 }

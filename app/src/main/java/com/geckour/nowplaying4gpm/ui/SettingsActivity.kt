@@ -610,8 +610,7 @@ class SettingsActivity : ScopedActivity() {
     internal fun invokeUpdate() {
         binding.maskInactiveApp.visibility = View.GONE
 
-        NotificationService.sendRequestInvokeUpdate(this,
-                sharedPreferences.getCurrentTrackInfo())
+        NotificationService.sendRequestInvokeUpdate(this)
     }
 
     @OnNeverAskAgain(Manifest.permission.READ_EXTERNAL_STORAGE,

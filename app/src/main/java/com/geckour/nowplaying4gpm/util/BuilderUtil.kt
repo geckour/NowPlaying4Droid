@@ -8,6 +8,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.preference.PreferenceManager
 import android.provider.MediaStore
+import android.text.Html
 import android.view.View
 import android.widget.RemoteViews
 import androidx.palette.graphics.Palette
@@ -17,7 +18,7 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
-import kotlinx.coroutines.CoroutineScope
+import com.sys1yagi.mastodon4j.api.entity.Status
 
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
         "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
@@ -138,11 +139,38 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 setColorized(true)
             }
 
-            val color =
-                    Palette.from(this)
-                            .maximumColorCount(12)
-                            .generate()
-                            .getOptimizedColor(context)
+            val color = Palette.from(this)
+                    .maximumColorCount(12)
+                    .generate()
+                    .getOptimizedColor(context)
+            setColor(color)
+        }
+    }.build()
+}
+
+suspend fun getNotification(context: Context, status: Status): Notification? {
+    val notificationBuilder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                Notification.Builder(context, NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name)
+            else Notification.Builder(context)
+
+    return notificationBuilder.apply {
+        val notificationText = Html.fromHtml(status.content, Html.FROM_HTML_MODE_COMPACT).toString()
+
+        val thumb = getBitmapFromUrl(context, status.mediaAttachments.firstOrNull()?.url)
+
+        setSmallIcon(R.drawable.ic_notification_notify)
+        setLargeIcon(thumb)
+        setContentTitle(context.getString(R.string.notification_title_notify_success_mastodon))
+        setContentText(notificationText)
+        if (Build.VERSION.SDK_INT >= 24) {
+            style = Notification.DecoratedMediaCustomViewStyle()
+        }
+        thumb?.apply {
+            val color = Palette.from(this)
+                    .maximumColorCount(24)
+                    .generate()
+                    .getOptimizedColor(context)
             setColor(color)
         }
     }.build()
