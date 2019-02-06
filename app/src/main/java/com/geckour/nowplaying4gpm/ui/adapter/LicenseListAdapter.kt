@@ -79,11 +79,9 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
     inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind() {
-            GlobalScope.launch(Dispatchers.IO) {
-                Glide.with(binding.button)
-                        .load(easterEggIconUrl)
-                        .into(binding.button)
-            }
+            Glide.with(binding.button)
+                    .load(easterEggIconUrl)
+                    .into(binding.button)
             binding.buttonCover.setOnClickListener { toggleDonateState() }
         }
 
