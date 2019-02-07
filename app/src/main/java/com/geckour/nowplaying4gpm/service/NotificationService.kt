@@ -195,7 +195,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 refreshMetadataJob?.cancel()
                 refreshMetadataJob = launch {
                     currentSbn = sbn
-                    onMetadataChanged(this@apply, sbn.notification)
+                    onMetadataChanged(this@apply, sbn.packageName, sbn.notification)
                 }
             }
         }
@@ -237,7 +237,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         getSystemService(NotificationManager::class.java).destroyNotification()
     }
 
-    private suspend fun onMetadataChanged(metadata: MediaMetadata, notification: Notification? = null) {
+    private suspend fun onMetadataChanged(
+            metadata: MediaMetadata,
+            playerPackageName: String,
+            notification: Notification? = null
+    ) {
         val coreElement = metadata.getTrackCoreElement()
 
         if ((currentMetadata == null && currentTrackSetJob?.isActive != true)
@@ -247,12 +251,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             currentTrackClearJob?.cancelAndJoin()
             currentTrackSetJob?.cancelAndJoin()
 
-            setCurrentTrack(metadata, notification, coreElement)
+            setCurrentTrack(metadata, playerPackageName, notification, coreElement)
         }
     }
 
     private fun setCurrentTrack(
             metadata: MediaMetadata,
+            playerPackageName: String,
             notification: Notification?,
             coreElement: TrackCoreElement = metadata.getTrackCoreElement()
     ) {
@@ -283,7 +288,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         null
                     }
 
-            if (onQuickUpdate(coreElement, packageName, spotifyUrl).not()) {
+            if (onQuickUpdate(coreElement, playerPackageName, spotifyUrl).not()) {
                 onMetadataCleared()
                 return@launch
             }
@@ -291,7 +296,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             val artworkUri = metadata.storeArtworkUri(coreElement,
                     notification?.getArtworkBitmap()?.await())
             onUpdate(TrackInfo(coreElement, artworkUri?.toString(),
-                    packageName, packageName.getAppName(this@NotificationService),
+                    playerPackageName, playerPackageName.getAppName(this@NotificationService),
                     spotifyUrl))
         }
     }
@@ -338,8 +343,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
-        reflectTrackInfo(trackInfo)
-        if (trackInfo != TrackInfo.empty) postMastodon(trackInfo)
+        if (trackInfo != TrackInfo.empty) {
+            reflectTrackInfo(trackInfo)
+            postMastodon(trackInfo)
+        }
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
