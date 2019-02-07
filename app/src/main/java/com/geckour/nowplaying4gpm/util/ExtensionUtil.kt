@@ -152,8 +152,9 @@ enum class FormatPattern(val value: String) {
     }
 }
 
-fun String.getSharingText(trackInfo: TrackInfo, modifiers: List<FormatPatternModifier>): String =
-        this.splitConsideringEscape().joinToString("") {
+fun String.getSharingText(trackInfo: TrackInfo, modifiers: List<FormatPatternModifier>): String? =
+        if (trackInfo == TrackInfo.empty) null
+        else this.splitConsideringEscape().joinToString("") {
             return@joinToString Regex("^'(.+)'$").let { regex ->
                 if (it.matches(regex)) it.replace(regex, "$1")
                 else when (it) {
@@ -273,7 +274,7 @@ fun Context.checkStoragePermission(onNotGranted: ((context: Context) -> Unit)? =
 }
 
 suspend fun Context.checkStoragePermissionAsync(onNotGranted: (suspend (Context) -> Unit)? = null,
-                                   onGranted: suspend (Context) -> Unit = {}) {
+                                                onGranted: suspend (Context) -> Unit = {}) {
     if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.READ_EXTERNAL_STORAGE)
             == PackageManager.PERMISSION_GRANTED) {
