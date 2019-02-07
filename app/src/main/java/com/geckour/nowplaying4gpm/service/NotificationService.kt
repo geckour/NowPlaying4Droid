@@ -225,6 +225,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private fun onMetadataCleared() {
         currentSbn = null
+        currentMetadata = null
 
         refreshMetadataJob?.cancel()
         currentTrackClearJob?.cancel()
@@ -343,10 +344,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun onUpdate(trackInfo: TrackInfo) {
-        if (trackInfo != TrackInfo.empty) {
-            reflectTrackInfo(trackInfo)
-            postMastodon(trackInfo)
-        }
+        reflectTrackInfo(trackInfo)
+        postMastodon(trackInfo)
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
@@ -383,11 +382,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun updateWear(trackInfo: TrackInfo) {
-        val subject =
-                if (trackInfo.coreElement.isAllNonNull) {
-                    sharedPreferences.getFormatPattern(this@NotificationService)
-                            .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-                } else null
+        val subject = sharedPreferences.getFormatPattern(this@NotificationService)
+                .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
         val artwork = trackInfo.artworkUriString?.getUri()
 
         Wearable.getDataClient(this@NotificationService)
@@ -406,7 +402,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun postMastodon(trackInfo: TrackInfo) {
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
+        if (trackInfo != TrackInfo.empty &&
+                sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
             postMastodonJob?.cancel()
             postMastodonJob = launch {
                 delay(sharedPreferences.getDelayDurationPostMastodon())

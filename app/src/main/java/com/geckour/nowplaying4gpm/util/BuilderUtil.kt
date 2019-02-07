@@ -28,12 +28,11 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
         val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
-        val summary =
-                if (info?.coreElement?.isAllNonNull == true) {
-                    sharedPreferences.getFormatPattern(context)
-                            .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
-                            .foldBreak()
-                } else null
+        val summary = info?.let {
+            sharedPreferences.getFormatPattern(context)
+                    .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
+                    ?.foldBreak()
+        }
 
         setTextViewText(R.id.widget_summary_share,
                 summary ?: context.getString(R.string.dialog_message_alert_no_metadata))
@@ -81,6 +80,8 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
 }
 
 suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notification? {
+    if (trackInfo == TrackInfo.empty) return null
+
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     val notificationBuilder =
@@ -106,7 +107,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
         val notificationText =
                 sharedPreferences.getFormatPattern(context)
                         .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-                        .foldBreak()
+                        ?.foldBreak()
 
         val thumb =
                 if (sharedPreferences.getSwitchState(
