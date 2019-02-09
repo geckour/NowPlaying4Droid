@@ -473,7 +473,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private fun showShortNotify(status: Status) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
-            launch {
+            runBlocking {
                 getSystemService(NotificationManager::class.java).apply {
                     showNotification(status)
                     delay(2500)
@@ -498,7 +498,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
         if (trackInfo != null) {
             deleteWearTrackInfo {
-                launch { updateWear(trackInfo) }
+                runBlocking { updateWear(trackInfo) }
             }
         }
     }

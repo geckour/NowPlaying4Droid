@@ -11,13 +11,9 @@ import com.geckour.nowplaying4gpm.ui.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.SharingActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getShareWidgetViews
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.runBlocking
 
-class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
+class ShareWidgetProvider : AppWidgetProvider() {
 
     enum class Action {
         SHARE,
@@ -37,20 +33,6 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
             val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
             return maxWidth < 232
         }
-    }
-
-    private var job: Job = Job()
-    override val coroutineContext: CoroutineContext
-        get() = job + Dispatchers.IO
-
-    override fun onEnabled(context: Context?) {
-        super.onEnabled(context)
-        job = Job()
-    }
-
-    override fun onDisabled(context: Context?) {
-        super.onDisabled(context)
-        job.cancel()
     }
 
     override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
@@ -73,16 +55,14 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         if (context == null || intent == null) return
 
         when (intent.action) {
-            Action.SHARE.name -> {
-                launch(Dispatchers.Main) { context.startActivity(SharingActivity.getIntent(context)) }
-            }
+            Action.SHARE.name -> context.startActivity(SharingActivity.getIntent(context))
 
             Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))
         }
     }
 
     private fun updateWidget(context: Context, vararg ids: Int) =
-            launch {
+            runBlocking {
                 if (ids.isNotEmpty()) {
                     val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
                             .getCurrentTrackInfo()
