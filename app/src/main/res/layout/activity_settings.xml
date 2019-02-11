@@ -24,17 +24,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <Toolbar
+        <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="0dp"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/colorPrimary"
             android:elevation="5dp"
             android:title="@{toolbarTitle}"
-            android:titleTextColor="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:titleTextColor="@android:color/white"
             tools:title="ツールバータイトル" />
 
         <View
@@ -89,7 +89,7 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_general}"
                     app:desc="@{@string/pref_item_desc_change_artwork_resolve_order}"
-                    app:maskInactiveVisible="@{!mastodonEnabled}"
+                    app:maskInactiveDonateVisible="@{!donated}"
                     app:title="@{@string/pref_item_title_change_artwork_resolve_order}" />
 
                 <include

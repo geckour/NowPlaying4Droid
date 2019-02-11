@@ -28,7 +28,7 @@
             android:paddingBottom="10dp"
             android:text='@{item.prefix}'
             android:textAlignment="textEnd"
-            android:textColor="@color/colorPrimaryDark"
+            android:textColor="@color/colorPrimaryVariant"
             android:textCursorDrawable="@null"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -70,7 +70,7 @@
             android:paddingBottom="10dp"
             android:text='@{item.suffix}'
             android:textAlignment="textStart"
-            android:textColor="@color/colorPrimaryDark"
+            android:textColor="@color/colorPrimaryVariant"
             android:textCursorDrawable="@null"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"

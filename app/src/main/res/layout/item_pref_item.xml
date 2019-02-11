@@ -48,7 +48,7 @@
             android:lines="1"
             android:maxLines="1"
             android:text="@{title}"
-            android:textColor="@color/colorPrimaryDark"
+            android:textColor="@color/colorPrimaryVariant"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@id/extra"

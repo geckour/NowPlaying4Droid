@@ -68,6 +68,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
         binding.toolbarTitle = "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
+        setSupportActionBar(binding.toolbar)
 
         binding.toolbarCover.apply {
             tag = EasterEggTag(0, -1L)

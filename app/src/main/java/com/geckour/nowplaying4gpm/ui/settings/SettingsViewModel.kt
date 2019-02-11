@@ -329,7 +329,7 @@ class SettingsViewModel : ViewModel() {
                                 super.getDropDownView(position, convertView, parent).apply {
                                     if (position == spinner.selectedItemPosition) {
                                         (this as TextView).setTextColor(
-                                                context.getColor(R.color.colorPrimaryDark))
+                                                context.getColor(R.color.colorPrimaryVariant))
                                     }
                                 }
                     }.apply {
@@ -451,7 +451,7 @@ class SettingsViewModel : ViewModel() {
                                 super.getDropDownView(position, convertView, parent).apply {
                                     if (position == spinner.selectedItemPosition) {
                                         (this as TextView).setTextColor(
-                                                context.getColor(R.color.colorPrimaryDark))
+                                                context.getColor(R.color.colorPrimaryVariant))
                                     }
                                 }
                     }.apply {

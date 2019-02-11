@@ -30,6 +30,7 @@ class LicensesActivity : WithCrashlyticsActivity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_licenses)
 
         binding.toolbarTitle = "${getString(R.string.activity_title_licenses)} - ${getString(R.string.app_name)}"
+        setSupportActionBar(binding.toolbar)
 
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@LicensesActivity, RecyclerView.VERTICAL, false)
