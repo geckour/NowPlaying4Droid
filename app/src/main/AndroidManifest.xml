@@ -25,7 +25,7 @@
             android:value="false" />
 
         <activity
-            android:name=".ui.SettingsActivity"
+            android:name=".ui.settings.SettingsActivity"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -46,16 +46,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.SharingActivity"
+            android:name=".ui.sharing.SharingActivity"
             android:launchMode="singleTask"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay" />
         <activity
-            android:name=".ui.LicensesActivity"
+            android:name=".ui.license.LicensesActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.Dark" />
         <activity
-            android:name=".ui.MushroomActivity"
+            android:name=".ui.mushroom.MushroomActivity"
             android:launchMode="singleTop"
             android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>

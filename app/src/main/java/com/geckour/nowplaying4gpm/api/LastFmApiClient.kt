@@ -9,20 +9,20 @@ import timber.log.Timber
 
 class LastFmApiClient {
     private val service = Retrofit.Builder()
-            .client(OkHttpProvider.client)
-            .baseUrl("http://ws.audioscrobbler.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(CoroutineCallAdapterFactory())
-            .build()
-            .create(LastFmApiService::class.java)
+        .client(OkHttpProvider.client)
+        .baseUrl("http://ws.audioscrobbler.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(CoroutineCallAdapterFactory())
+        .build()
+        .create(LastFmApiService::class.java)
 
     suspend fun searchAlbum(album: String?, artist: String?): Album? =
-            if (album == null || artist == null) null
-            else try {
-                service.searchAlbum(album, artist).await().album
-            } catch (t: Throwable) {
-                Timber.e(t)
-                Crashlytics.logException(t)
-                null
-            }
+        if (album == null || artist == null) null
+        else try {
+            service.searchAlbum(album, artist).await().album
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            null
+        }
 }

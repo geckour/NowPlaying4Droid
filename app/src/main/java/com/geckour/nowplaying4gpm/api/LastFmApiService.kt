@@ -10,19 +10,19 @@ interface LastFmApiService {
 
     @GET("2.0")
     fun searchAlbum(
-            @Query("album")
-            album: String,
+        @Query("album")
+        album: String,
 
-            @Query("artist")
-            artist: String,
+        @Query("artist")
+        artist: String,
 
-            @Query("method")
-            method: String = "album.getInfo",
+        @Query("method")
+        method: String = "album.getInfo",
 
-            @Query("api_key")
-            apiKey: String = BuildConfig.LAST_FM_API_KEY,
+        @Query("api_key")
+        apiKey: String = BuildConfig.LAST_FM_API_KEY,
 
-            @Query("format")
-            format: String = "json"
+        @Query("format")
+        format: String = "json"
     ): Deferred<AlbumWrapper>
 }

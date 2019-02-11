@@ -9,13 +9,13 @@ interface SpotifyApiService {
 
     @GET("/v1/search")
     fun searchSpotifyItem(
-            @Query("q")
-            query: String,
+        @Query("q")
+        query: String,
 
-            @Query("type")
-            type: String = "track",
+        @Query("type")
+        type: String = "track",
 
-            @Query("limit")
-            limit: Int = 1
+        @Query("limit")
+        limit: Int = 1
     ): Deferred<SpotifySearchResult>
 }

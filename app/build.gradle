@@ -16,8 +16,8 @@ android {
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 24
-        versionCode 73
-        versionName "2.7.5"
+        versionCode 74
+        versionName "2.7.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -80,11 +80,12 @@ static def getKey(keyName) {
 dependencies {
     def coroutines_version = '1.0.1'
     def stetho_version = '1.5.0'
+    def firebase_version = '16.0.4'
+    def lifecycle_version = '2.1.0-alpha02'
     def permission_dispatcher_version = '3.3.1'
     def retrofit2_version = '2.4.0'
     def okhttp_version = '3.11.0'
     def glide_version = '4.8.0'
-    def firebase_version = '16.0.4'
 
     wearApp project(':wear')
 
@@ -116,9 +117,17 @@ dependencies {
     implementation "com.facebook.stetho:stetho:$stetho_version"
     implementation "com.facebook.stetho:stetho-okhttp3:$stetho_version"
 
+    // KTX
+    implementation 'androidx.core:core-ktx:1.0.1'
+
     // Permission
     implementation "com.github.hotchemi:permissionsdispatcher:$permission_dispatcher_version"
     kapt "com.github.hotchemi:permissionsdispatcher-processor:$permission_dispatcher_version"
+
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+    kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
 
     // Palette API
     implementation 'androidx.palette:palette:1.0.0'

@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.ui
+package com.geckour.nowplaying4gpm.ui.mushroom
 
 import android.app.Activity
 import android.content.Intent
@@ -17,7 +17,7 @@ class MushroomActivity : Activity() {
         setCrashlytics()
 
         val subject = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
-                .getSharingText(this)
+            .getSharingText(this)
         if (subject != null) {
             setResult(RESULT_OK, Intent().apply {
                 putExtra(ARGS_KEY_MUSHROOM, subject)

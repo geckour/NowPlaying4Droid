@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.ui.adapter
+package com.geckour.nowplaying4gpm.ui.widget.adapter
 
 import android.text.Editable
 import android.text.TextWatcher
@@ -9,9 +9,16 @@ import androidx.recyclerview.widget.RecyclerView
 import com.geckour.nowplaying4gpm.databinding.ItemDialogListFormatPatternModifierBinding
 import com.geckour.nowplaying4gpm.util.FormatPatternModifier
 
-class FormatPatternModifierListAdapter(val items: MutableList<FormatPatternModifier>) : RecyclerView.Adapter<FormatPatternModifierListAdapter.ViewHolder>() {
+class FormatPatternModifierListAdapter(val items: MutableList<FormatPatternModifier>) :
+    RecyclerView.Adapter<FormatPatternModifierListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
-            ViewHolder(ItemDialogListFormatPatternModifierBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+        ViewHolder(
+            ItemDialogListFormatPatternModifierBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
+        )
 
     override fun getItemCount(): Int = items.size
 
@@ -19,8 +26,8 @@ class FormatPatternModifierListAdapter(val items: MutableList<FormatPatternModif
         holder.bind()
     }
 
-    inner class ViewHolder(private val binding: ItemDialogListFormatPatternModifierBinding)
-        : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemDialogListFormatPatternModifierBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
         init {
             binding.prefix.addTextChangedListener(object : TextWatcher {

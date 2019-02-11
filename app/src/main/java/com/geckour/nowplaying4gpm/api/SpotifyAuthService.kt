@@ -10,7 +10,7 @@ interface SpotifyAuthService {
     @FormUrlEncoded
     @POST("/api/token")
     fun getToken(
-            @Field("grant_type")
-            grantType: String = "client_credentials"
+        @Field("grant_type")
+        grantType: String = "client_credentials"
     ): Deferred<SpotifyToken>
 }
