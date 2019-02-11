@@ -25,6 +25,7 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.*
+import com.geckour.nowplaying4gpm.worker.RestartNotificationServiceWorker
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -161,6 +162,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         getSystemService(NotificationManager::class.java).destroyNotification()
         job.cancel()
+
+        RestartNotificationServiceWorker.start()
     }
 
     override fun onListenerConnected() {
