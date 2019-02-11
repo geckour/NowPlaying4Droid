@@ -65,6 +65,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
+        private const val spotifyPackageName = "com.spotify.music"
+
         fun sendRequestInvokeUpdate(context: Context) {
             context.checkStoragePermission {
                 it.sendBroadcast(Intent().apply {
@@ -193,7 +195,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
 
-        if (sbn != null && sbn.packageName != packageName) {
+        if (sbn != null && sbn.packageName != packageName
+            && sbn.packageName != spotifyPackageName) {
             fetchMetadata(sbn.packageName)?.apply {
                 refreshMetadataJob?.cancel()
                 refreshMetadataJob = launch {
