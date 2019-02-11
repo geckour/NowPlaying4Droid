@@ -31,9 +31,9 @@ import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.SingleLiveEvent
+import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdapter
 import com.geckour.nowplaying4gpm.ui.widget.adapter.FormatPatternModifierListAdapter
-import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.*
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -51,7 +51,7 @@ import timber.log.Timber
 class SettingsViewModel : ViewModel() {
 
     private val twitterApiClient =
-            TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
+        TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
 
     private val mastodonScope = Scope(Scope.Name.ALL)
     internal var mastodonRegistrationInfo: AppRegistration? = null
@@ -63,44 +63,54 @@ class SettingsViewModel : ViewModel() {
 
     internal fun showErrorDialog(context: Context, titleResId: Int, messageResId: Int, onDismiss: () -> Unit = {}) {
         AlertDialog.Builder(context)
-                .setTitle(titleResId)
-                .setMessage(messageResId)
-                .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
-                .setOnDismissListener { onDismiss() }
-                .show()
+            .setTitle(titleResId)
+            .setMessage(messageResId)
+            .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+            .setOnDismissListener { onDismiss() }
+            .show()
     }
 
     internal fun onAuthMastodonError(context: Context) {
-        showErrorDialog(context,
-                R.string.dialog_title_alert_failure_auth_mastodon,
-                R.string.dialog_message_alert_failure_auth_mastodon)
+        showErrorDialog(
+            context,
+            R.string.dialog_title_alert_failure_auth_mastodon,
+            R.string.dialog_message_alert_failure_auth_mastodon
+        )
     }
 
     internal fun onAuthTwitterError(context: Context) {
-        showErrorDialog(context,
-                R.string.dialog_title_alert_failure_auth_twitter,
-                R.string.dialog_message_alert_failure_auth_twitter)
+        showErrorDialog(
+            context,
+            R.string.dialog_title_alert_failure_auth_twitter,
+            R.string.dialog_message_alert_failure_auth_twitter
+        )
     }
 
     internal fun destroyNotification(context: Context) =
-            context.sendBroadcast(Intent().apply {
-                action = NotificationService.ACTION_DESTROY_NOTIFICATION
-            })
+        context.sendBroadcast(Intent().apply {
+            action = NotificationService.ACTION_DESTROY_NOTIFICATION
+        })
 
     internal fun updateWidget(context: Context, sharedPreferences: SharedPreferences) {
         val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
 
         AppWidgetManager.getInstance(context).apply {
-            val ids = getAppWidgetIds(ComponentName(context,
-                    ShareWidgetProvider::class.java))
+            val ids = getAppWidgetIds(
+                ComponentName(
+                    context,
+                    ShareWidgetProvider::class.java
+                )
+            )
 
             launch {
                 ids.forEach { id ->
                     val widgetOptions = this@apply.getAppWidgetOptions(id)
                     updateAppWidget(
-                            id,
-                            getShareWidgetViews(context,
-                                    ShareWidgetProvider.isMin(widgetOptions), trackInfo)
+                        id,
+                        getShareWidgetViews(
+                            context,
+                            ShareWidgetProvider.isMin(widgetOptions), trackInfo
+                        )
                     )
                 }
             }
@@ -109,41 +119,45 @@ class SettingsViewModel : ViewModel() {
 
     internal fun requestNotificationListenerPermission(activity: Activity, onGranted: () -> Unit = {}) {
         if (NotificationManagerCompat.getEnabledListenerPackages(activity)
-                        .contains(activity.packageName).not()) {
+                .contains(activity.packageName).not()
+        ) {
             if (showingNotificationServicePermissionDialog.not()) {
                 showingNotificationServicePermissionDialog = true
                 AlertDialog.Builder(activity)
-                        .setTitle(R.string.dialog_title_alert_grant_notification_listener)
-                        .setMessage(R.string.dialog_message_alert_grant_notification_listener)
-                        .setCancelable(false)
-                        .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                            activity.startActivityForResult(
-                                    Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
-                                    SettingsActivity.RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal)
-                            dialog.dismiss()
-                            showingNotificationServicePermissionDialog = false
-                        }.show()
+                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
+                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                        activity.startActivityForResult(
+                            Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
+                            SettingsActivity.RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal
+                        )
+                        dialog.dismiss()
+                        showingNotificationServicePermissionDialog = false
+                    }.show()
             }
         } else onGranted()
     }
 
     internal fun onClickChangeArtworkResolveOrder(context: Context, sharedPreferences: SharedPreferences) {
-        val adapter = ArtworkResolveMethodListAdapter(sharedPreferences
+        val adapter = ArtworkResolveMethodListAdapter(
+            sharedPreferences
                 .getArtworkResolveOrder()
-                .toMutableList())
+                .toMutableList()
+        )
         val artworkResolveMethodDialogBinding = DialogArtworkMethodBinding.inflate(
-                LayoutInflater.from(context),
-                null,
-                false
+            LayoutInflater.from(context),
+            null,
+            false
         ).apply {
             recyclerView.adapter = adapter
             adapter.itemTouchHolder.attachToRecyclerView(recyclerView)
         }
 
         AlertDialog.Builder(context).generate(
-                artworkResolveMethodDialogBinding.root,
-                context.getString(R.string.dialog_title_artwork_resolve_order),
-                context.getString(R.string.dialog_message_artwork_resolve_order)
+            artworkResolveMethodDialogBinding.root,
+            context.getString(R.string.dialog_title_artwork_resolve_order),
+            context.getString(R.string.dialog_message_artwork_resolve_order)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -157,19 +171,21 @@ class SettingsViewModel : ViewModel() {
     }
 
     internal fun onClickFormatPatternModifiers(context: Context, sharedPreferences: SharedPreferences) {
-        val adapter = FormatPatternModifierListAdapter(sharedPreferences
+        val adapter = FormatPatternModifierListAdapter(
+            sharedPreferences
                 .getFormatPatternModifiers()
-                .toMutableList())
+                .toMutableList()
+        )
         val formatPatternModifiersDialogBinding = DialogFormatPatternModifiersBinding.inflate(
-                LayoutInflater.from(context),
-                null,
-                false
+            LayoutInflater.from(context),
+            null,
+            false
         ).apply { recyclerView.adapter = adapter }
 
         val dialog = AlertDialog.Builder(context).generate(
-                formatPatternModifiersDialogBinding.root,
-                context.getString(R.string.dialog_title_format_pattern_modifier),
-                context.getString(R.string.dialog_message_format_pattern_modifier)
+            formatPatternModifiersDialogBinding.root,
+            context.getString(R.string.dialog_title_format_pattern_modifier),
+            context.getString(R.string.dialog_message_format_pattern_modifier)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -195,18 +211,18 @@ class SettingsViewModel : ViewModel() {
             }
 
             CustomTabsIntent.Builder()
-                    .setShowTitle(true)
-                    .setToolbarColor(context.getColor(R.color.colorPrimary))
-                    .build()
-                    .launchUrl(context, uri)
+                .setShowTitle(true)
+                .setToolbarColor(context.getColor(R.color.colorPrimary))
+                .build()
+                .launchUrl(context, uri)
         }
     }
 
     internal fun onClickAuthMastodon(context: Context, sharedPreferences: SharedPreferences) {
         val instanceNameInputDialogBinding = DialogAutoCompleteEditTextBinding.inflate(
-                LayoutInflater.from(context),
-                null,
-                false
+            LayoutInflater.from(context),
+            null,
+            false
         ).apply {
             hint = context.getString(R.string.dialog_hint_mastodon_instance)
             editText.setText(sharedPreferences.getMastodonUserInfo()?.instanceName)
@@ -214,15 +230,17 @@ class SettingsViewModel : ViewModel() {
 
             launch {
                 val instances = MastodonInstancesApiClient().getList()
-                editText.setAdapter(ArrayAdapter<String>(context,
+                editText.setAdapter(
+                    ArrayAdapter<String>(context,
                         android.R.layout.simple_dropdown_item_1line,
-                        instances.map { it.name }))
+                        instances.map { it.name })
+                )
             }
         }
 
         AlertDialog.Builder(context).generate(
-                instanceNameInputDialogBinding.root,
-                context.getString(R.string.dialog_title_mastodon_instance)
+            instanceNameInputDialogBinding.root,
+            context.getString(R.string.dialog_title_mastodon_instance)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -230,22 +248,25 @@ class SettingsViewModel : ViewModel() {
                     if (instance.isNotBlank()) {
                         launch(Dispatchers.IO) {
                             val mastodonApiClient =
-                                    MastodonClient.Builder(instance, OkHttpClient.Builder().apply {
-                                        if (BuildConfig.DEBUG) {
-                                            addNetworkInterceptor(
-                                                    HttpLoggingInterceptor()
-                                                            .setLevel(HttpLoggingInterceptor.Level.BODY))
-                                            addNetworkInterceptor(StethoInterceptor())
-                                        }
-                                    }, Gson())
-                                            .build()
+                                MastodonClient.Builder(instance, OkHttpClient.Builder().apply {
+                                    if (BuildConfig.DEBUG) {
+                                        addNetworkInterceptor(
+                                            HttpLoggingInterceptor()
+                                                .setLevel(HttpLoggingInterceptor.Level.BODY)
+                                        )
+                                        addNetworkInterceptor(StethoInterceptor())
+                                    }
+                                }, Gson())
+                                    .build()
                             val registrationInfo = try {
-                                Apps(mastodonApiClient).createApp(App.MASTODON_CLIENT_NAME,
-                                        App.MASTODON_CALLBACK,
-                                        mastodonScope,
-                                        App.MASTODON_WEB_URL)
-                                        .toJob()
-                                        .await()
+                                Apps(mastodonApiClient).createApp(
+                                    App.MASTODON_CLIENT_NAME,
+                                    App.MASTODON_CALLBACK,
+                                    mastodonScope,
+                                    App.MASTODON_WEB_URL
+                                )
+                                    .toJob()
+                                    .await()
                             } catch (e: Mastodon4jRequestException) {
                                 Timber.e(e)
                                 Crashlytics.logException(e)
@@ -257,14 +278,16 @@ class SettingsViewModel : ViewModel() {
                             mastodonRegistrationInfo = registrationInfo
 
                             val authUrl = Apps(mastodonApiClient)
-                                    .getOAuthUrl(registrationInfo.clientId,
-                                            mastodonScope, App.MASTODON_CALLBACK)
+                                .getOAuthUrl(
+                                    registrationInfo.clientId,
+                                    mastodonScope, App.MASTODON_CALLBACK
+                                )
 
                             CustomTabsIntent.Builder()
-                                    .setShowTitle(true)
-                                    .setToolbarColor(context.getColor(R.color.colorPrimary))
-                                    .build()
-                                    .launchUrl(context, Uri.parse(authUrl))
+                                .setShowTitle(true)
+                                .setToolbarColor(context.getColor(R.color.colorPrimary))
+                                .build()
+                                .launchUrl(context, Uri.parse(authUrl))
                         }
                     }
                 }
@@ -273,11 +296,15 @@ class SettingsViewModel : ViewModel() {
         }.show()
     }
 
-    internal fun onClickDelayMastodon(context: Context, sharedPreferences: SharedPreferences, itemDelayMastodonBinding: ItemPrefItemBinding) {
+    internal fun onClickDelayMastodon(
+        context: Context,
+        sharedPreferences: SharedPreferences,
+        itemDelayMastodonBinding: ItemPrefItemBinding
+    ) {
         val delayTimeInputDialogBinding = DialogEditTextBinding.inflate(
-                LayoutInflater.from(context),
-                null,
-                false
+            LayoutInflater.from(context),
+            null,
+            false
         ).apply {
             hint = context.getString(R.string.dialog_hint_mastodon_delay)
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
@@ -286,8 +313,8 @@ class SettingsViewModel : ViewModel() {
         }
 
         AlertDialog.Builder(context).generate(
-                delayTimeInputDialogBinding.root,
-                context.getString(R.string.dialog_title_mastodon_delay)
+            delayTimeInputDialogBinding.root,
+            context.getString(R.string.dialog_title_mastodon_delay)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -300,11 +327,13 @@ class SettingsViewModel : ViewModel() {
                     if (duration != null && duration in (500..60000)) {
                         sharedPreferences.storeDelayDurationPostMastodon(duration)
                         itemDelayMastodonBinding.summary =
-                                context.getString(R.string.pref_item_summary_delay_mastodon, duration)
+                            context.getString(R.string.pref_item_summary_delay_mastodon, duration)
                     } else {
-                        showErrorDialog(context,
-                                R.string.dialog_title_alert_invalid_duration_value,
-                                R.string.dialog_message_alert_invalid_duration_value)
+                        showErrorDialog(
+                            context,
+                            R.string.dialog_title_alert_invalid_duration_value,
+                            R.string.dialog_message_alert_invalid_duration_value
+                        )
                     }
                 }
             }
@@ -312,29 +341,36 @@ class SettingsViewModel : ViewModel() {
         }.show()
     }
 
-    internal fun onClickVisibilityMastodon(context: Context, sharedPreferences: SharedPreferences, visibilityMastodonBinding: ItemPrefItemBinding) {
+    internal fun onClickVisibilityMastodon(
+        context: Context,
+        sharedPreferences: SharedPreferences,
+        visibilityMastodonBinding: ItemPrefItemBinding
+    ) {
         val chooseVisibilityBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
-                LayoutInflater.from(context),
-                R.layout.dialog_spinner,
-                null,
-                false
+            LayoutInflater.from(context),
+            R.layout.dialog_spinner,
+            null,
+            false
         ).apply {
             val arrayAdapter =
-                    object : ArrayAdapter<String>(
-                            context,
-                            android.R.layout.simple_spinner_item,
-                            Visibility.values().map { context.getString(it.getSummaryResId()) }) {
-                        override fun getDropDownView(position: Int,
-                                                     convertView: View?, parent: ViewGroup): View =
-                                super.getDropDownView(position, convertView, parent).apply {
-                                    if (position == spinner.selectedItemPosition) {
-                                        (this as TextView).setTextColor(
-                                                context.getColor(R.color.colorPrimaryVariant))
-                                    }
-                                }
-                    }.apply {
-                        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                    }
+                object : ArrayAdapter<String>(
+                    context,
+                    android.R.layout.simple_spinner_item,
+                    Visibility.values().map { context.getString(it.getSummaryResId()) }) {
+                    override fun getDropDownView(
+                        position: Int,
+                        convertView: View?, parent: ViewGroup
+                    ): View =
+                        super.getDropDownView(position, convertView, parent).apply {
+                            if (position == spinner.selectedItemPosition) {
+                                (this as TextView).setTextColor(
+                                    context.getColor(R.color.colorPrimaryVariant)
+                                )
+                            }
+                        }
+                }.apply {
+                    setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
             spinner.apply {
                 adapter = arrayAdapter
                 setSelection(sharedPreferences.getVisibilityMastodon().ordinal)
@@ -342,17 +378,18 @@ class SettingsViewModel : ViewModel() {
         }
 
         AlertDialog.Builder(context).generate(
-                chooseVisibilityBinding.root,
-                context.getString(R.string.dialog_title_mastodon_visibility),
-                context.getString(R.string.dialog_message_mastodon_visibility)) { dialog, which ->
+            chooseVisibilityBinding.root,
+            context.getString(R.string.dialog_title_mastodon_visibility),
+            context.getString(R.string.dialog_message_mastodon_visibility)
+        ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val visibilityIndex = chooseVisibilityBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
-                            .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
-                            .apply()
+                        .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
+                        .apply()
                     visibilityMastodonBinding.summary =
-                            context.getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
+                        context.getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
                     onRequestUpdate()
                 }
             }
@@ -362,9 +399,11 @@ class SettingsViewModel : ViewModel() {
 
     internal fun onClickFab(context: Context, sharedPreferences: SharedPreferences) {
         if (sharedPreferences.readyForShare(context).not()) {
-            showErrorDialog(context,
-                    R.string.dialog_title_alert_no_metadata,
-                    R.string.dialog_message_alert_no_metadata)
+            showErrorDialog(
+                context,
+                R.string.dialog_title_alert_no_metadata,
+                R.string.dialog_message_alert_no_metadata
+            )
             return
         }
 
@@ -376,39 +415,47 @@ class SettingsViewModel : ViewModel() {
             billingService?.let {
                 BillingApiClient(viewModelScope, it).apply {
                     val sku =
-                            getSkuDetails(activity, skuName).firstOrNull()
-                                    ?: run {
-                                        showErrorDialog(activity,
-                                                R.string.dialog_title_alert_failure_purchase,
-                                                R.string.dialog_message_alert_on_start_purchase)
-                                        return@launch
-                                    }
+                        getSkuDetails(activity, skuName).firstOrNull()
+                            ?: run {
+                                showErrorDialog(
+                                    activity,
+                                    R.string.dialog_title_alert_failure_purchase,
+                                    R.string.dialog_message_alert_on_start_purchase
+                                )
+                                return@launch
+                            }
 
                     if (getPurchasedItems(activity).contains(sku.productId)) {
-                        showErrorDialog(activity,
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_already_purchase)
+                        showErrorDialog(
+                            activity,
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_already_purchase
+                        )
                         reflectDonation.postValue(true)
                         return@launch
                     }
                 }
 
                 activity.startIntentSenderForResult(
-                        BillingApiClient(viewModelScope, it)
-                                .getBuyIntent(activity, skuName)
-                                ?.intentSender,
-                        SettingsActivity.RequestCode.BILLING.ordinal,
-                        Intent(), 0, 0, 0
+                    BillingApiClient(viewModelScope, it)
+                        .getBuyIntent(activity, skuName)
+                        ?.intentSender,
+                    SettingsActivity.RequestCode.BILLING.ordinal,
+                    Intent(), 0, 0, 0
                 )
             }
         }
     }
 
-    internal fun onClickItemPatternFormat(context: Context, sharedPreferences: SharedPreferences, patternFormatBinding: ItemPrefItemBinding) {
+    internal fun onClickItemPatternFormat(
+        context: Context,
+        sharedPreferences: SharedPreferences,
+        patternFormatBinding: ItemPrefItemBinding
+    ) {
         val dialogBinding = DialogEditTextBinding.inflate(
-                LayoutInflater.from(context),
-                null,
-                false
+            LayoutInflater.from(context),
+            null,
+            false
         ).apply {
             hint = context.getString(R.string.dialog_hint_pattern_format)
             editText.setText(sharedPreferences.getFormatPattern(context))
@@ -416,16 +463,16 @@ class SettingsViewModel : ViewModel() {
         }
 
         AlertDialog.Builder(context).generate(
-                dialogBinding.root,
-                context.getString(R.string.dialog_title_pattern_format),
-                context.getString(R.string.dialog_message_pattern_format)
+            dialogBinding.root,
+            context.getString(R.string.dialog_title_pattern_format),
+            context.getString(R.string.dialog_message_pattern_format)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val pattern = dialogBinding.editText.text.toString()
                     sharedPreferences.edit()
-                            .putString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, pattern)
-                            .apply()
+                        .putString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, pattern)
+                        .apply()
                     patternFormatBinding.summary = pattern
                 }
             }
@@ -434,29 +481,36 @@ class SettingsViewModel : ViewModel() {
         }.show()
     }
 
-    internal fun onClickItemChooseColor(context: Context, sharedPreferences: SharedPreferences, chooseColorBinding: ItemPrefItemBinding) {
+    internal fun onClickItemChooseColor(
+        context: Context,
+        sharedPreferences: SharedPreferences,
+        chooseColorBinding: ItemPrefItemBinding
+    ) {
         val dialogBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
-                LayoutInflater.from(context),
-                R.layout.dialog_spinner,
-                null,
-                false
+            LayoutInflater.from(context),
+            R.layout.dialog_spinner,
+            null,
+            false
         ).apply {
             val arrayAdapter =
-                    object : ArrayAdapter<String>(
-                            context,
-                            android.R.layout.simple_spinner_item,
-                            PaletteColor.values().map { context.getString(it.getSummaryResId()) }) {
-                        override fun getDropDownView(position: Int,
-                                                     convertView: View?, parent: ViewGroup): View =
-                                super.getDropDownView(position, convertView, parent).apply {
-                                    if (position == spinner.selectedItemPosition) {
-                                        (this as TextView).setTextColor(
-                                                context.getColor(R.color.colorPrimaryVariant))
-                                    }
-                                }
-                    }.apply {
-                        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                    }
+                object : ArrayAdapter<String>(
+                    context,
+                    android.R.layout.simple_spinner_item,
+                    PaletteColor.values().map { context.getString(it.getSummaryResId()) }) {
+                    override fun getDropDownView(
+                        position: Int,
+                        convertView: View?, parent: ViewGroup
+                    ): View =
+                        super.getDropDownView(position, convertView, parent).apply {
+                            if (position == spinner.selectedItemPosition) {
+                                (this as TextView).setTextColor(
+                                    context.getColor(R.color.colorPrimaryVariant)
+                                )
+                            }
+                        }
+                }.apply {
+                    setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
             spinner.apply {
                 adapter = arrayAdapter
                 setSelection(sharedPreferences.getChosePaletteColor().ordinal)
@@ -464,17 +518,18 @@ class SettingsViewModel : ViewModel() {
         }
 
         AlertDialog.Builder(context).generate(
-                dialogBinding.root,
-                context.getString(R.string.dialog_title_choose_color),
-                context.getString(R.string.dialog_message_choose_color)) { dialog, which ->
+            dialogBinding.root,
+            context.getString(R.string.dialog_title_choose_color),
+            context.getString(R.string.dialog_message_choose_color)
+        ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
                     val paletteIndex = dialogBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
-                            .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
-                            .apply()
+                        .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
+                        .apply()
                     chooseColorBinding.summary =
-                            context.getString(PaletteColor.getFromIndex(paletteIndex).getSummaryResId())
+                        context.getString(PaletteColor.getFromIndex(paletteIndex).getSummaryResId())
                     onRequestUpdate()
                 }
             }
@@ -483,11 +538,11 @@ class SettingsViewModel : ViewModel() {
     }
 
     internal fun onAuthTwitterCallback(
-            intent: Intent,
-            context: Context,
-            sharedPreferences: SharedPreferences,
-            rootView: View,
-            authTwitterBinding: ItemPrefItemBinding
+        intent: Intent,
+        context: Context,
+        sharedPreferences: SharedPreferences,
+        rootView: View,
+        authTwitterBinding: ItemPrefItemBinding
     ) {
         sharedPreferences.setAlertTwitterAuthFlag(false)
 
@@ -509,9 +564,10 @@ class SettingsViewModel : ViewModel() {
                     sharedPreferences.storeTwitterAccessToken(accessToken)
 
                     authTwitterBinding.summary = accessToken.screenName
-                    Snackbar.make(rootView,
-                            R.string.snackbar_text_success_auth_twitter,
-                            Snackbar.LENGTH_LONG
+                    Snackbar.make(
+                        rootView,
+                        R.string.snackbar_text_success_auth_twitter,
+                        Snackbar.LENGTH_LONG
                     ).show()
                 }
             }
@@ -519,11 +575,12 @@ class SettingsViewModel : ViewModel() {
     }
 
     internal fun onAuthMastodonCallback(
-            intent: Intent,
-            context: Context,
-            sharedPreferences: SharedPreferences,
-            rootView: View,
-            authMastodonBinding: ItemPrefItemBinding) {
+        intent: Intent,
+        context: Context,
+        sharedPreferences: SharedPreferences,
+        rootView: View,
+        authMastodonBinding: ItemPrefItemBinding
+    ) {
         mastodonRegistrationInfo?.apply {
             val token = intent.data?.let {
                 val queryName = "code"
@@ -536,24 +593,27 @@ class SettingsViewModel : ViewModel() {
             if (token == null) onAuthMastodonError(context)
             else {
                 val mastodonApiClientBuilder = MastodonClient.Builder(this@apply.instanceName,
-                        OkHttpClient.Builder().apply {
-                            if (BuildConfig.DEBUG) {
-                                addNetworkInterceptor(
-                                        HttpLoggingInterceptor()
-                                                .setLevel(HttpLoggingInterceptor.Level.BODY))
-                                addNetworkInterceptor(StethoInterceptor())
-                            }
-                        }, Gson())
+                    OkHttpClient.Builder().apply {
+                        if (BuildConfig.DEBUG) {
+                            addNetworkInterceptor(
+                                HttpLoggingInterceptor()
+                                    .setLevel(HttpLoggingInterceptor.Level.BODY)
+                            )
+                            addNetworkInterceptor(StethoInterceptor())
+                        }
+                    }, Gson()
+                )
                 launch(Dispatchers.IO) {
                     val accessToken = try {
                         Apps(mastodonApiClientBuilder.build())
-                                .getAccessToken(
-                                        this@apply.clientId,
-                                        this@apply.clientSecret,
-                                        App.MASTODON_CALLBACK,
-                                        token)
-                                .toJob()
-                                .await()
+                            .getAccessToken(
+                                this@apply.clientId,
+                                this@apply.clientSecret,
+                                App.MASTODON_CALLBACK,
+                                token
+                            )
+                            .toJob()
+                            .await()
                     } catch (e: Mastodon4jRequestException) {
                         Timber.e(e)
                         Crashlytics.logException(e)
@@ -562,26 +622,31 @@ class SettingsViewModel : ViewModel() {
 
                     if (accessToken == null) onAuthMastodonError(context)
                     else {
-                        val userName = Accounts(mastodonApiClientBuilder
+                        val userName = Accounts(
+                            mastodonApiClientBuilder
                                 .accessToken(accessToken.accessToken)
-                                .build())
-                                .getVerifyCredentials()
-                                .toJob()
-                                .await()
-                                ?.userName ?: run {
+                                .build()
+                        )
+                            .getVerifyCredentials()
+                            .toJob()
+                            .await()
+                            ?.userName ?: run {
                             onAuthMastodonError(context)
                             return@launch
                         }
                         val userInfo =
-                                MastodonUserInfo(accessToken, this@apply.instanceName, userName)
+                            MastodonUserInfo(accessToken, this@apply.instanceName, userName)
                         sharedPreferences.storeMastodonUserInfo(userInfo)
 
                         authMastodonBinding.summary =
-                                context.getString(R.string.pref_item_summary_auth_mastodon,
-                                        userInfo.userName, userInfo.instanceName)
-                        Snackbar.make(rootView,
-                                R.string.snackbar_text_success_auth_mastodon,
-                                Snackbar.LENGTH_LONG
+                            context.getString(
+                                R.string.pref_item_summary_auth_mastodon,
+                                userInfo.userName, userInfo.instanceName
+                            )
+                        Snackbar.make(
+                            rootView,
+                            R.string.snackbar_text_success_auth_mastodon,
+                            Snackbar.LENGTH_LONG
                         ).show()
                     }
                 }

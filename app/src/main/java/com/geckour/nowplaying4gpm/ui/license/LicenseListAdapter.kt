@@ -11,8 +11,7 @@ import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 
-class LicenseListAdapter(private val viewModel: LicenseViewModel)
-    : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class LicenseListAdapter(private val viewModel: LicenseViewModel) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val easterEggIconUrl = "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
@@ -24,37 +23,41 @@ class LicenseListAdapter(private val viewModel: LicenseViewModel)
     }
 
     data class LicenseItem(
-            @StringRes val nameResId: Int,
-            @StringRes val textResId: Int,
-            var stateOpen: Boolean
+        @StringRes val nameResId: Int,
+        @StringRes val textResId: Int,
+        var stateOpen: Boolean
     )
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
-            when (viewType) {
-                ViewType.NORMAL.ordinal -> {
-                    NormalItemViewHolder(
-                            ItemLicenseBinding.inflate(
-                                    LayoutInflater.from(parent.context),
-                                    parent,
-                                    false))
-                }
-                ViewType.FOOTER.ordinal -> {
-                    FooterItemViewHolder(
-                            ItemLicenseFooterBinding.inflate(
-                                    LayoutInflater.from(parent.context),
-                                    parent,
-                                    false))
-                }
-                else -> throw IllegalArgumentException()
+        when (viewType) {
+            ViewType.NORMAL.ordinal -> {
+                NormalItemViewHolder(
+                    ItemLicenseBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    )
+                )
             }
+            ViewType.FOOTER.ordinal -> {
+                FooterItemViewHolder(
+                    ItemLicenseFooterBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    )
+                )
+            }
+            else -> throw IllegalArgumentException()
+        }
 
     override fun getItemCount(): Int = viewModel.listItems.size + 1
 
     override fun getItemViewType(position: Int): Int =
-            when (position) {
-                viewModel.listItems.size -> ViewType.FOOTER.ordinal
-                else -> ViewType.NORMAL.ordinal
-            }
+        when (position) {
+            viewModel.listItems.size -> ViewType.FOOTER.ordinal
+            else -> ViewType.NORMAL.ordinal
+        }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
@@ -79,8 +82,8 @@ class LicenseListAdapter(private val viewModel: LicenseViewModel)
 
         fun bind() {
             Glide.with(binding.button)
-                    .load(easterEggIconUrl)
-                    .into(binding.button)
+                .load(easterEggIconUrl)
+                .into(binding.button)
             binding.buttonCover.setOnClickListener { toggleDonateState() }
         }
 
@@ -88,8 +91,8 @@ class LicenseListAdapter(private val viewModel: LicenseViewModel)
             val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(binding.root.context)
 
             sharedPreferences.edit().putBoolean(
-                    PrefKey.PREF_KEY_BILLING_DONATE.name,
-                    sharedPreferences.getDonateBillingState().not()
+                PrefKey.PREF_KEY_BILLING_DONATE.name,
+                sharedPreferences.getDonateBillingState().not()
             ).apply()
         }
     }

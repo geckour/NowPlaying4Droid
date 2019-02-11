@@ -15,7 +15,7 @@ class LicensesActivity : WithCrashlyticsActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
-                Intent(context, LicensesActivity::class.java)
+            Intent(context, LicensesActivity::class.java)
     }
 
     private lateinit var binding: ActivityLicensesBinding

@@ -42,12 +42,12 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
-                Intent(context, SettingsActivity::class.java)
+            Intent(context, SettingsActivity::class.java)
     }
 
     private data class EasterEggTag(
-            val count: Int,
-            val time: Long
+        val count: Int,
+        val time: Long
     )
 
     private val viewModel: SettingsViewModel by lazy {
@@ -91,14 +91,15 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemPatternFormat.summary = sharedPreferences.getFormatPattern(this)
         binding.itemChooseColor.summary =
-                getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
+            getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
 
         binding.fab.setOnClickListener { viewModel.onClickFab(this, sharedPreferences) }
 
         binding.scrollView.apply {
             setOnScrollChangeListener { _, _, y, _, oldY ->
                 if (y > oldY
-                        && getChildAt(0).measuredHeight <= measuredHeight + y)
+                    && getChildAt(0).measuredHeight <= measuredHeight + y
+                )
                     binding.fab.hide()
                 if (y < oldY && binding.fab.isShown.not())
                     binding.fab.show()
@@ -106,34 +107,35 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         binding.scrollView
-                .getChildAt(0)
-                .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                    var visibleCount = 0
-                    (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
-                        (0 until this.childCount).forEach {
-                            val itemBinding: ItemPrefItemBinding? = try {
-                                DataBindingUtil.findBinding(this.getChildAt(it))
-                            } catch (e: ClassCastException) {
-                                return@forEach
-                            }
+            .getChildAt(0)
+            .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                var visibleCount = 0
+                (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
+                    (0 until this.childCount).forEach {
+                        val itemBinding: ItemPrefItemBinding? = try {
+                            DataBindingUtil.findBinding(this.getChildAt(it))
+                        } catch (e: ClassCastException) {
+                            return@forEach
+                        }
 
-                            if (itemBinding?.root?.visibility == View.VISIBLE
-                                    && itemBinding.categoryId == binding.categoryOthers.root.id) {
-                                visibleCount++
-                            }
+                        if (itemBinding?.root?.visibility == View.VISIBLE
+                            && itemBinding.categoryId == binding.categoryOthers.root.id
+                        ) {
+                            visibleCount++
                         }
                     }
-
-                    binding.categoryOthers.root.visibility =
-                            if (visibleCount == 0) View.GONE
-                            else View.VISIBLE
                 }
+
+                binding.categoryOthers.root.visibility =
+                    if (visibleCount == 0) View.GONE
+                    else View.VISIBLE
+            }
 
         binding.itemSwitchUseApi.also { b ->
             b.maskInactiveDonate.visibility =
-                    if (sharedPreferences.getDonateBillingState())
-                        View.GONE
-                    else View.VISIBLE
+                if (sharedPreferences.getDonateBillingState())
+                    View.GONE
+                else View.VISIBLE
 
             b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
 
@@ -148,9 +150,9 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemChangeArtworkResolveOrder.also { b ->
             b.maskInactiveDonate.visibility =
-                    if (sharedPreferences.getDonateBillingState())
-                        View.GONE
-                    else View.VISIBLE
+                if (sharedPreferences.getDonateBillingState())
+                    View.GONE
+                else View.VISIBLE
 
             b.root.setOnClickListener {
                 viewModel.onClickChangeArtworkResolveOrder(this, sharedPreferences)
@@ -208,42 +210,50 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON) { checkState, summary ->
                     b.summary = summary
                     this@SettingsActivity.binding.itemAuthMastodon.maskInactive.visibility =
-                            if (checkState) View.GONE else View.VISIBLE
+                        if (checkState) View.GONE else View.VISIBLE
                     this@SettingsActivity.binding.itemDelayMastodon.maskInactive.visibility =
-                            if (checkState) View.GONE else View.VISIBLE
+                        if (checkState) View.GONE else View.VISIBLE
                     this@SettingsActivity.binding.itemVisibilityMastodon.maskInactive.visibility =
-                            if (checkState) View.GONE else View.VISIBLE
+                        if (checkState) View.GONE else View.VISIBLE
                     this@SettingsActivity.binding.itemSwitchSuccessNotificationMastodon.maskInactive.visibility =
-                            if (checkState) View.GONE else View.VISIBLE
+                        if (checkState) View.GONE else View.VISIBLE
                 })
             }
         }
 
         binding.itemAuthMastodon.also { b ->
             b.maskInactive.visibility =
-                    if (sharedPreferences.getSwitchState(
-                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
-                        View.GONE
-                    else View.VISIBLE
+                if (sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
+                    )
+                )
+                    View.GONE
+                else View.VISIBLE
 
             val userInfo = sharedPreferences.getMastodonUserInfo()
             if (userInfo != null) {
                 b.summary =
-                        getString(R.string.pref_item_summary_auth_mastodon,
-                                userInfo.userName, userInfo.instanceName)
+                    getString(
+                        R.string.pref_item_summary_auth_mastodon,
+                        userInfo.userName, userInfo.instanceName
+                    )
             }
             b.root.setOnClickListener { viewModel.onClickAuthMastodon(this, sharedPreferences) }
         }
 
         binding.itemDelayMastodon.also { b ->
             b.maskInactive.visibility =
-                    if (sharedPreferences.getSwitchState(
-                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
-                        View.GONE
-                    else View.VISIBLE
+                if (sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
+                    )
+                )
+                    View.GONE
+                else View.VISIBLE
 
-            b.summary = getString(R.string.pref_item_summary_delay_mastodon,
-                    sharedPreferences.getDelayDurationPostMastodon())
+            b.summary = getString(
+                R.string.pref_item_summary_delay_mastodon,
+                sharedPreferences.getDelayDurationPostMastodon()
+            )
             b.root.setOnClickListener {
                 viewModel.onClickDelayMastodon(this, sharedPreferences, binding.itemDelayMastodon)
             }
@@ -251,10 +261,12 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemVisibilityMastodon.also { b ->
             b.maskInactive.visibility =
-                    if (sharedPreferences.getSwitchState(
-                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
-                        View.GONE
-                    else View.VISIBLE
+                if (sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
+                    )
+                )
+                    View.GONE
+                else View.VISIBLE
 
             b.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
             b.root.setOnClickListener {
@@ -264,10 +276,12 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemSwitchSuccessNotificationMastodon.also { b ->
             b.maskInactive.visibility =
-                    if (sharedPreferences.getSwitchState(
-                                    PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON))
-                        View.GONE
-                    else View.VISIBLE
+                if (sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
+                    )
+                )
+                    View.GONE
+                else View.VISIBLE
 
             b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
             b.extra.apply {
@@ -371,11 +385,11 @@ class SettingsActivity : WithCrashlyticsActivity() {
             }
         }
         bindService(
-                Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
-                    `package` = "com.android.vending"
-                },
-                serviceConnection,
-                Context.BIND_AUTO_CREATE
+            Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
+                `package` = "com.android.vending"
+            },
+            serviceConnection,
+            Context.BIND_AUTO_CREATE
         )
     }
 
@@ -389,17 +403,21 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
-            viewModel.showErrorDialog(this,
-                    R.string.dialog_title_alert_must_auth_twitter,
-                    R.string.dialog_message_alert_must_auth_twitter) {
+            viewModel.showErrorDialog(
+                this,
+                R.string.dialog_title_alert_must_auth_twitter,
+                R.string.dialog_message_alert_must_auth_twitter
+            ) {
                 sharedPreferences.setAlertTwitterAuthFlag(false)
             }
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int,
-                                            permissions: Array<out String>,
-                                            grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         onRequestPermissionsResult(requestCode, grantResults)
     }
@@ -414,11 +432,15 @@ class SettingsActivity : WithCrashlyticsActivity() {
         super.onNewIntent(intent)
 
         if (intent?.data?.toString()?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true)
-            viewModel.onAuthTwitterCallback(intent, this, sharedPreferences,
-                    binding.root, binding.itemAuthTwitter)
+            viewModel.onAuthTwitterCallback(
+                intent, this, sharedPreferences,
+                binding.root, binding.itemAuthTwitter
+            )
         if (intent?.data?.toString()?.startsWith(App.MASTODON_CALLBACK) == true)
-            viewModel.onAuthMastodonCallback(intent, this, sharedPreferences,
-                    binding.root, binding.itemAuthMastodon)
+            viewModel.onAuthMastodonCallback(
+                intent, this, sharedPreferences,
+                binding.root, binding.itemAuthMastodon
+            )
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -436,22 +458,26 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     Activity.RESULT_OK -> {
                         data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
                             val purchaseResult: PurchaseResult? =
-                                    Gson().fromJsonOrNull(this, PurchaseResult::class.java)
+                                Gson().fromJsonOrNull(this, PurchaseResult::class.java)
 
                             if (purchaseResult?.purchaseState == 0) {
                                 onReflectDonation(true)
                             } else {
-                                viewModel.showErrorDialog(this@SettingsActivity,
-                                        R.string.dialog_title_alert_failure_purchase,
-                                        R.string.dialog_message_alert_failure_purchase)
+                                viewModel.showErrorDialog(
+                                    this@SettingsActivity,
+                                    R.string.dialog_title_alert_failure_purchase,
+                                    R.string.dialog_message_alert_failure_purchase
+                                )
                             }
                         }
                     }
 
                     Activity.RESULT_CANCELED -> {
-                        viewModel.showErrorDialog(this,
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_on_cancel_purchase)
+                        viewModel.showErrorDialog(
+                            this,
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_on_cancel_purchase
+                        )
                     }
                 }
             }
@@ -472,35 +498,44 @@ class SettingsActivity : WithCrashlyticsActivity() {
         invokeUpdateWithPermissionCheck()
     }
 
-    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    @NeedsPermission(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
     internal fun invokeUpdate() {
         binding.maskInactiveApp.visibility = View.GONE
 
         NotificationService.sendRequestInvokeUpdate(this)
     }
 
-    @OnNeverAskAgain(Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    @OnNeverAskAgain(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
     internal fun onNeverAskPermissionAgain() {
         binding.maskInactiveApp.visibility = View.VISIBLE
     }
 
     private fun onClickItemWithSwitch(extra: FrameLayout?) = (extra?.getChildAt(0) as? Switch)?.performClick()
 
-    private fun getSwitch(prefKey: PrefKey,
-                          onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }): Switch {
+    private fun getSwitch(
+        prefKey: PrefKey,
+        onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }
+    ): Switch {
         return Switch(this@SettingsActivity).apply {
             fun getSummary(): String = getString(
-                    if (isChecked) R.string.pref_item_summary_switch_on
-                    else R.string.pref_item_summary_switch_off)
+                if (isChecked) R.string.pref_item_summary_switch_on
+                else R.string.pref_item_summary_switch_off
+            )
             setOnClickListener {
                 sharedPreferences.edit()
-                        .putBoolean(prefKey.name, isChecked)
-                        .apply()
+                    .putBoolean(prefKey.name, isChecked)
+                    .apply()
 
-                onCheckStateChanged(isChecked,
-                        getSummary())
+                onCheckStateChanged(
+                    isChecked,
+                    getSummary()
+                )
             }
             isChecked = sharedPreferences.getSwitchState(prefKey)
             onCheckStateChanged(isChecked, getSummary())

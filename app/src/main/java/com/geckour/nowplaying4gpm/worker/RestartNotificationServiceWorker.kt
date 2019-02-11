@@ -6,8 +6,8 @@ import androidx.work.*
 import com.geckour.nowplaying4gpm.service.NotificationService
 
 class RestartNotificationServiceWorker(
-        private val context: Context,
-        workerParameters: WorkerParameters
+    private val context: Context,
+    workerParameters: WorkerParameters
 ) : Worker(context, workerParameters) {
     override fun doWork(): Result {
         context.startService(Intent(context, NotificationService::class.java))
@@ -20,11 +20,11 @@ class RestartNotificationServiceWorker(
 
         fun start() {
             WorkManager.getInstance()
-                    .beginUniqueWork(
-                            NAME,
-                            ExistingWorkPolicy.REPLACE,
-                            OneTimeWorkRequestBuilder<RestartNotificationServiceWorker>().build()
-                    ).enqueue()
+                .beginUniqueWork(
+                    NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    OneTimeWorkRequestBuilder<RestartNotificationServiceWorker>().build()
+                ).enqueue()
         }
     }
 }

@@ -8,9 +8,10 @@ import com.geckour.nowplaying4gpm.databinding.ItemDialogListArtworkMethodBinding
 import com.geckour.nowplaying4gpm.util.ArtworkResolveMethod
 import com.geckour.nowplaying4gpm.util.swap
 
-class ArtworkResolveMethodListAdapter(val items: MutableList<ArtworkResolveMethod>) : RecyclerView.Adapter<ArtworkResolveMethodListAdapter.ViewHolder>() {
+class ArtworkResolveMethodListAdapter(val items: MutableList<ArtworkResolveMethod>) :
+    RecyclerView.Adapter<ArtworkResolveMethodListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
-            ViewHolder(ItemDialogListArtworkMethodBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+        ViewHolder(ItemDialogListArtworkMethodBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
     override fun getItemCount(): Int = items.size
 
@@ -24,8 +25,8 @@ class ArtworkResolveMethodListAdapter(val items: MutableList<ArtworkResolveMetho
         notifyItemMoved(from, to)
     }
 
-    inner class ViewHolder(private val binding: ItemDialogListArtworkMethodBinding)
-        : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemDialogListArtworkMethodBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
         fun bind() {
             binding.item = items[adapterPosition]
@@ -38,23 +39,28 @@ class ArtworkResolveMethodListAdapter(val items: MutableList<ArtworkResolveMetho
         }
     }
 
-    val itemTouchHolder = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
-        var from: Int? = null
-        var to: Int? = null
+    val itemTouchHolder =
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
+            var from: Int? = null
+            var to: Int? = null
 
-        override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-            val from = viewHolder.adapterPosition
-            val to = target.adapterPosition
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.adapterPosition
+                val to = target.adapterPosition
 
-            if (this.from == null) this.from = from
-            this.to = to
+                if (this.from == null) this.from = from
+                this.to = to
 
-            move(from, to)
+                move(from, to)
 
-            return true
-        }
+                return true
+            }
 
-        override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-        }
-    })
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+            }
+        })
 }

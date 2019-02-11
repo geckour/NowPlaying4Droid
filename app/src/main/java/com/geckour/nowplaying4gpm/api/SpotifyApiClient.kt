@@ -9,21 +9,21 @@ import timber.log.Timber
 
 class SpotifyApiClient {
     private val authService = Retrofit.Builder()
-            .client(OkHttpProvider.spotifyAuthClient)
-            .baseUrl("https://accounts.spotify.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(CoroutineCallAdapterFactory())
-            .build()
-            .create(SpotifyAuthService::class.java)
+        .client(OkHttpProvider.spotifyAuthClient)
+        .baseUrl("https://accounts.spotify.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(CoroutineCallAdapterFactory())
+        .build()
+        .create(SpotifyAuthService::class.java)
 
     private val service: SpotifyApiService
         get() = Retrofit.Builder()
-                .client(OkHttpProvider.spotifyApiClient)
-                .baseUrl("https://api.spotify.com/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .addCallAdapterFactory(CoroutineCallAdapterFactory())
-                .build()
-                .create(SpotifyApiService::class.java)
+            .client(OkHttpProvider.spotifyApiClient)
+            .baseUrl("https://api.spotify.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(CoroutineCallAdapterFactory())
+            .build()
+            .create(SpotifyApiService::class.java)
 
     private suspend fun resetToken(): String? {
         val token = try {

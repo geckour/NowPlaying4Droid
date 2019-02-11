@@ -19,9 +19,9 @@ class SharingActivity : WithCrashlyticsActivity() {
         private const val ARGS_KEY_REQUIRE_UNLOCK = "args_key_require_unlock"
 
         fun getIntent(context: Context, requireUnlock: Boolean = true): Intent =
-                Intent(context, SharingActivity::class.java).apply {
-                    putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
-                }
+            Intent(context, SharingActivity::class.java).apply {
+                putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
+            }
     }
 
     private val viewModel: SharingViewModel by lazy {

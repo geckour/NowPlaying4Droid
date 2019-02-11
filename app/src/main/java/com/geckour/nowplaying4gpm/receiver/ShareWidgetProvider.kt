@@ -22,11 +22,12 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
     companion object {
         fun getPendingIntent(context: Context, action: Action): PendingIntent =
-                PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) },
-                        PendingIntent.FLAG_CANCEL_CURRENT)
+            PendingIntent.getBroadcast(
+                context,
+                0,
+                Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) },
+                PendingIntent.FLAG_CANCEL_CURRENT
+            )
 
         fun isMin(widgetOptions: Bundle?): Boolean {
             if (widgetOptions == null) return false
@@ -42,7 +43,12 @@ class ShareWidgetProvider : AppWidgetProvider() {
         updateWidget(context, *appWidgetIds)
     }
 
-    override fun onAppWidgetOptionsChanged(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetId: Int, newOptions: Bundle?) {
+    override fun onAppWidgetOptionsChanged(
+        context: Context?,
+        appWidgetManager: AppWidgetManager?,
+        appWidgetId: Int,
+        newOptions: Bundle?
+    ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
         if (context == null || newOptions == null) return
 
@@ -62,20 +68,20 @@ class ShareWidgetProvider : AppWidgetProvider() {
     }
 
     private fun updateWidget(context: Context, vararg ids: Int) =
-            runBlocking {
-                if (ids.isNotEmpty()) {
-                    val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
-                            .getCurrentTrackInfo()
+        runBlocking {
+            if (ids.isNotEmpty()) {
+                val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
+                    .getCurrentTrackInfo()
 
-                    AppWidgetManager.getInstance(context).apply {
-                        ids.forEach { id ->
-                            val widgetOptions = this.getAppWidgetOptions(id)
-                            updateAppWidget(
-                                    id,
-                                    getShareWidgetViews(context, isMin(widgetOptions), trackInfo)
-                            )
-                        }
+                AppWidgetManager.getInstance(context).apply {
+                    ids.forEach { id ->
+                        val widgetOptions = this.getAppWidgetOptions(id)
+                        updateAppWidget(
+                            id,
+                            getShareWidgetViews(context, isMin(widgetOptions), trackInfo)
+                        )
                     }
                 }
             }
+        }
 }

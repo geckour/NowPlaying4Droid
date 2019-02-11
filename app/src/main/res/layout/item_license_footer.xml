@@ -4,29 +4,29 @@
         xmlns:tools="http://schemas.android.com/tools">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="1000dp">
+            android:layout_width="match_parent"
+            android:layout_height="1000dp">
 
         <ImageView
-            android:id="@+id/button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginBottom="16dp"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            tools:srcCompat="@drawable/ic_app_icon"/>
+                android:id="@+id/button"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:layout_marginEnd="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                tools:srcCompat="@drawable/ic_app_icon"/>
 
         <View
-            android:id="@+id/button_cover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="?android:attr/selectableItemBackground"
-            app:layout_constraintTop_toTopOf="@id/button"
-            app:layout_constraintBottom_toBottomOf="@id/button"
-            app:layout_constraintStart_toStartOf="@id/button"
-            app:layout_constraintEnd_toEndOf="@id/button"/>
+                android:id="@+id/button_cover"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="?android:attr/selectableItemBackground"
+                app:layout_constraintTop_toTopOf="@id/button"
+                app:layout_constraintBottom_toBottomOf="@id/button"
+                app:layout_constraintStart_toStartOf="@id/button"
+                app:layout_constraintEnd_toEndOf="@id/button"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

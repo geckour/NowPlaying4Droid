@@ -10,19 +10,19 @@ import timber.log.Timber
 class MastodonInstancesApiClient {
 
     private val service = Retrofit.Builder()
-            .client(OkHttpProvider.mastodonInstancesClient)
-            .baseUrl("https://instances.social/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(CoroutineCallAdapterFactory())
-            .build()
-            .create(MastodonInstancesApiService::class.java)
+        .client(OkHttpProvider.mastodonInstancesClient)
+        .baseUrl("https://instances.social/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(CoroutineCallAdapterFactory())
+        .build()
+        .create(MastodonInstancesApiService::class.java)
 
     suspend fun getList(): List<MastodonInstance> =
-            try {
-                service.getInstancesList().await().value
-            } catch (t: Throwable) {
-                Timber.e(t)
-                Crashlytics.logException(t)
-                emptyList()
-            }
+        try {
+            service.getInstancesList().await().value
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            emptyList()
+        }
 }

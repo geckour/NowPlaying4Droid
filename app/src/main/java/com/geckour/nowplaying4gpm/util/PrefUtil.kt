@@ -41,8 +41,8 @@ enum class PrefKey(val defaultValue: Any? = null) {
 }
 
 data class ArtworkResolveMethod(
-        val key: ArtworkResolveMethodKey,
-        val enabled: Boolean
+    val key: ArtworkResolveMethodKey,
+    val enabled: Boolean
 ) {
     enum class ArtworkResolveMethodKey(val strResId: Int) {
         CONTENT_RESOLVER(R.string.dialog_list_item_content_resolver),
@@ -54,69 +54,72 @@ data class ArtworkResolveMethod(
 }
 
 data class FormatPatternModifier(
-        val key: FormatPattern,
-        val prefix: String? = null,
-        val suffix: String? = null
+    val key: FormatPattern,
+    val prefix: String? = null,
+    val suffix: String? = null
 )
 
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
-        edit().apply {
-            putString(
-                    PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-                    Gson().toJson(trackInfo))
-        }.apply()
+    edit().apply {
+        putString(
+            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
+            Gson().toJson(trackInfo)
+        )
+    }.apply()
 
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
-        edit().apply {
-            putString(
-                    PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
-                    Gson().toJson(order)
-            )
-        }.apply()
+    edit().apply {
+        putString(
+            PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
+            Gson().toJson(order)
+        )
+    }.apply()
 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
-        getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
-            val type = object : TypeToken<List<ArtworkResolveMethod>>() {}.type
-            Gson().fromJson<List<ArtworkResolveMethod>>(it, type)
-        } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
-                .values()
-                .map { ArtworkResolveMethod(it, true) }
+    getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
+        val type = object : TypeToken<List<ArtworkResolveMethod>>() {}.type
+        Gson().fromJson<List<ArtworkResolveMethod>>(it, type)
+    } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
+        .values()
+        .map { ArtworkResolveMethod(it, true) }
 
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
-        edit().apply {
-            putString(
-                    PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
-                    Gson().toJson(modifiers)
-            )
-        }.apply()
+    edit().apply {
+        putString(
+            PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
+            Gson().toJson(modifiers)
+        )
+    }.apply()
 
 fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
-        getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
-            val type = object : TypeToken<List<FormatPatternModifier>>() {}.type
-            val stored = Gson().fromJson<List<FormatPatternModifier>>(json, type)
-            FormatPattern.replaceablePatterns
-                    .map { pattern ->
-                        val modifier = stored.firstOrNull { it.key == pattern }
-                        FormatPatternModifier(pattern, modifier?.prefix, modifier?.suffix)
-                    }
-        } ?: FormatPattern.replaceablePatterns
-                .map { FormatPatternModifier(it) }
+    getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
+        val type = object : TypeToken<List<FormatPatternModifier>>() {}.type
+        val stored = Gson().fromJson<List<FormatPatternModifier>>(json, type)
+        FormatPattern.replaceablePatterns
+            .map { pattern ->
+                val modifier = stored.firstOrNull { it.key == pattern }
+                FormatPatternModifier(pattern, modifier?.prefix, modifier?.suffix)
+            }
+    } ?: FormatPattern.replaceablePatterns
+        .map { FormatPatternModifier(it) }
 
 fun SharedPreferences.getFormatPattern(context: Context): String =
-        getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
-                ?: context.getString(R.string.default_sharing_text_pattern)
+    getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
+        ?: context.getString(R.string.default_sharing_text_pattern)
 
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit().putString(
-            PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
-            Gson().toJson(ArtworkInfo(artworkUri?.toString()))).apply()
+        PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
+        Gson().toJson(ArtworkInfo(artworkUri?.toString()))
+    ).apply()
 }
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
     return if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
         Gson().fromJsonOrNull(
-                getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null) ?: return null,
-                ArtworkInfo::class.java)
+            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null) ?: return null,
+            ArtworkInfo::class.java
+        )
     } else null
 }
 
@@ -137,52 +140,58 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
 }
 
 fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): String? =
-        if (readyForShare(context, trackInfo))
-            getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
-        else null
+    if (readyForShare(context, trackInfo))
+        getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
+    else null
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
     return if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
         Gson().fromJsonOrNull(
-                getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null) ?: return null,
-                TrackInfo::class.java
+            getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null) ?: return null,
+            TrackInfo::class.java
         ) { refreshCurrentTrackInfo(TrackInfo.empty) }
     } else null
 }
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
-        PaletteColor.values().getOrNull(
-                getInt(
-                        PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name,
-                        PaletteColor.LIGHT_VIBRANT.ordinal)
-        ) ?: PaletteColor.LIGHT_VIBRANT
+    PaletteColor.values().getOrNull(
+        getInt(
+            PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name,
+            PaletteColor.LIGHT_VIBRANT.ordinal
+        )
+    ) ?: PaletteColor.LIGHT_VIBRANT
 
 fun SharedPreferences.getSwitchState(key: PrefKey): Boolean =
-        if (contains(key.name))
-            getBoolean(key.name, (key.defaultValue as? Boolean) ?: true)
-        else key.defaultValue as? Boolean ?: true
+    if (contains(key.name))
+        getBoolean(key.name, (key.defaultValue as? Boolean) ?: true)
+    else key.defaultValue as? Boolean ?: true
 
 fun SharedPreferences.getDelayDurationPostMastodon(): Long =
-        if (contains(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name))
-            getLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name,
-                    PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long)
-        else PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long
+    if (contains(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name))
+        getLong(
+            PrefKey.PREF_KEY_DELAY_POST_MASTODON.name,
+            PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long
+        )
+    else PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long
 
 fun SharedPreferences.getVisibilityMastodon(): Visibility =
-        Visibility.values().getOrNull(
-                getInt(
-                        PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name,
-                        Visibility.PUBLIC.ordinal)
-        ) ?: Visibility.PUBLIC
+    Visibility.values().getOrNull(
+        getInt(
+            PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name,
+            Visibility.PUBLIC.ordinal
+        )
+    ) ?: Visibility.PUBLIC
 
 fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
     edit().putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration).apply()
 }
 
 fun SharedPreferences.getDonateBillingState(): Boolean =
-        contains(PrefKey.PREF_KEY_BILLING_DONATE.name)
-                && getBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name,
-                PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean)
+    contains(PrefKey.PREF_KEY_BILLING_DONATE.name)
+            && getBoolean(
+        PrefKey.PREF_KEY_BILLING_DONATE.name,
+        PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
+    )
 
 fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
     edit().putString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, Gson().toJson(accessToken)).apply()
@@ -191,24 +200,30 @@ fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
 fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
         Gson().fromJsonOrNull(
-                getString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-                        PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String)
-                        ?: return null,
-                AccessToken::class.java)
+            getString(
+                PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
+                PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
+            )
+                ?: return null,
+            AccessToken::class.java
+        )
     else null
 }
 
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
     edit().putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, Gson().toJson(userInfo))
-            .apply()
+        .apply()
 }
 
 fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
     return if (contains(PrefKey.PREF_KEY_MASTODON_USER_INFO.name))
         Gson().fromJsonOrNull(
-                getString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
-                        PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String) ?: return null,
-                MastodonUserInfo::class.java)
+            getString(
+                PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
+                PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String
+            ) ?: return null,
+            MastodonUserInfo::class.java
+        )
     else null
 }
 
@@ -217,20 +232,24 @@ fun SharedPreferences.setAlertTwitterAuthFlag(flag: Boolean) {
 }
 
 fun SharedPreferences.getAlertTwitterAuthFlag(): Boolean =
-        if (contains(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name))
-            getBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name,
-                    PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.defaultValue as Boolean)
-        else false
+    if (contains(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name))
+        getBoolean(
+            PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name,
+            PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.defaultValue as Boolean
+        )
+    else false
 
 fun SharedPreferences.setReceivedDelegateShareNodeId(nodeId: String?) {
     edit().putString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, nodeId).apply()
 }
 
 fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
-        if (contains(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name))
-            getString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name,
-                    PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.defaultValue as? String)
-        else null
+    if (contains(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name))
+        getString(
+            PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name,
+            PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.defaultValue as? String
+        )
+    else null
 
 fun SharedPreferences.readyForShare(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): Boolean {
     return trackInfo != null &&

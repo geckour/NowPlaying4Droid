@@ -35,33 +35,35 @@ class TwitterApiClient(consumerKey: String, consumerSecret: String) : TwitterApi
     }
 
     override suspend fun getAccessToken(verifier: String): AccessToken? =
-            try {
-                if (requestToken == null) null
-                else twitter.getOAuthAccessToken(requestToken, verifier)
-            } catch (t: Throwable) {
-                Timber.e(t)
-                Crashlytics.logException(t)
-                null
-            }
+        try {
+            if (requestToken == null) null
+            else twitter.getOAuthAccessToken(requestToken, verifier)
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            null
+        }
 
-    override suspend fun post(accessToken: AccessToken,
-                              subject: String, artwork: Bitmap?, artworkTitle: String?) =
-            try {
-                twitter.oAuthAccessToken = accessToken
-                val status = StatusUpdate(subject)
-                        .apply {
-                            if (artwork != null) {
-                                val bytes =
-                                        ByteArrayOutputStream().apply {
-                                            artwork.compress(Bitmap.CompressFormat.JPEG, 100, this)
-                                        }.toByteArray()
-                                setMedia(artworkTitle, ByteArrayInputStream(bytes))
-                            }
-                        }
-                twitter.updateStatus(status)
-            } catch (t: Throwable) {
-                Timber.e(t)
-                Crashlytics.logException(t)
-                null
-            }
+    override suspend fun post(
+        accessToken: AccessToken,
+        subject: String, artwork: Bitmap?, artworkTitle: String?
+    ) =
+        try {
+            twitter.oAuthAccessToken = accessToken
+            val status = StatusUpdate(subject)
+                .apply {
+                    if (artwork != null) {
+                        val bytes =
+                            ByteArrayOutputStream().apply {
+                                artwork.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                            }.toByteArray()
+                        setMedia(artworkTitle, ByteArrayInputStream(bytes))
+                    }
+                }
+            twitter.updateStatus(status)
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            null
+        }
 }

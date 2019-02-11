@@ -29,23 +29,24 @@ class BillingApiClient(private val coroutineScope: CoroutineScope, private val s
 
     suspend fun getPurchasedItems(context: Context): List<String> = asyncOrNull {
         service.getPurchases(
-                API_VERSION,
-                context.packageName,
-                BILLING_TYPE,
-                null
+            API_VERSION,
+            context.packageName,
+            BILLING_TYPE,
+            null
         ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
     }.await() ?: emptyList()
 
     suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = asyncOrNull {
         service.getSkuDetails(
-                API_VERSION,
-                context.packageName,
-                BILLING_TYPE,
-                Bundle().apply {
-                    putStringArrayList(
-                            QUERY_KEY_SKU_DETAILS,
-                            ArrayList(skus.toList()))
-                }
+            API_VERSION,
+            context.packageName,
+            BILLING_TYPE,
+            Bundle().apply {
+                putStringArrayList(
+                    QUERY_KEY_SKU_DETAILS,
+                    ArrayList(skus.toList())
+                )
+            }
         ).let {
             if (it.getInt(BUNDLE_KEY_RESPONSE_CODE) == ResponseCode.RESPONSE_OK.code) {
                 it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST)?.map {
@@ -56,10 +57,11 @@ class BillingApiClient(private val coroutineScope: CoroutineScope, private val s
     }.await() ?: emptyList()
 
     fun getBuyIntent(context: Context, sku: String): PendingIntent? =
-            service.getBuyIntent(API_VERSION, context.packageName, sku, BILLING_TYPE, null)?.let {
-                if (it.containsKey(BUNDLE_KEY_RESPONSE_CODE)
-                        && it.getInt(BUNDLE_KEY_RESPONSE_CODE) == 0)
-                    it.getParcelable(BUNDLE_KEY_BUY_INTENT)
-                else null
-            }
+        service.getBuyIntent(API_VERSION, context.packageName, sku, BILLING_TYPE, null)?.let {
+            if (it.containsKey(BUNDLE_KEY_RESPONSE_CODE)
+                && it.getInt(BUNDLE_KEY_RESPONSE_CODE) == 0
+            )
+                it.getParcelable(BUNDLE_KEY_BUY_INTENT)
+            else null
+        }
 }

@@ -98,7 +98,9 @@
     <string name="dialog_title_artwork_resolve_order">アートワーク解決の順序を指定</string>
     <string name="dialog_message_artwork_resolve_order">ドラッグ&amp;ドロップで並べ替え、スイッチで有効性の切り替え</string>
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
-    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\n作曲者名: CO\nプレイヤー名: PN\nSpotify URL: SU\nエスケープ: \' \' で囲む\n改行: \\n</string>
+    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\n作曲者名: CO\nプレイヤー名: PN\nSpotify URL:
+        SU\nエスケープ: \' \' で囲む\n改行: \\n
+    </string>
     <string name="dialog_title_mastodon_instance">Mastodonのインスタンスを選択</string>
     <string name="dialog_title_mastodon_delay">遅延時間を入力</string>
     <string name="dialog_title_mastodon_visibility">Mastodonの公開範囲</string>
