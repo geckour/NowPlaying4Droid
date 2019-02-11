@@ -7,8 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import com.geckour.nowplaying4gpm.ui.SettingsActivity
-import com.geckour.nowplaying4gpm.ui.SharingActivity
+import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getShareWidgetViews
 import kotlinx.coroutines.runBlocking

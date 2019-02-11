@@ -85,6 +85,7 @@ dependencies {
     def okhttp_version = '3.11.0'
     def glide_version = '4.8.0'
     def firebase_version = '16.0.4'
+    def lifecycle_version = '2.1.0-alpha02'
 
     wearApp project(':wear')
 
@@ -116,9 +117,17 @@ dependencies {
     implementation "com.facebook.stetho:stetho:$stetho_version"
     implementation "com.facebook.stetho:stetho-okhttp3:$stetho_version"
 
+    // KTX
+    implementation 'androidx.core:core-ktx:1.0.1'
+
     // Permission
     implementation "com.github.hotchemi:permissionsdispatcher:$permission_dispatcher_version"
     kapt "com.github.hotchemi:permissionsdispatcher-processor:$permission_dispatcher_version"
+
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+    kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
 
     // Palette API
     implementation 'androidx.palette:palette:1.0.0'

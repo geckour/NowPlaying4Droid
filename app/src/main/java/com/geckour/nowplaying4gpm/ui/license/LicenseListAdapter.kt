@@ -1,19 +1,18 @@
-package com.geckour.nowplaying4gpm.ui.adapter
+package com.geckour.nowplaying4gpm.ui.license
 
 import android.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.annotation.StringRes
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseBinding
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
-class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class LicenseListAdapter(private val viewModel: LicenseViewModel)
+    : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val easterEggIconUrl = "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
@@ -25,8 +24,8 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
     }
 
     data class LicenseItem(
-            val name: String,
-            val text: String,
+            @StringRes val nameResId: Int,
+            @StringRes val textResId: Int,
             var stateOpen: Boolean
     )
 
@@ -49,17 +48,17 @@ class LicenseListAdapter(private val items: List<LicenseItem>) : RecyclerView.Ad
                 else -> throw IllegalArgumentException()
             }
 
-    override fun getItemCount(): Int = items.size + 1
+    override fun getItemCount(): Int = viewModel.listItems.size + 1
 
     override fun getItemViewType(position: Int): Int =
             when (position) {
-                items.size -> ViewType.FOOTER.ordinal
+                viewModel.listItems.size -> ViewType.FOOTER.ordinal
                 else -> ViewType.NORMAL.ordinal
             }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is NormalItemViewHolder -> holder.bind(items[holder.adapterPosition])
+            is NormalItemViewHolder -> holder.bind(viewModel.listItems[holder.adapterPosition])
             is FooterItemViewHolder -> holder.bind()
         }
     }

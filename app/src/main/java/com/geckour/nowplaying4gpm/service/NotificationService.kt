@@ -23,7 +23,7 @@ import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
-import com.geckour.nowplaying4gpm.ui.SharingActivity
+import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.*
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.MessageEvent

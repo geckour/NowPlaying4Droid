@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.ui.adapter
+package com.geckour.nowplaying4gpm.ui.widget.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup

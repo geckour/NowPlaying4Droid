@@ -13,20 +13,21 @@ import android.preference.PreferenceManager
 import android.view.View
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.geckour.nowplaying4gpm.ui.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.google.gson.Gson
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import timber.log.Timber
 import java.lang.reflect.Type
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.math.absoluteValue
 
 enum class PaletteColor {
@@ -374,4 +375,8 @@ fun <T> MutableList<T>.swap(from: Int, to: Int) {
     val tmp = this[to]
     this[to] = this[from]
     this[from] = tmp
+}
+
+fun ViewModel.launch(context: CoroutineContext = EmptyCoroutineContext, start: CoroutineStart = CoroutineStart.DEFAULT, block: suspend CoroutineScope.() -> Unit) {
+    viewModelScope.launch(context, start, block)
 }

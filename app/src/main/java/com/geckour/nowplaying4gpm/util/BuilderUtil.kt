@@ -16,8 +16,8 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
-import com.geckour.nowplaying4gpm.ui.SettingsActivity
-import com.geckour.nowplaying4gpm.ui.SharingActivity
+import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
+import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.sys1yagi.mastodon4j.api.entity.Status
 
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =

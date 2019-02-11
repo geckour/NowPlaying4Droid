@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.ui
+package com.geckour.nowplaying4gpm.ui.mushroom
 
 import android.app.Activity
 import android.content.Intent

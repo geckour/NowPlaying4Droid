@@ -11,7 +11,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.service.NotificationService
-import com.geckour.nowplaying4gpm.ui.SharingActivity
+import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import timber.log.Timber
 
 class App : Application() {
