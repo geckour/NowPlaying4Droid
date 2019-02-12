@@ -86,6 +86,7 @@ dependencies {
     def retrofit2_version = '2.4.0'
     def okhttp_version = '3.11.0'
     def glide_version = '4.8.0'
+    def mockk_version = '1.9.1'
 
     wearApp project(':wear')
 
@@ -103,7 +104,11 @@ dependencies {
     }
     implementation('com.crashlytics.sdk.android:crashlytics:2.9.3') { transitive = true }
     testImplementation 'junit:junit:4.12'
+    testImplementation 'androidx.test:runner:1.1.2-alpha01'
+    testImplementation 'androidx.test.ext:junit:1.1.0'
+    testImplementation 'org.robolectric:robolectric:4.0-alpha-2'
     testImplementation 'org.assertj:assertj-core:3.10.0'
+    testImplementation "io.mockk:mockk:$mockk_version"
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
 

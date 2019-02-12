@@ -2,6 +2,7 @@ package com.geckour.nowplaying4gpm.util
 
 import android.content.ContentUris
 import android.content.Context
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.net.Uri
 import android.preference.PreferenceManager
@@ -62,12 +63,15 @@ private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: Tra
             ),
             null,
             null
-        )?.use {
-            (if (it.moveToNext()) {
-                it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-            } else null).apply { it.close() }
-        }
+        )?.use { it.getAlbumIdFromDevice() }
     }.await()
+
+private fun Cursor?.getAlbumIdFromDevice(): Long? =
+    this?.use {
+        (if (it.moveToNext()) {
+            it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+        } else null).apply { it.close() }
+    }
 
 private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
     albumId?.let {
@@ -167,23 +171,23 @@ suspend fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
     }
 
 suspend fun getBitmapFromUri(context: Context, uri: Uri?): Bitmap? =
-    try {
-        val glideOptions =
-            RequestOptions()
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true)
-                .signature { System.currentTimeMillis().toString() }
-        uri?.let {
+    uri?.let {
+        try {
+            val glideOptions =
+                RequestOptions()
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .signature { System.currentTimeMillis().toString() }
             withContext(Dispatchers.IO) {
                 Glide.with(context)
                     .asBitmap().load(uri).apply(glideOptions)
                     .submit().get()
             }
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            null
         }
-    } catch (t: Throwable) {
-        Timber.e(t)
-        Crashlytics.logException(t)
-        null
     }
 
 suspend fun getBitmapFromUriString(context: Context, uriString: String): Bitmap? =
