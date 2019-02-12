@@ -1,8 +1,10 @@
 package com.geckour.nowplaying4gpm.util
 
-import android.net.Uri
+import android.preference.PreferenceManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.crashlytics.android.Crashlytics
+import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -14,9 +16,11 @@ import org.junit.runner.RunWith
 class AsyncUtilTest {
 
     private val sampleValidUrl = "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Before
     fun setUp() {
+        Fabric.with(context, Crashlytics())
     }
 
     @Test
@@ -34,51 +38,38 @@ class AsyncUtilTest {
     }
 
     @Test
-    fun refreshArtworkUriFromBitmap() { // TODO: mock SharedPreference
+    fun containsArtworkUri_beforeSet_returnFalse() {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val actual = sharedPreferences.contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)
+        assertThat(actual).isFalse()
     }
 
     @Test
-    fun getBitmapFromUrl_withInvalidUrl_returnNull() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val actual = runBlocking { getBitmapFromUrl(context, "") }
-        assertThat(actual).isNull()
+    fun containsArtworkUri_afterRefreshArtworkUriFromBitmap_returnTrue() { // TODO: mock FileProvider
     }
 
     @Test
-    fun getBitmapFromUrl_withValidUrl_returnNotNull() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val actual = runBlocking { getBitmapFromUrl(context, sampleValidUrl) }
-        assertThat(actual).isNotNull
+    fun getBitmapFromUrl_withInvalidUrl_returnNull() { // TODO: mock Glide
     }
 
     @Test
-    fun getBitmapFromUri_withEmptyUri_returnNull() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val uri = Uri.EMPTY
-        val actual = runBlocking { getBitmapFromUri(context, uri) }
-        assertThat(actual).isNull()
+    fun getBitmapFromUrl_withValidUrl_returnNotNull() { // TODO: mock Glide
     }
 
     @Test
-    fun getBitmapFromUri_withValidUri_returnNotNull() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val uri = Uri.parse(sampleValidUrl)
-        val actual = runBlocking { getBitmapFromUri(context, uri) }
-        assertThat(actual).isNotNull
+    fun getBitmapFromUri_withEmptyUri_returnNull() { // TODO: mock Glide
     }
 
     @Test
-    fun getBitmapFromUriString_withInvalidUrl_returnNull() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val actual = runBlocking { getBitmapFromUriString(context, "") }
-        assertThat(actual).isNull()
+    fun getBitmapFromUri_withValidUri_returnNotNull() { // TODO: mock Glide
     }
 
     @Test
-    fun getBitmapFromUriString_withValidUrl_returnNotNull() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val actual = runBlocking { getBitmapFromUriString(context, sampleValidUrl) }
-        assertThat(actual).isNotNull
+    fun getBitmapFromUriString_withInvalidUrl_returnNull() { // TODO: mock Glide
+    }
+
+    @Test
+    fun getBitmapFromUriString_withValidUrl_returnNotNull() { // TODO: mock Glide
     }
 
     @After
