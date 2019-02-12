@@ -6,13 +6,20 @@
 Android app for sharing #NowPlaying using MediaController.  
 
 ## Features
-- Reside notification to share #NowPlaying
+- Show resident notification for sharing #NowPlaying
 - Custom pattern of sharing text format
+- Specify prefix / suffix for each format pattern
 - Use NotificationListenerService to get the music metadata and artwork
-- Try to fetch album art (It succeeds only when playing song is exist inside of device)
-- Try to fetch album art from Web API when failed to fetch from device
-- Change accent color of notification for shareing based on album art colors
-- Change background color of notification for shareing based on album art colors (only for Android O or later)
+- Try to fetch album art inside of the device
+- Try to fetch album art from Web API
+- Change accent color of notification for sharing based on album art colors
+- Change background color of notification for sharing based on album art colors (only for Android O or later)
+- Create widget for share
+- Share from Android Wear
+- Share via Mushroom
+- Auto post for Mastodon
+- Share via shortcut
+- Share the Spotify URL of playing music
 
 ## License
     GNU GENERAL PUBLIC LICENSE Version 3
