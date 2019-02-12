@@ -143,6 +143,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
                     b.summary = summary
+
                     onRequestUpdate()
                 })
             }
@@ -209,14 +210,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON) { checkState, summary ->
                     b.summary = summary
-                    this@SettingsActivity.binding.itemAuthMastodon.maskInactive.visibility =
-                        if (checkState) View.GONE else View.VISIBLE
-                    this@SettingsActivity.binding.itemDelayMastodon.maskInactive.visibility =
-                        if (checkState) View.GONE else View.VISIBLE
-                    this@SettingsActivity.binding.itemVisibilityMastodon.maskInactive.visibility =
-                        if (checkState) View.GONE else View.VISIBLE
-                    this@SettingsActivity.binding.itemSwitchSuccessNotificationMastodon.maskInactive.visibility =
-                        if (checkState) View.GONE else View.VISIBLE
+                    binding.mastodonEnabled = checkState
                 })
             }
         }
@@ -532,10 +526,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     .putBoolean(prefKey.name, isChecked)
                     .apply()
 
-                onCheckStateChanged(
-                    isChecked,
-                    getSummary()
-                )
+                onCheckStateChanged(isChecked, getSummary())
             }
             isChecked = sharedPreferences.getSwitchState(prefKey)
             onCheckStateChanged(isChecked, getSummary())

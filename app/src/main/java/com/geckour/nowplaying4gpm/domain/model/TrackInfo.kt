@@ -34,27 +34,27 @@ data class TrackInfo(
                 else -> true
             }
         }
+
+    data class TrackCoreElement(
+        val title: String?,
+        val artist: String?,
+        val album: String?,
+        val composer: String?
+    ) : Serializable {
+        companion object {
+            val empty: TrackCoreElement = TrackCoreElement(null, null, null, null)
+        }
+
+        val isAllNonNull: Boolean =
+            title != null && artist != null && album != null
+
+        val spotifySearchQuery: String? =
+            if (this.isAllNonNull)
+                "track:\"$title\" \"$artist\" album:\"$album\""
+            else null
+    }
 }
 
 data class ArtworkInfo(
     val artworkUriString: String?
 )
-
-data class TrackCoreElement(
-    val title: String?,
-    val artist: String?,
-    val album: String?,
-    val composer: String?
-) : Serializable {
-    companion object {
-        val empty: TrackCoreElement = TrackCoreElement(null, null, null, null)
-    }
-
-    val isAllNonNull: Boolean =
-        title != null && artist != null && album != null
-
-    val spotifySearchQuery: String? =
-        if (this.isAllNonNull)
-            "track:\"$title\" \"$artist\" album:\"$album\""
-        else null
-}
