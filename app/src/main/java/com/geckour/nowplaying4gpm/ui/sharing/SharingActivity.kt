@@ -48,9 +48,8 @@ class SharingActivity : WithCrashlyticsActivity() {
 
     private fun Intent?.requireUnlock(): Boolean {
         val default = true
-        if (this == null) return default
 
-        return if (this.hasExtra(ARGS_KEY_REQUIRE_UNLOCK))
+        return if (this?.hasExtra(ARGS_KEY_REQUIRE_UNLOCK) == true)
             this.getBooleanExtra(ARGS_KEY_REQUIRE_UNLOCK, default)
         else default
     }
