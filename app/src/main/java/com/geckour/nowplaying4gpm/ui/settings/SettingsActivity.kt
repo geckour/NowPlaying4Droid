@@ -143,6 +143,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 visibility = View.VISIBLE
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
                     b.summary = summary
+
                     onRequestUpdate()
                 })
             }
@@ -525,10 +526,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     .putBoolean(prefKey.name, isChecked)
                     .apply()
 
-                onCheckStateChanged(
-                    isChecked,
-                    getSummary()
-                )
+                onCheckStateChanged(isChecked, getSummary())
             }
             isChecked = sharedPreferences.getSwitchState(prefKey)
             onCheckStateChanged(isChecked, getSummary())

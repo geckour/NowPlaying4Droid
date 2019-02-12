@@ -21,7 +21,6 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
@@ -258,7 +257,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         metadata: MediaMetadata,
         playerPackageName: String,
         notification: Notification?,
-        coreElement: TrackCoreElement = metadata.getTrackCoreElement()
+        coreElement: TrackInfo.TrackCoreElement = metadata.getTrackCoreElement()
     ) {
         currentTrackSetJob = launch {
             val contains = sharedPreferences
@@ -310,7 +309,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
 
-    private fun MediaMetadata.getTrackCoreElement(): TrackCoreElement =
+    private fun MediaMetadata.getTrackCoreElement(): TrackInfo.TrackCoreElement =
         this.let {
             val track: String? =
                 if (it.containsKey(MediaMetadata.METADATA_KEY_TITLE))
@@ -333,11 +332,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     it.getString(MediaMetadata.METADATA_KEY_COMPOSER)
                 else null
 
-            TrackCoreElement(track, artist, album, composer)
+            TrackInfo.TrackCoreElement(track, artist, album, composer)
         }
 
     private suspend fun onQuickUpdate(
-        coreElement: TrackCoreElement,
+        coreElement: TrackInfo.TrackCoreElement,
         packageName: String,
         spotifyUrl: String?
     ): Boolean {
@@ -598,7 +597,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun MediaMetadata.storeArtworkUri(
-        coreElement: TrackCoreElement,
+        coreElement: TrackInfo.TrackCoreElement,
         notificationBitmap: Bitmap?
     ): Uri? {
         // Check whether arg metadata and current metadata are the same or not

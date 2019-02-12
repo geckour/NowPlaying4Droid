@@ -14,7 +14,7 @@ import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.sys1yagi.mastodon4j.MastodonRequest
 import kotlinx.coroutines.*
 import timber.log.Timber
@@ -48,7 +48,7 @@ suspend fun <T> MastodonRequest<T>.toJob(): Deferred<T?> =
         execute()
     }
 
-private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackCoreElement): Long? =
+private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackInfo.TrackCoreElement): Long? =
     asyncOrNull {
         if (trackCoreElement.isAllNonNull.not()) return@asyncOrNull null
 
@@ -90,12 +90,12 @@ private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): U
         }.await()
     }
 
-suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackCoreElement): Uri? =
+suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
     getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackCoreElement))
 
 private suspend fun getArtworkUrlFromLastFmApi(
     client: LastFmApiClient,
-    trackCoreElement: TrackCoreElement,
+    trackCoreElement: TrackInfo.TrackCoreElement,
     size: Image.Size = Image.Size.MEGA
 ): String? =
     if (trackCoreElement.album == null && trackCoreElement.artist == null) null
@@ -109,7 +109,7 @@ private suspend fun getArtworkUrlFromLastFmApi(
 suspend fun refreshArtworkUriFromLastFmApi(
     context: Context,
     client: LastFmApiClient,
-    trackCoreElement: TrackCoreElement
+    trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
     val bitmap = getBitmapFromUrl(context, url)?.let { it.copy(it.config, false) }

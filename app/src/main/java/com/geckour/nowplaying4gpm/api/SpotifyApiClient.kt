@@ -1,7 +1,7 @@
 package com.geckour.nowplaying4gpm.api
 
 import com.crashlytics.android.Crashlytics
-import com.geckour.nowplaying4gpm.domain.model.TrackCoreElement
+import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -37,7 +37,7 @@ class SpotifyApiClient {
         return token
     }
 
-    suspend fun getSpotifyUrl(trackCoreElement: TrackCoreElement): String? {
+    suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): String? {
         resetToken() ?: return null
         return trackCoreElement.spotifySearchQuery?.let {
             try {
