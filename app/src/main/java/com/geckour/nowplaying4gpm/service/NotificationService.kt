@@ -8,8 +8,7 @@ import android.content.*
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadata
-import android.media.session.MediaController
-import android.media.session.MediaSession
+import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -63,6 +62,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         private const val WEAR_PATH_SHARE_FAILURE = "/share/failure"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
+
+        private const val SPOTIFY_PACKAGE_NAME = "com.spotify.music"
 
         fun sendRequestInvokeUpdate(context: Context) {
             context.checkStoragePermission {
@@ -171,7 +172,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (currentSbn == null) {
             try {
                 activeNotifications.sortedBy { it.postTime }
-                    .lastOrNull { fetchMetadata(it.notification) != null }
+                    .lastOrNull { fetchMetadata(it.packageName) != null }
                     .apply { onNotificationPosted(this) }
             } catch (t: Throwable) {
                 Timber.e(t)
@@ -192,8 +193,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
 
-        if (sbn != null && sbn.packageName != packageName) {
-            fetchMetadata(sbn.notification)?.apply {
+        if (sbn != null
+            && sbn.packageName != packageName
+            && (sbn.packageName != SPOTIFY_PACKAGE_NAME || sbn.notification.existMediaSessionToken)
+        ) {
+            fetchMetadata(sbn.packageName)?.apply {
                 refreshMetadataJob?.cancel()
                 refreshMetadataJob = launch {
                     currentSbn = sbn
@@ -214,10 +218,21 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
 
-    private fun fetchMetadata(notification: Notification): MediaMetadata? =
-        (notification.extras[Notification.EXTRA_MEDIA_SESSION] as MediaSession.Token?)?.let {
-            MediaController(this, it).metadata
+    private fun fetchMetadata(playerPackageName: String): MediaMetadata? =
+        getSystemService(MediaSessionManager::class.java).let { manager ->
+            val componentName =
+                ComponentName(
+                    this@NotificationService,
+                    NotificationService::class.java
+                )
+
+            return@let manager.getActiveSessions(componentName)
+                .firstOrNull { it.packageName == playerPackageName }
+                ?.metadata
         }
+
+    private val Notification.existMediaSessionToken: Boolean
+        get() = extras.containsKey(Notification.EXTRA_MEDIA_SESSION)
 
     private fun onMetadataCleared() {
         currentSbn = null
