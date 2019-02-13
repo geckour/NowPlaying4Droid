@@ -11,9 +11,13 @@ import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getShareWidgetViews
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
-class ShareWidgetProvider : AppWidgetProvider() {
+class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
     enum class Action {
         SHARE,
@@ -34,6 +38,20 @@ class ShareWidgetProvider : AppWidgetProvider() {
             val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
             return maxWidth < 232
         }
+    }
+
+    private var job: Job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.IO
+
+    override fun onEnabled(context: Context?) {
+        super.onEnabled(context)
+        job = Job()
+    }
+
+    override fun onDisabled(context: Context?) {
+        super.onDisabled(context)
+        job.cancel()
     }
 
     override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
@@ -60,15 +78,17 @@ class ShareWidgetProvider : AppWidgetProvider() {
 
         if (context == null || intent == null) return
 
-        when (intent.action) {
-            Action.SHARE.name -> context.startActivity(SharingActivity.getIntent(context))
+        launch(Dispatchers.Main) {
+            when (intent.action) {
+                Action.SHARE.name -> context.startActivity(SharingActivity.getIntent(context))
 
-            Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))
+                Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))
+            }
         }
     }
 
     private fun updateWidget(context: Context, vararg ids: Int) =
-        runBlocking {
+        launch {
             if (ids.isNotEmpty()) {
                 val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
                     .getCurrentTrackInfo()
