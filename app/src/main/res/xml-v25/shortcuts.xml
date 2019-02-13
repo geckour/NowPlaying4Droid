@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+            android:shortcutId="shortcut_id_invoke_share"
+            android:shortcutShortLabel="@string/shortcut_invoke_share">
+        <intent
+                android:action="android.intent.action.VIEW"
+                android:targetPackage="com.geckour.nowplaying4gpm"
+                android:targetClass="com.geckour.nowplaying4gpm.ui.sharing.SharingActivity"/>
+    </shortcut>
+</shortcuts>

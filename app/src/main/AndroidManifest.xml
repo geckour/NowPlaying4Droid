@@ -44,6 +44,9 @@
                 <data android:host="mastodon"/>
                 <data android:host="mastodon.callback"/>
             </intent-filter>
+
+            <meta-data android:name="android.app.shortcuts"
+                       android:resource="@xml/shortcuts"/>
         </activity>
         <activity
                 android:name=".ui.sharing.SharingActivity"
