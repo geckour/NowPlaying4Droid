@@ -68,6 +68,6 @@
             android:clickable="true"
             android:focusable="true"
             android:padding="12dp"
-            android:src="@drawable/ic_settings_black_24px"
+            android:src="@drawable/ic_settings"
             android:tint="@color/colorAccent"/>
 </RelativeLayout>

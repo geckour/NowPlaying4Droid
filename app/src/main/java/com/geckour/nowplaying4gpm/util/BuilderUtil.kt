@@ -3,6 +3,7 @@ package com.geckour.nowplaying4gpm.util
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -118,9 +119,27 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 Notification.Action.Builder(
                     Icon.createWithResource(
                         context,
-                        R.drawable.ic_settings_black_24px
+                        R.drawable.ic_settings
                     ),
                     context.getString(R.string.action_open_pref),
+                    it
+                ).build()
+            }
+        val actionClear =
+            PendingIntent.getBroadcast(
+                context,
+                1,
+                Intent().apply {
+                    action = NotificationService.ACTION_DESTROY_NOTIFICATION
+                },
+                PendingIntent.FLAG_CANCEL_CURRENT
+            ).let {
+                Notification.Action.Builder(
+                    Icon.createWithResource(
+                        context,
+                        R.drawable.ic_clear
+                    ),
+                    context.getString(R.string.action_clear_notification),
                     it
                 ).build()
             }
@@ -155,6 +174,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
         if (Build.VERSION.SDK_INT >= 24) {
             style = Notification.DecoratedMediaCustomViewStyle()
             addAction(actionOpenSetting)
+            addAction(actionClear)
         }
         thumb?.apply {
             if (Build.VERSION.SDK_INT >= 26

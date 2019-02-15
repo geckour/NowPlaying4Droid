@@ -159,6 +159,7 @@
     <string name="share_title">Choose where to share…</string>
 
     <string name="action_open_pref">Settings</string>
+    <string name="action_clear_notification">Clear</string>
 
     <string name="widget_desc">Share the NowPlaying…</string>
 

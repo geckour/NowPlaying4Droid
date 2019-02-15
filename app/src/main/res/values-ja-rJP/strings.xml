@@ -140,6 +140,7 @@
     <string name="share_title">共有先を選択…</string>
 
     <string name="action_open_pref">設定</string>
+    <string name="action_clear_notification">閉じる</string>
 
     <string name="widget_desc">NowPlayingを共有…</string>
 </resources>
