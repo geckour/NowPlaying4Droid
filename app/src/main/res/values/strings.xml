@@ -74,6 +74,8 @@
     <string name="pref_item_title_switch_launch_gpm_on_click_widget_artwork">On tap widget\'s artwork</string>
     <string name="pref_item_desc_switch_launch_gpm_on_click_widget_artwork">Launch music player app which now playing
     </string>
+    <string name="pref_item_title_switch_show_clear_button_in_widget">Clear button in sharing widget</string>
+    <string name="pref_item_desc_switch_show_clear_button_in_widget">Show clear button for track information in sharing widget</string>
 
     <string name="pref_category_wear">Wear</string>
     <string name="pref_item_title_auth_twitter">Twitter Authentication</string>

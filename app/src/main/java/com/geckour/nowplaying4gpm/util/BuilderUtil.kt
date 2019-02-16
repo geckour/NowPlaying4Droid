@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.util
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -24,7 +23,7 @@ import com.sys1yagi.mastodon4j.api.entity.Status
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
     "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackInfo: TrackInfo? = null): RemoteViews {
+suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo: TrackInfo? = null): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -41,7 +40,7 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
         )
 
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
-            && isMin.not()
+            && blockCount > 1
         ) {
             val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())?.let {
                 Bitmap.createScaledBitmap(it, 600, 600, false)
@@ -56,6 +55,14 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
             setViewVisibility(R.id.artwork, View.GONE)
         }
 
+        setViewVisibility(
+            R.id.widget_button_clear,
+            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET)
+                && blockCount > 2
+            ) View.VISIBLE
+            else View.GONE
+        )
+
         setOnClickPendingIntent(
             R.id.widget_share_root,
             ShareWidgetProvider.getPendingIntent(
@@ -68,8 +75,7 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
             if (sharedPreferences.getSwitchState(
                     PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK
                 )
-            )
-                info?.playerPackageName
+            ) info?.playerPackageName
             else null
         val launchIntent = packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
         setOnClickPendingIntent(
@@ -94,6 +100,11 @@ suspend fun getShareWidgetViews(context: Context, isMin: Boolean = false, trackI
                 context,
                 ShareWidgetProvider.Action.OPEN_SETTING
             )
+        )
+
+        setOnClickPendingIntent(
+            R.id.widget_button_clear,
+            NotificationService.getClearTrackInfoPendingIntent(context)
         )
     }
 }
@@ -126,23 +137,14 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
                 ).build()
             }
         val actionClear =
-            PendingIntent.getBroadcast(
-                context,
-                1,
-                Intent().apply {
-                    action = NotificationService.ACTION_DESTROY_NOTIFICATION
-                },
-                PendingIntent.FLAG_CANCEL_CURRENT
-            ).let {
-                Notification.Action.Builder(
-                    Icon.createWithResource(
-                        context,
-                        R.drawable.ic_clear
-                    ),
-                    context.getString(R.string.action_clear_notification),
-                    it
-                ).build()
-            }
+            Notification.Action.Builder(
+                Icon.createWithResource(
+                    context,
+                    R.drawable.ic_clear
+                ),
+                context.getString(R.string.action_clear_notification),
+                NotificationService.getClearTrackInfoPendingIntent(context)
+            ).build()
         val notificationText =
             sharedPreferences.getFormatPattern(context)
                 .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())

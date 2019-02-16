@@ -3,6 +3,7 @@ package com.geckour.nowplaying4gpm.service
 import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.*
 import android.graphics.Bitmap
@@ -50,6 +51,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     companion object {
+        private const val ACTION_CLEAR_TRACK_INFO = "com.geckour.nowplaying4gpm.cleartrackinfo"
         const val ACTION_DESTROY_NOTIFICATION = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_INVOKE_UPDATE = "com.geckour.nowplaying4gpm.invokeupdate"
         private const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
@@ -72,12 +74,23 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 })
             }
         }
+
+        fun getClearTrackInfoPendingIntent(context: Context): PendingIntent =
+            PendingIntent.getBroadcast(
+                context, 1,
+                Intent().apply { action = ACTION_CLEAR_TRACK_INFO },
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
     }
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.apply {
                 when (action) {
+                    ACTION_CLEAR_TRACK_INFO -> {
+                        onMetadataCleared()
+                    }
+
                     ACTION_DESTROY_NOTIFICATION -> {
                         notificationManager.destroyNotification()
                     }
@@ -160,6 +173,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         setCrashlytics()
 
         val intentFilter = IntentFilter().apply {
+            addAction(ACTION_CLEAR_TRACK_INFO)
             addAction(ACTION_DESTROY_NOTIFICATION)
             addAction(ACTION_INVOKE_UPDATE)
             addAction(Intent.ACTION_USER_PRESENT)
@@ -409,7 +423,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     id,
                     getShareWidgetViews(
                         this@NotificationService,
-                        ShareWidgetProvider.isMin(widgetOptions), trackInfo
+                        ShareWidgetProvider.blockCount(widgetOptions), trackInfo
                     )
                 )
             }

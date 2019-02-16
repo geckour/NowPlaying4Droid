@@ -354,6 +354,18 @@ class SettingsActivity : WithCrashlyticsActivity() {
             }
         }
 
+        binding.itemSwitchShowClearButtonInWidget.also { b ->
+            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
+            b.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET) { _, summary ->
+                    b.summary = summary
+
+                    viewModel.updateWidget(this@SettingsActivity, sharedPreferences)
+                })
+            }
+        }
+
         binding.itemAuthTwitter.also { b ->
             val accessToken = sharedPreferences.getTwitterAccessToken()
             if (accessToken != null) b.summary = accessToken.screenName
