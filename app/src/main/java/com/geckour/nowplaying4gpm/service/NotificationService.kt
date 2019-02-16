@@ -79,7 +79,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             intent?.apply {
                 when (action) {
                     ACTION_DESTROY_NOTIFICATION -> {
-                        getSystemService(NotificationManager::class.java).destroyNotification()
+                        notificationManager.destroyNotification()
                     }
 
                     ACTION_INVOKE_UPDATE -> {
@@ -105,6 +105,20 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
+    }
+    private val notificationManager: NotificationManager by lazy {
+        getSystemService(NotificationManager::class.java)
+    }
+    private val mediaSessionManager: MediaSessionManager by lazy {
+        getSystemService(MediaSessionManager::class.java)
+    }
+    private val keyguardManager: KeyguardManager? by lazy {
+        try {
+            getSystemService(KeyguardManager::class.java)
+        } catch (t: Throwable) {
+            Timber.e(t)
+            null
+        }
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val spotifyApiClient: SpotifyApiClient = SpotifyApiClient()
@@ -162,7 +176,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             Timber.e(e)
         }
 
-        getSystemService(NotificationManager::class.java).destroyNotification()
+        notificationManager.destroyNotification()
         job.cancel()
     }
 
@@ -218,18 +232,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
 
-    private fun fetchMetadata(playerPackageName: String): MediaMetadata? =
-        getSystemService(MediaSessionManager::class.java).let { manager ->
-            val componentName =
-                ComponentName(
-                    this@NotificationService,
-                    NotificationService::class.java
-                )
+    private fun fetchMetadata(playerPackageName: String): MediaMetadata? {
+        val componentName =
+            ComponentName(
+                this@NotificationService,
+                NotificationService::class.java
+            )
 
-            return@let manager.getActiveSessions(componentName)
-                .firstOrNull { it.packageName == playerPackageName }
-                ?.metadata
-        }
+        return mediaSessionManager.getActiveSessions(componentName)
+            .firstOrNull { it.packageName == playerPackageName }
+            ?.metadata
+    }
 
     private val Notification.existMediaSessionToken: Boolean
         get() = extras.containsKey(Notification.EXTRA_MEDIA_SESSION)
@@ -246,7 +259,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         val info = TrackInfo.empty
         currentTrackClearJob = launch { onUpdate(info) }
 
-        getSystemService(NotificationManager::class.java).destroyNotification()
+        notificationManager.destroyNotification()
     }
 
     private suspend fun onMetadataChanged(
@@ -275,35 +288,26 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         coreElement: TrackInfo.TrackCoreElement = metadata.getTrackCoreElement()
     ) {
         currentTrackSetJob = launch {
-            val contains = sharedPreferences
+            val containsSpotifyPattern = sharedPreferences
                 .getFormatPattern(this@NotificationService)
                 .containsPattern(FormatPattern.SPOTIFY_URL)
             val spotifyUrl =
-                if (contains) {
-                    FirebaseAnalytics.getInstance(application)
-                        .logEvent(
-                            FirebaseAnalytics.Event.SELECT_CONTENT,
-                            Bundle().apply {
-                                putString(
-                                    FirebaseAnalytics.Param.ITEM_NAME,
+                FirebaseAnalytics.getInstance(application)
+                    .logEvent(
+                        FirebaseAnalytics.Event.SELECT_CONTENT,
+                        Bundle().apply {
+                            putString(
+                                FirebaseAnalytics.Param.ITEM_NAME,
+                                if (containsSpotifyPattern)
                                     "Generated share sentence contains Spotify specifier"
-                                )
-                            }
-                        )
-                    spotifyApiClient.getSpotifyUrl(coreElement)
-                } else {
-                    FirebaseAnalytics.getInstance(application)
-                        .logEvent(
-                            FirebaseAnalytics.Event.SELECT_CONTENT,
-                            Bundle().apply {
-                                putString(
-                                    FirebaseAnalytics.Param.ITEM_NAME,
-                                    "Generated share sentence without Spotify specifier"
-                                )
-                            }
-                        )
-                    null
-                }
+                                else "Generated share sentence without Spotify specifier"
+                            )
+                        }
+                    ).let {
+                        if (containsSpotifyPattern)
+                            spotifyApiClient.getSpotifyUrl(coreElement)
+                        else null
+                    }
 
             if (onQuickUpdate(coreElement, playerPackageName, spotifyUrl).not()) {
                 onMetadataCleared()
@@ -390,7 +394,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun updateNotification(trackInfo: TrackInfo) {
-        getSystemService(NotificationManager::class.java).showNotification(trackInfo)
+        notificationManager.showNotification(trackInfo)
     }
 
     private suspend fun updateWidget(trackInfo: TrackInfo) {
@@ -514,8 +518,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private fun showShortNotify(status: Status) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
-            runBlocking {
-                getSystemService(NotificationManager::class.java).apply {
+            launch {
+                notificationManager.apply {
                     showNotification(status)
                     delay(2500)
                     cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
@@ -539,7 +543,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
         if (trackInfo != null) {
             deleteWearTrackInfo {
-                runBlocking { updateWear(trackInfo) }
+                launch { updateWear(trackInfo) }
             }
         }
     }
@@ -548,14 +552,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sourceNodeId: String,
         invokeOnReleasedLock: Boolean = false
     ) {
-        val keyguardManager =
-            try {
-                getSystemService(KeyguardManager::class.java)
-            } catch (t: Throwable) {
-                Timber.e(t)
-                null
-            }
-
         if (keyguardManager?.isDeviceLocked?.not() == true) {
             startActivity(SharingActivity.getIntent(this@NotificationService)
                 .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
