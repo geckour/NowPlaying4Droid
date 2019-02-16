@@ -63,11 +63,25 @@
             android:id="@+id/widget_button_setting"
             android:layout_width="56dp"
             android:layout_height="56dp"
+            android:layout_alignWithParentIfMissing="true"
+            android:layout_toStartOf="@id/widget_button_clear"
+            android:layout_centerVertical="true"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_settings"
+            android:tint="@color/colorAccent"/>
+
+    <ImageView
+            android:id="@+id/widget_button_clear"
+            android:visibility="gone"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:clickable="true"
             android:focusable="true"
             android:padding="12dp"
-            android:src="@drawable/ic_settings_black_24px"
+            android:src="@drawable/ic_clear"
             android:tint="@color/colorAccent"/>
 </RelativeLayout>

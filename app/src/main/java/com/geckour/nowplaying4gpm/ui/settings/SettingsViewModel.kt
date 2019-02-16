@@ -109,7 +109,7 @@ class SettingsViewModel : ViewModel() {
                         id,
                         getShareWidgetViews(
                             context,
-                            ShareWidgetProvider.isMin(widgetOptions), trackInfo
+                            ShareWidgetProvider.blockCount(widgetOptions), trackInfo
                         )
                     )
                 }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
@@ -33,10 +34,11 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
                 PendingIntent.FLAG_CANCEL_CURRENT
             )
 
-        fun isMin(widgetOptions: Bundle?): Boolean {
-            if (widgetOptions == null) return false
+        fun blockCount(widgetOptions: Bundle?): Int {
+            if (widgetOptions == null) return 0
             val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
-            return maxWidth < 232
+            Timber.d("np4d max width: $maxWidth")
+            return maxWidth / 113
         }
     }
 
@@ -98,7 +100,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
                         val widgetOptions = this.getAppWidgetOptions(id)
                         updateAppWidget(
                             id,
-                            getShareWidgetViews(context, isMin(widgetOptions), trackInfo)
+                            getShareWidgetViews(context, blockCount(widgetOptions), trackInfo)
                         )
                     }
                 }
