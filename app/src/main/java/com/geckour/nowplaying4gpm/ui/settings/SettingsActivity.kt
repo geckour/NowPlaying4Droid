@@ -42,7 +42,9 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
-            Intent(context, SettingsActivity::class.java)
+            Intent(context, SettingsActivity::class.java).apply {
+                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
     }
 
     private data class EasterEggTag(

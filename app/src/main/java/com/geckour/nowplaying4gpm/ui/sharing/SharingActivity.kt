@@ -21,6 +21,7 @@ class SharingActivity : WithCrashlyticsActivity() {
         fun getIntent(context: Context, requireUnlock: Boolean = true): Intent =
             Intent(context, SharingActivity::class.java).apply {
                 putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
+                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
             }
     }
 
