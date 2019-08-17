@@ -4,6 +4,8 @@ import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.provider.MediaStore
@@ -15,6 +17,7 @@ import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
+import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.sys1yagi.mastodon4j.MastodonRequest
 import kotlinx.coroutines.*
@@ -49,13 +52,13 @@ suspend fun <T> MastodonRequest<T>.toJob(): Deferred<T?> =
         execute()
     }
 
-private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackInfo.TrackCoreElement): Long? =
+private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackInfo.TrackCoreElement): MediaIdInfo? =
     asyncOrNull {
         if (trackCoreElement.isAllNonNull.not()) return@asyncOrNull null
 
         return@asyncOrNull context.contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            arrayOf(MediaStore.Audio.Media.ALBUM_ID),
+            arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
             getContentQuerySelection(
                 requireNotNull(trackCoreElement.title),
                 requireNotNull(trackCoreElement.artist),
@@ -66,30 +69,42 @@ private suspend fun getAlbumIdFromDevice(context: Context, trackCoreElement: Tra
         )?.use { it.getAlbumIdFromDevice() }
     }.await()
 
-private fun Cursor?.getAlbumIdFromDevice(): Long? =
-    this?.use {
-        (if (it.moveToNext()) {
-            it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-        } else null).apply { it.close() }
+private fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? =
+    this?.let {
+        (if (it.moveToFirst()) {
+            MediaIdInfo(
+                it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
+                it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+            )
+        } else null)
     }
 
-private suspend fun getArtworkUriFromDevice(context: Context, albumId: Long?): Uri? =
-    albumId?.let {
+private suspend fun getArtworkUriFromDevice(context: Context, mediaIdInfo: MediaIdInfo?): Uri? =
+    mediaIdInfo?.let {
         asyncOrNull {
-            ContentUris.withAppendedId(
-                Uri.parse("content://media/external/audio/albumart"), it
-            )?.let {
-                try {
+            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId)
+            try {
+                val retriever = MediaMetadataRetriever().apply { setDataSource(context, uri) }
+                retriever.embeddedPicture?.let uri@{ biteArray ->
+                    refreshArtworkUriFromBitmap(
+                        context,
+                        BitmapFactory.decodeByteArray(biteArray, 0, biteArray.size)
+                            ?: return@uri null
+                    )
+                } ?: ContentUris.withAppendedId(
+                    Uri.parse("content://media/external/audio/albumart"),
+                    it.mediaAlbumId
+                )?.let {
                     context.contentResolver.openInputStream(it)?.close()
                         ?: throw IllegalStateException()
                     PreferenceManager.getDefaultSharedPreferences(context)
                         .refreshTempArtwork(it)
                     it
-                } catch (t: Throwable) {
-                    Timber.e(t)
-                    Crashlytics.logException(t)
-                    null
                 }
+            } catch (t: Throwable) {
+                Timber.e(t)
+                Crashlytics.logException(t)
+                null
             }
         }.await()
     }
