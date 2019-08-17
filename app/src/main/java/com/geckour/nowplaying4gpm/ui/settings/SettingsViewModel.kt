@@ -259,14 +259,14 @@ class SettingsViewModel : ViewModel() {
                                 }, Gson())
                                     .build()
                             val registrationInfo = try {
-                                Apps(mastodonApiClient).createApp(
-                                    App.MASTODON_CLIENT_NAME,
-                                    App.MASTODON_CALLBACK,
-                                    mastodonScope,
-                                    App.MASTODON_WEB_URL
-                                )
-                                    .toJob()
-                                    .await()
+                                Apps(mastodonApiClient)
+                                    .createApp(
+                                        App.MASTODON_CLIENT_NAME,
+                                        App.MASTODON_CALLBACK,
+                                        mastodonScope,
+                                        App.MASTODON_WEB_URL
+                                    )
+                                    .executeCatching()
                             } catch (e: Mastodon4jRequestException) {
                                 Timber.e(e)
                                 Crashlytics.logException(e)
@@ -592,7 +592,8 @@ class SettingsViewModel : ViewModel() {
 
             if (token == null) onAuthMastodonError(context)
             else {
-                val mastodonApiClientBuilder = MastodonClient.Builder(this@apply.instanceName,
+                val mastodonApiClientBuilder = MastodonClient.Builder(
+                    this@apply.instanceName,
                     OkHttpClient.Builder().apply {
                         if (BuildConfig.DEBUG) {
                             addNetworkInterceptor(
@@ -612,8 +613,7 @@ class SettingsViewModel : ViewModel() {
                                 App.MASTODON_CALLBACK,
                                 token
                             )
-                            .toJob()
-                            .await()
+                            .executeCatching()
                     } catch (e: Mastodon4jRequestException) {
                         Timber.e(e)
                         Crashlytics.logException(e)
@@ -628,8 +628,7 @@ class SettingsViewModel : ViewModel() {
                                 .build()
                         )
                             .getVerifyCredentials()
-                            .toJob()
-                            .await()
+                            .executeCatching()
                             ?.userName ?: run {
                             onAuthMastodonError(context)
                             return@launch

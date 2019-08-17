@@ -42,7 +42,7 @@ suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
             && blockCount > 1
         ) {
-            val artwork = getBitmapFromUri(context, info?.artworkUriString?.getUri())?.let {
+            val artwork = info?.artworkUriString?.getUri().getBitmapFromUri(context)?.let {
                 Bitmap.createScaledBitmap(it, 600, 600, false)
             }
             if (summary != null && artwork != null) {
