@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
 import android.content.*
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.text.InputType
 import android.view.LayoutInflater
@@ -34,6 +35,7 @@ import com.geckour.nowplaying4gpm.ui.SingleLiveEvent
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdapter
 import com.geckour.nowplaying4gpm.ui.widget.adapter.FormatPatternModifierListAdapter
+import com.geckour.nowplaying4gpm.ui.widget.adapter.PlayerPackageListAdapter
 import com.geckour.nowplaying4gpm.util.*
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -145,7 +147,7 @@ class SettingsViewModel : ViewModel() {
                 .getArtworkResolveOrder()
                 .toMutableList()
         )
-        val artworkResolveMethodDialogBinding = DialogArtworkMethodBinding.inflate(
+        val dialogRecyclerViewBinding = DialogRecyclerViewBinding.inflate(
             LayoutInflater.from(context),
             null,
             false
@@ -155,7 +157,7 @@ class SettingsViewModel : ViewModel() {
         }
 
         AlertDialog.Builder(context).generate(
-            artworkResolveMethodDialogBinding.root,
+            dialogRecyclerViewBinding.root,
             context.getString(R.string.dialog_title_artwork_resolve_order),
             context.getString(R.string.dialog_message_artwork_resolve_order)
         ) { dialog, which ->
@@ -259,14 +261,14 @@ class SettingsViewModel : ViewModel() {
                                 }, Gson())
                                     .build()
                             val registrationInfo = try {
-                                Apps(mastodonApiClient).createApp(
-                                    App.MASTODON_CLIENT_NAME,
-                                    App.MASTODON_CALLBACK,
-                                    mastodonScope,
-                                    App.MASTODON_WEB_URL
-                                )
-                                    .toJob()
-                                    .await()
+                                Apps(mastodonApiClient)
+                                    .createApp(
+                                        App.MASTODON_CLIENT_NAME,
+                                        App.MASTODON_CALLBACK,
+                                        mastodonScope,
+                                        App.MASTODON_WEB_URL
+                                    )
+                                    .executeCatching()
                             } catch (e: Mastodon4jRequestException) {
                                 Timber.e(e)
                                 Crashlytics.logException(e)
@@ -393,6 +395,50 @@ class SettingsViewModel : ViewModel() {
                     onRequestUpdate()
                 }
             }
+            dialog.dismiss()
+        }.show()
+    }
+
+    internal fun onClickPlayerPackageMastodon(context: Context, sharedPreferences: SharedPreferences) {
+        val adapter = PlayerPackageListAdapter(
+            sharedPreferences
+                .getPackageStateListPostMastodon()
+                .mapNotNull { packageState ->
+                    val appName = context.packageManager.let {
+                        it.getApplicationLabel(
+                            it.getApplicationInfo(
+                                packageState.packageName,
+                                PackageManager.GET_META_DATA
+                            )
+                        )
+                    }?.toString()
+                    if (appName == null) {
+                        sharedPreferences.storePackageStatePostMastodon(packageState.packageName, false)
+                        null
+                    } else PlayerPackageState(packageState.packageName, appName, packageState.state)
+                }
+        )
+        val dialogRecyclerViewBinding = DialogRecyclerViewBinding.inflate(
+            LayoutInflater.from(context),
+            null,
+            false
+        ).apply {
+            recyclerView.adapter = adapter
+        }
+
+        AlertDialog.Builder(context).generate(
+            dialogRecyclerViewBinding.root,
+            context.getString(R.string.dialog_title_player_package_mastodon),
+            context.getString(R.string.dialog_message_player_package_mastodon)
+        ) { dialog, which ->
+            when (which) {
+                DialogInterface.BUTTON_POSITIVE -> {
+                    adapter.itemsDiff.forEach {
+                        sharedPreferences.storePackageStatePostMastodon(it.packageName, it.state)
+                    }
+                }
+            }
+            onRequestUpdate()
             dialog.dismiss()
         }.show()
     }
@@ -592,7 +638,8 @@ class SettingsViewModel : ViewModel() {
 
             if (token == null) onAuthMastodonError(context)
             else {
-                val mastodonApiClientBuilder = MastodonClient.Builder(this@apply.instanceName,
+                val mastodonApiClientBuilder = MastodonClient.Builder(
+                    this@apply.instanceName,
                     OkHttpClient.Builder().apply {
                         if (BuildConfig.DEBUG) {
                             addNetworkInterceptor(
@@ -612,8 +659,7 @@ class SettingsViewModel : ViewModel() {
                                 App.MASTODON_CALLBACK,
                                 token
                             )
-                            .toJob()
-                            .await()
+                            .executeCatching()
                     } catch (e: Mastodon4jRequestException) {
                         Timber.e(e)
                         Crashlytics.logException(e)
@@ -628,8 +674,7 @@ class SettingsViewModel : ViewModel() {
                                 .build()
                         )
                             .getVerifyCredentials()
-                            .toJob()
-                            .await()
+                            .executeCatching()
                             ?.userName ?: run {
                             onAuthMastodonError(context)
                             return@launch

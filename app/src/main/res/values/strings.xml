@@ -25,7 +25,8 @@
 
     <string name="pref_category_general">General</string>
     <string name="pref_item_title_switch_use_api">Access to network when fetch the artwork</string>
-    <string name="pref_item_desc_switch_use_api">Access to external service for auxiliary mean of fetching the artwork
+    <string name="pref_item_desc_switch_use_api">
+        Access to external service for auxiliary mean of fetching the artwork
     </string>
     <string name="pref_item_title_change_artwork_resolve_order">Change resolving artwork order</string>
     <string name="pref_item_desc_change_artwork_resolve_order">Change the order of resolving artwork</string>
@@ -36,9 +37,8 @@
     <string name="pref_item_title_pattern_modifiers">Specify modifier of formatting patterns</string>
     <string name="pref_item_desc_pattern_modifiers">Specify prefix / suffix for each patterns</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
-    <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are
-        satisfied
-    </string>
+    <string name="pref_item_desc_strict_match_pattern">
+        Generate sharing text if all of specified format patterns are satisfied</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
     <string name="pref_item_desc_switch_bundle_artwork">Attach album artwork on sharing</string>
     <string name="pref_item_title_switch_copy_into_clipboard">Copy into clipboard</string>
@@ -53,9 +53,11 @@
     <string name="pref_item_summary_delay_mastodon" translatable="false">%1$d ms</string>
     <string name="pref_item_title_visibility_mastodon">Visibility of auto post</string>
     <string name="pref_item_desc_visibility_mastodon">Select visibility of auto post for Mastodon</string>
+    <string name="pref_item_title_player_package_mastodon">Select player apps for Mastodon</string>
+    <string name="pref_item_desc_player_package_mastodon">Select which player apps can be used for auto post for Mastodon</string>
     <string name="pref_item_title_success_notification_mastodon">Show notification on succeeded</string>
-    <string name="pref_item_desc_success_notification_mastodon">Show short notification on succeeded to post for
-        Mastodon
+    <string name="pref_item_desc_success_notification_mastodon">
+        Show short notification on succeeded to post for Mastodon
     </string>
 
     <string name="pref_category_notification">Notification</string>
@@ -75,7 +77,9 @@
     <string name="pref_item_desc_switch_launch_gpm_on_click_widget_artwork">Launch music player app which now playing
     </string>
     <string name="pref_item_title_switch_show_clear_button_in_widget">Clear button in sharing widget</string>
-    <string name="pref_item_desc_switch_show_clear_button_in_widget">Show clear button for track information in sharing widget</string>
+    <string name="pref_item_desc_switch_show_clear_button_in_widget">
+        Show clear button for track information in sharing widget
+    </string>
 
     <string name="pref_category_wear">Wear</string>
     <string name="pref_item_title_auth_twitter">Twitter Authentication</string>
@@ -115,13 +119,22 @@
     <string name="dialog_title_artwork_resolve_order">Specify resolving order of artwork</string>
     <string name="dialog_message_artwork_resolve_order">Reorder by D\'n\'D, toggle enabled by switch</string>
     <string name="dialog_title_pattern_format">Specify formatting pattern of a sentence to post</string>
-    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name:
-        CO\nPlayer name: PN\nSpotify URL: SU\nescape sequence: Wrap by \' \'\nline break: \\n
+    <string name="dialog_message_pattern_format">
+        Track name: TI\n
+        Artist name: AR\n
+        Album name: AL\n
+        Composer name: CO\n
+        Player name: PN\n
+        Spotify URL: SU\n
+        escape sequence: Wrap by \' \'\n
+        line break: \\n
     </string>
     <string name="dialog_title_mastodon_instance">Select Mastodon instance</string>
     <string name="dialog_title_mastodon_delay">Input delay duration</string>
     <string name="dialog_title_mastodon_visibility">Visibility of Mastodon</string>
     <string name="dialog_message_mastodon_visibility">Select visibility of auto post for Mastodon</string>
+    <string name="dialog_title_player_package_mastodon">Select player apps for Mastodon</string>
+    <string name="dialog_message_player_package_mastodon">Specify which player apps can be used for auto post for Mastodon</string>
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_title_alert_no_metadata">Failure to share</string>
@@ -132,8 +145,8 @@
     <string name="dialog_message_alert_on_start_purchase">Failure to start the purchase process</string>
     <string name="dialog_message_alert_on_cancel_purchase">Canceled the purchase process</string>
     <string name="dialog_title_alert_grant_notification_listener">Need to grant permission</string>
-    <string name="dialog_message_alert_grant_notification_listener">Open system settings to grant permission for listen
-        notifications
+    <string name="dialog_message_alert_grant_notification_listener">
+        Open system settings to grant permission for listen notifications
     </string>
     <string name="dialog_title_alert_failure_auth_twitter">Failure authentication</string>
     <string name="dialog_message_alert_failure_auth_twitter">Failure to authenticate the Twitter account</string>
@@ -147,6 +160,7 @@
     <string name="dialog_hint_pattern_format">For example: TI - AR (AL)</string>
     <string name="dialog_hint_mastodon_instance">Input instance name…</string>
     <string name="dialog_hint_mastodon_delay" translatable="false">500~60000 [ms]</string>
+    <string name="dialog_hint_player_package">For example: TI - AR (AL)</string>
     <string name="dialog_list_item_content_resolver">ContentResolver (in device)</string>
     <string name="dialog_list_item_media_metadata_uri">MediaMetadata URI (provided by player)</string>
     <string name="dialog_list_item_media_metadata_bitmap">MediaMetadata Bitmap (provided by player)</string>
@@ -167,156 +181,297 @@
 
 
     <string name="library_coroutines" translatable="false">Kotlin Coroutines</string>
-    <string name="license_coroutines" translatable="false">Copyright 2016–2018 JetBrains s.r.o.\nLicensed under the
-        Apache License, Version 2.0 (the "License");\nyou may not use this file except in compliance with the
-        License.\nYou may obtain a copy of the License at\nhttp://www.apache.org/licenses/LICENSE-2.0\nUnless required
-        by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an "AS IS"
-        BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the
-        specific language governing permissions and\nlimitations under the License.
+    <string name="license_coroutines" translatable="false">
+        Copyright 2016–2018 JetBrains s.r.o.\nLicensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\nhttp://www.apache.org/licenses/LICENSE-2.0\n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_androidx" translatable="false">AndroidX</string>
-    <string name="license_androidx" translatable="false">Copyright 2018 The Android Open Source Project\n\nLicensed
-        under the Apache License, Version 2.0 (the "License");\nyou may not use this file except in compliance with the
-        License.\nYou may obtain a copy of the License at\n\n http://www.apache.org/licenses/LICENSE-2.0\n\nUnless
-        required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an
-        "AS IS" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for
-        the specific language governing permissions and\nlimitations under the License.
+    <string name="license_androidx" translatable="false">
+        Copyright 2018 The Android Open Source Project\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE-2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_databinding" translatable="false">Data Binding Library</string>
-    <string name="license_databinding" translatable="false">Copyright 2015 The Android Open Source Project\n \n Licensed
-        under the Apache License, Version 2.0 (the "License");\n you may not use this file except in compliance with the
-        License.\n You may obtain a copy of the License at\n\n http://www.apache.org/licenses/LICENSE–2.0\n\n Unless
-        required by applicable law or agreed to in writing, software\n distributed under the License is distributed on
-        an "AS IS" BASIS,\n WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n See the License
-        for the specific language governing permissions and\n limitations under the License.
+    <string name="license_databinding" translatable="false">
+        Copyright 2015 The Android Open Source Project\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE–2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_timber" translatable="false">Timber</string>
-    <string name="license_timber" translatable="false">Copyright 2013 Jake Wharton\n\nLicensed under the Apache License,
-        Version 2.0 (the "License");\nyou may not use this file except in compliance with the License.\nYou may obtain a
-        copy of the License at\n\n http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or
-        agreed to in writing, software\ndistributed under the License is distributed on an "AS IS" BASIS,\nWITHOUT
-        WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language
-        governing permissions and\nlimitations under the License.
+    <string name="license_timber" translatable="false">
+        Copyright 2013 Jake Wharton\n
+        \n
+        Licensed under the Apache License,
+        Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE-2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_stetho" translatable="false">Stetho</string>
-    <string name="license_stetho" translatable="false">BSD License\n\nFor Stetho software\n\nCopyright © 2015, Facebook,
-        Inc. All rights reserved.\n\nRedistribution and use in source and binary forms, with or without
-        modification,\nare permitted provided that the following conditions are met:\n\n * Redistributions of source
-        code must retain the above copyright notice, this\n list of conditions and the following disclaimer.\n\n *
-        Redistributions in binary form must reproduce the above copyright notice,\n this list of conditions and the
-        following disclaimer in the documentation\n and/or other materials provided with the distribution.\n\n * Neither
-        the name Facebook nor the names of its contributors may be used to\n endorse or promote products derived from
-        this software without specific\n prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS
-        AND CONTRIBUTORS "AS IS" AND\nANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-        IMPLIED\nWARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\nDISCLAIMED. IN NO EVENT SHALL
-        THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR\nANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-        CONSEQUENTIAL DAMAGES\n(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\nLOSS OF
-        USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\nANY THEORY OF LIABILITY, WHETHER IN
-        CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-        THIS\nSOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    <string name="license_stetho" translatable="false">
+        BSD License\n
+        \n
+        For Stetho software\n
+        \n
+        Copyright © 2015, Facebook, Inc. All rights reserved.\n
+        \n
+        Redistribution and use in source and binary forms, with or without modification,\n
+        are permitted provided that the following conditions are met:\n
+        \n
+        * Redistributions of source code must retain the above copyright notice, this\n
+        list of conditions and the following disclaimer.\n
+        \n
+        * Redistributions in binary form must reproduce the above copyright notice,\n
+        this list of conditions and the following disclaimer in the documentation\n
+        and/or other materials provided with the distribution.\n
+        \n
+        * Neither the name Facebook nor the names of its contributors may be used to\n
+        endorse or promote products derived from this software without specific\n
+        prior written permission.\n
+        \n
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND\n
+        ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n
+        WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n
+        DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR\n
+        ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n
+        (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n
+        LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\n
+        ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n
+        (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n
+        SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </string>
     <string name="library_retrofit" translatable="false">Retrofit</string>
-    <string name="license_retrofit" translatable="false">Copyright 2013 Square, Inc.\n\nLicensed under the Apache
-        License, Version 2.0 (the "License");\nyou may not use this file except in compliance with the License.\nYou may
-        obtain a copy of the License at\n\n http://www.apache.org/licenses/LICENSE–2.0\n\nUnless required by applicable
-        law or agreed to in writing, software\ndistributed under the License is distributed on an "AS IS"
-        BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the
-        specific language governing permissions and\nlimitations under the License.
+    <string name="license_retrofit" translatable="false">
+        Copyright 2013 Square, Inc.\n\nLicensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE–2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_okhttp" translatable="false">OkHttp</string>
-    <string name="license_okhttp" translatable="false">Copyright 2016 Square, Inc.\n\nLicensed under the Apache License,
-        Version 2.0 (the "License");\nyou may not use this file except in compliance with the License.\nYou may obtain a
-        copy of the License at\n\n http://www.apache.org/licenses/LICENSE–2.0\n\nUnless required by applicable law or
-        agreed to in writing, software\ndistributed under the License is distributed on an "AS IS" BASIS,\nWITHOUT
-        WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language
-        governing permissions and\nlimitations under the License.
+    <string name="license_okhttp" translatable="false">
+        Copyright 2016 Square, Inc.\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE–2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_coroutines4retrofit" translatable="false">Kotlin Coroutine (Experimental) Adapter</string>
-    <string name="license_coroutines4retrofit" translatable="false">Copyright 2017 Jake Wharton\n\nLicensed under the
-        Apache License, Version 2.0 (the "License");\nyou may not use this file except in compliance with the
-        License.\nYou may obtain a copy of the License at\n\n http://www.apache.org/licenses/LICENSE-2.0\n\nUnless
-        required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an
-        "AS IS" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for
-        the specific language governing permissions and\nlimitations under the License.
+    <string name="license_coroutines4retrofit" translatable="false">
+        Copyright 2017 Jake Wharton\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE-2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_glide" translatable="false">Glide</string>
-    <string name="license_glide" translatable="false">License for everything not in third_party and not otherwise
-        marked:\n\nCopyright 2014 Google, Inc. All rights reserved.\n\nRedistribution and use in source and binary
-        forms, with or without modification, are\npermitted provided that the following conditions are met:\n\n 1.
-        Redistributions of source code must retain the above copyright notice, this list of\n conditions and the
-        following disclaimer.\n\n 2. Redistributions in binary form must reproduce the above copyright notice, this
-        list\n of conditions and the following disclaimer in the documentation and/or other materials\n provided with
-        the distribution.\n\nTHIS SOFTWARE IS PROVIDED BY GOOGLE, INC. ``AS IS\'\' AND ANY EXPRESS OR
-        IMPLIED\nWARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\nFITNESS FOR A
-        PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GOOGLE, INC. OR\nCONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-        INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\nCONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
-        OF SUBSTITUTE GOODS OR\nSERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-        ON\nANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\nNEGLIGENCE OR OTHERWISE)
-        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF\nADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\nThe
-        views and conclusions contained in the software and documentation are those of the\nauthors and should not be
-        interpreted as representing official policies, either expressed\nor implied, of Google,
-        Inc.\n–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\nLicense for
-        third_party/disklrucache:\n\nCopyright 2012 Jake Wharton\nCopyright 2011 The Android Open Source
-        Project\n\nLicensed under the Apache License, Version 2.0 (the "License");\nyou may not use this file except in
-        compliance with the License.\nYou may obtain a copy of the License at\n\n
-        http://www.apache.org/licenses/LICENSE–2.0\n\nUnless required by applicable law or agreed to in writing,
-        software\ndistributed under the License is distributed on an "AS IS" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF
-        ANY KIND, either express or implied.\nSee the License for the specific language governing permissions
-        and\nlimitations under the
-        License.\n–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\nLicense
-        for third_party/gif_decoder:\n\nCopyright © 2013 Xcellent Creations, Inc.\n\nPermission is hereby granted, free
-        of charge, to any person obtaining\na copy of this software and associated documentation files
-        (the\n"Software"), to deal in the Software without restriction, including\nwithout limitation the rights to use,
-        copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit
-        persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright
-        notice and this permission notice shall be\nincluded in all copies or substantial portions of the
-        Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT
-        NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\nNONINFRINGEMENT. IN NO
-        EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\nLIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-        ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR
-        OTHER DEALINGS IN THE
-        SOFTWARE.\n–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\nLicense
-        for third_party/gif_encoder/AnimatedGifEncoder.java and\nthird_party/gif_encoder/LZWEncoder.java:\n\nNo
-        copyright asserted on the source code of this class. May be used for any\npurpose, however, refer to the Unisys
-        LZW patent for restrictions on use of\nthe associated LZWEncoder class. Please forward any corrections
-        to\nkweiner@fmsware.com.\n\n–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\nLicense
-        for third_party/gif_encoder/NeuQuant.java\n\nCopyright © 1994 Anthony Dekker\n\nNEUQUANT Neural–Net quantization
-        algorithm by Anthony Dekker, 1994. See\n"Kohonen neural networks for optimal colour quantization" in
-        "Network:\nComputation in Neural Systems" Vol. 5 (1994) pp 351–367. for a discussion of\nthe algorithm.\n\nAny
-        party obtaining a copy of these files from the author, directly or\nindirectly, is granted, free of charge, a
-        full and unrestricted irrevocable,\nworld–wide, paid up, royalty–free, nonexclusive right and license to deal
-        in\nthis software and documentation files (the "Software"), including without\nlimitation the rights to use,
-        copy, modify, merge, publish, distribute,\nsublicense, and/or sell copies of the Software, and to permit persons
-        who\nreceive copies from any such party to do so, with the only requirement being\nthat this copyright notice
-        remain intact.
+    <string name="license_glide" translatable="false">
+        License for everything not in third_party and not otherwise
+        marked:\n
+        \n
+        Copyright 2014 Google, Inc. All rights reserved.\n
+        \n
+        Redistribution and use in source and binary forms, with or without modification, are\n
+        permitted provided that the following conditions are met:\n
+        \n
+        1.
+        Redistributions of source code must retain the above copyright notice, this list of\n
+        conditions and the following disclaimer.\n
+        \n
+        2. Redistributions in binary form must reproduce the above copyright notice, this list\n
+        of conditions and the following disclaimer in the documentation and/or other materials\n
+        provided with the distribution.\n
+        \n
+        THIS SOFTWARE IS PROVIDED BY GOOGLE, INC. ``AS IS\'\' AND ANY EXPRESS OR IMPLIED\n
+        WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
+        FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GOOGLE, INC. OR\n
+        CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n
+        CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR\n
+        SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\n
+        ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\n
+        NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF\n
+        ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n
+        \n
+        The views and conclusions contained in the software and documentation are those of the\n
+        authors and should not be interpreted as representing official policies, either expressed\n
+        or implied, of Google, Inc.\n
+        –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\n
+        License for third_party/disklrucache:\n
+        \n
+        Copyright 2012 Jake Wharton\n
+        Copyright 2011 The Android Open Source Project\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE–2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.\n
+        –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\n
+        License for third_party/gif_decoder:\n
+        \n
+        Copyright © 2013 Xcellent Creations, Inc.\n
+        \n
+        Permission is hereby granted, free of charge, to any person obtaining\n
+        a copy of this software and associated documentation files (the\n
+        "Software"), to deal in the Software without restriction, including\n
+        without limitation the rights to use, copy, modify, merge, publish,\n
+        distribute, sublicense, and/or sell copies of the Software, and to\n
+        permit persons to whom the Software is furnished to do so, subject to\n
+        the following conditions:\n
+        \n
+        The above copyright notice and this permission notice shall be\n
+        included in all copies or substantial portions of the Software.\n
+        \n
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,\n
+        EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n
+        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n
+        NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\n
+        LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\n
+        OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\n
+        WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n
+        –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\n
+        License for third_party/gif_encoder/AnimatedGifEncoder.java and\n
+        third_party/gif_encoder/LZWEncoder.java:\n
+        \n
+        No copyright asserted on the source code of this class. May be used for any\n
+        purpose, however, refer to the Unisys LZW patent for restrictions on use of\n
+        the associated LZWEncoder class. Please forward any corrections to\n
+        kweiner@fmsware.com.\n
+        \n
+        –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––\n
+        License for third_party/gif_encoder/NeuQuant.java\n
+        \n
+        Copyright © 1994 Anthony Dekker\n
+        \n
+        NEUQUANT Neural–Net quantization algorithm by Anthony Dekker, 1994. See\n
+        "Kohonen neural networks for optimal colour quantization" in "Network:\n
+        Computation in Neural Systems" Vol. 5 (1994) pp 351–367. for a discussion of\n
+        the algorithm.\n
+        \n
+        Any party obtaining a copy of these files from the author, directly or\n
+        indirectly, is granted, free of charge, a full and unrestricted irrevocable,\n
+        world–wide, paid up, royalty–free, nonexclusive right and license to deal in\n
+        this software and documentation files (the "Software"), including without\n
+        limitation the rights to use, copy, modify, merge, publish, distribute,\n
+        sublicense, and/or sell copies of the Software, and to permit persons who\n
+        receive copies from any such party to do so, with the only requirement being\n
+        that this copyright notice remain intact.
     </string>
     <string name="library_twitter4j" translatable="false">Twitter4J</string>
-    <string name="license_twitter4j" translatable="false">Copyright 2007 Yusuke Yamamoto\n\nLicensed under the Apache
-        License, Version 2.0 (the "License");\nyou may not use this file except in compliance with the License.\nYou may
-        obtain a copy of the License at\n\n http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable
-        law or agreed to in writing, software\nDistributed under the License is distributed on an "AS IS"
-        BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the
-        specific language governing permissions and\nlimitations under the License.
+    <string name="license_twitter4j" translatable="false">
+        Copyright 2007 Yusuke Yamamoto\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE-2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        Distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_gson" translatable="false">Gson</string>
-    <string name="license_gson" translatable="false">Copyright 2008 Google Inc.\n\nLicensed under the Apache License,
-        Version 2.0 (the "License");\nyou may not use this file except in compliance with the License.\nYou may obtain a
-        copy of the License at\n\n http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or
-        agreed to in writing, software\ndistributed under the License is distributed on an "AS IS" BASIS,\nWITHOUT
-        WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language
-        governing permissions and\nlimitations under the License.
+    <string name="license_gson" translatable="false">
+        Copyright 2008 Google Inc.\n
+        \n
+        Licensed under the Apache License, Version 2.0 (the "License");\n
+        you may not use this file except in compliance with the License.\n
+        You may obtain a copy of the License at\n
+        \n
+        http://www.apache.org/licenses/LICENSE-2.0\n
+        \n
+        Unless required by applicable law or agreed to in writing, software\n
+        distributed under the License is distributed on an "AS IS" BASIS,\n
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n
+        See the License for the specific language governing permissions and\n
+        limitations under the License.
     </string>
     <string name="library_mastodon4j" translatable="false">mastodon4j</string>
-    <string name="license_mastodon4j" translatable="false">MIT License\n\nCopyright (c) 2017 Toshihiro
-        Yagi\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and
-        associated documentation files (the "Software"), to deal\nin the Software without restriction, including without
-        limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the
-        Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following
-        conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or
-        substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-        OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE
-        AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-        OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION
-        WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.
+    <string name="license_mastodon4j" translatable="false">
+        MIT License\n
+        \n
+        Copyright (c) 2017 Toshihiro Yagi\n
+        \n
+        Permission is hereby granted, free of charge, to any person obtaining a copy\n
+        of this software and associated documentation files (the "Software"), to deal\n
+        in the Software without restriction, including without limitation the rights\n
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n
+        copies of the Software, and to permit persons to whom the Software is\n
+        furnished to do so, subject to the following conditions:\n
+        \n
+        The above copyright notice and this permission notice shall be included in all\n
+        copies or substantial portions of the Software.\n
+        \n
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n
+        SOFTWARE.
     </string>
 </resources>

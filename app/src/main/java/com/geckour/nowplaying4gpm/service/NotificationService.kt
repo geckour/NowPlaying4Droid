@@ -141,12 +141,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
-        get() = job + getExceptionHandler() + Dispatchers.IO
+        get() = job + Dispatchers.IO
 
     private var refreshMetadataJob: Job? = null
     private var currentTrackClearJob: Job? = null
-    private var currentTrackSetJob: Job? = null
-    private var postMastodonJob: Job? = null
 
     private var currentSbn: StatusBarNotification? = null
     private var currentMetadata: MediaMetadata? = null
@@ -199,7 +197,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         if (currentSbn == null) {
             try {
-                activeNotifications.sortedBy { it.postTime }
+                activeNotifications
+                    .sortedBy { it.postTime }
                     .lastOrNull { fetchMetadata(it.packageName) != null }
                     .apply { onNotificationPosted(this) }
             } catch (t: Throwable) {
@@ -226,20 +225,18 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             && (sbn.packageName != SPOTIFY_PACKAGE_NAME || sbn.notification.existMediaSessionToken)
         ) {
             fetchMetadata(sbn.packageName)?.apply {
-                refreshMetadataJob?.cancel()
-                refreshMetadataJob = launch {
-                    currentSbn = sbn
-                    onMetadataChanged(this@apply, sbn.packageName, sbn.notification)
-                }
+                currentSbn = sbn
+                sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
+                onMetadataChanged(this@apply, sbn.packageName, sbn.notification)
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        if (sbn == null) return
+        sbn ?: return
 
-        if (sbn.packageName == currentSbn?.packageName) onMetadataCleared()
+        if (sbn.packageName == currentSbn?.packageName && sbn.id == currentSbn?.id) onMetadataCleared()
     }
 
     private fun requestRebind() {
@@ -271,75 +268,83 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sharedPreferences.refreshTempArtwork(null)
 
         val info = TrackInfo.empty
-        currentTrackClearJob = launch { onUpdate(info) }
+        currentTrackClearJob = launch { reflectTrackInfo(info) }
 
         notificationManager.destroyNotification()
     }
 
-    private suspend fun onMetadataChanged(
+    private fun onMetadataChanged(
         metadata: MediaMetadata,
         playerPackageName: String,
         notification: Notification? = null
     ) {
-        val coreElement = metadata.getTrackCoreElement()
+        if (metadata != currentMetadata) {
+            refreshMetadataJob?.cancel()
+            refreshMetadataJob = launch {
+                currentTrackClearJob?.cancelAndJoin()
+                currentMetadata = metadata
 
-        if ((currentMetadata == null && currentTrackSetJob?.isActive != true)
-            || (currentMetadata != null && metadata != currentMetadata)
-        ) {
-            currentMetadata = metadata
-
-            currentTrackClearJob?.cancelAndJoin()
-            currentTrackSetJob?.cancelAndJoin()
-
-            setCurrentTrack(metadata, playerPackageName, notification, coreElement)
+                val trackInfo = updateTrackInfo(
+                    metadata,
+                    playerPackageName,
+                    notification,
+                    metadata.getTrackCoreElement()
+                ) ?: return@launch
+                if (sharedPreferences.getPackageStateListPostMastodon()
+                        .firstOrNull { it.packageName == playerPackageName }
+                        ?.state == true
+                ) {
+                    postMastodon(trackInfo)
+                }
+            }
         }
     }
 
-    private fun setCurrentTrack(
+    private suspend fun updateTrackInfo(
         metadata: MediaMetadata,
         playerPackageName: String,
         notification: Notification?,
         coreElement: TrackInfo.TrackCoreElement = metadata.getTrackCoreElement()
-    ) {
-        currentTrackSetJob = launch {
-            val containsSpotifyPattern = sharedPreferences
-                .getFormatPattern(this@NotificationService)
-                .containsPattern(FormatPattern.SPOTIFY_URL)
-            val spotifyUrl =
-                FirebaseAnalytics.getInstance(application)
-                    .logEvent(
-                        FirebaseAnalytics.Event.SELECT_CONTENT,
-                        Bundle().apply {
-                            putString(
-                                FirebaseAnalytics.Param.ITEM_NAME,
-                                if (containsSpotifyPattern)
-                                    "Generated share sentence contains Spotify specifier"
-                                else "Generated share sentence without Spotify specifier"
-                            )
-                        }
-                    ).let {
-                        if (containsSpotifyPattern)
-                            spotifyApiClient.getSpotifyUrl(coreElement)
-                        else null
-                    }
-
-            if (onQuickUpdate(coreElement, playerPackageName, spotifyUrl).not()) {
-                onMetadataCleared()
-                return@launch
-            }
-
-            val artworkUri = metadata.storeArtworkUri(
-                coreElement,
-                notification?.getArtworkBitmap()?.await()
-            )
-            onUpdate(
-                TrackInfo(
-                    coreElement, artworkUri?.toString(),
-                    playerPackageName, playerPackageName.getAppName(this@NotificationService),
-                    spotifyUrl
-                )
-            )
+    ): TrackInfo? {
+        if (onQuickUpdate(coreElement, playerPackageName).not()) {
+            onMetadataCleared()
+            return null
         }
+
+        val containsSpotifyPattern = sharedPreferences
+            .getFormatPattern(this@NotificationService)
+            .containsPattern(FormatPattern.SPOTIFY_URL)
+        FirebaseAnalytics.getInstance(application)
+            .logEvent(
+                FirebaseAnalytics.Event.SELECT_CONTENT,
+                Bundle().apply {
+                    putString(
+                        FirebaseAnalytics.Param.ITEM_NAME,
+                        if (containsSpotifyPattern)
+                            "Generated share sentence contains Spotify specifier"
+                        else "Generated share sentence without Spotify specifier"
+                    )
+                }
+            )
+        val spotifyUrl =
+            if (containsSpotifyPattern)
+                spotifyApiClient.getSpotifyUrl(coreElement)
+            else null
+
+        val artworkUri = metadata.storeArtworkUri(
+            coreElement,
+            notification?.getArtworkBitmap()
+        )
+
+        val trackInfo = TrackInfo(
+            coreElement, artworkUri?.toString(),
+            playerPackageName, playerPackageName.getAppName(this),
+            spotifyUrl
+        )
+
+        reflectTrackInfo(trackInfo)
+
+        return trackInfo
     }
 
     private fun MediaMetadata.getTrackCoreElement(): TrackInfo.TrackCoreElement =
@@ -370,14 +375,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private suspend fun onQuickUpdate(
         coreElement: TrackInfo.TrackCoreElement,
-        packageName: String,
-        spotifyUrl: String?
+        packageName: String
     ): Boolean {
         sharedPreferences.refreshTempArtwork(null)
         val trackInfo = TrackInfo(
             coreElement, null,
             packageName, packageName.getAppName(this),
-            spotifyUrl
+            null
         )
 
         if (sharedPreferences.readyForShare(this, trackInfo).not()) {
@@ -387,11 +391,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         reflectTrackInfo(trackInfo, false)
 
         return true
-    }
-
-    private suspend fun onUpdate(trackInfo: TrackInfo) {
-        reflectTrackInfo(trackInfo)
-        postMastodon(trackInfo)
     }
 
     private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
@@ -452,92 +451,86 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
     }
 
-    private fun postMastodon(trackInfo: TrackInfo) {
+    private suspend fun postMastodon(trackInfo: TrackInfo) {
         if (trackInfo != TrackInfo.empty &&
             sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)
         ) {
-            postMastodonJob?.cancel()
-            postMastodonJob = launch {
-                delay(sharedPreferences.getDelayDurationPostMastodon())
+            delay(sharedPreferences.getDelayDurationPostMastodon())
 
-                val subject = sharedPreferences.getSharingText(this@NotificationService, trackInfo)
-                    ?: return@launch
+            val subject = sharedPreferences.getSharingText(this@NotificationService, trackInfo)
+                ?: return
 
-                FirebaseAnalytics.getInstance(application).logEvent(
-                    FirebaseAnalytics.Event.SELECT_CONTENT,
-                    Bundle().apply {
-                        putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
-                    }
-                )
+            FirebaseAnalytics.getInstance(application).logEvent(
+                FirebaseAnalytics.Event.SELECT_CONTENT,
+                Bundle().apply {
+                    putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
+                }
+            )
 
-                val artwork =
-                    if (sharedPreferences.getSwitchState(
-                            PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
-                        )
-                    ) {
-                        trackInfo.artworkUriString?.let {
-                            return@let try {
-                                getBitmapFromUriString(this@NotificationService, it)?.let { bitmap ->
-                                    ByteArrayOutputStream().apply {
-                                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
-                                    }.toByteArray()
-                                }
-                            } catch (t: Throwable) {
-                                Timber.e(t)
-                                null
+            val artwork =
+                if (sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
+                    )
+                ) {
+                    trackInfo.artworkUriString?.let {
+                        return@let try {
+                            getBitmapFromUriString(this@NotificationService, it)?.let { bitmap ->
+                                ByteArrayOutputStream().apply {
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                                }.toByteArray()
                             }
+                        } catch (t: Throwable) {
+                            Timber.e(t)
+                            null
                         }
-                    } else null
+                    }
+                } else null
 
-                val userInfo = sharedPreferences.getMastodonUserInfo() ?: return@launch
+            val userInfo = sharedPreferences.getMastodonUserInfo() ?: return
 
-                val mastodonClient = MastodonClient.Builder(
-                    userInfo.instanceName,
-                    OkHttpProvider.clientBuilder, Gson()
-                )
-                    .accessToken(userInfo.accessToken.accessToken)
-                    .build()
+            val mastodonClient = MastodonClient.Builder(
+                userInfo.instanceName,
+                OkHttpProvider.clientBuilder, Gson()
+            )
+                .accessToken(userInfo.accessToken.accessToken)
+                .build()
 
-                val mediaId = artwork?.let {
-                    Media(mastodonClient).postMedia(
+            val mediaId = artwork?.let {
+                Media(mastodonClient)
+                    .postMedia(
                         MultipartBody.Part.createFormData(
                             "file", "artwork.jpg",
                             RequestBody.create(MediaType.get("image/jpeg"), it)
                         )
                     )
-                        .toJob()
-                        .await()
-                        ?.id
-                }
-                val result = Statuses(mastodonClient).postStatus(
-                    subject,
-                    null,
-                    mediaId?.let { listOf(it) },
-                    false,
-                    null,
-                    sharedPreferences.getVisibilityMastodon().let {
-                        when (it) {
-                            Visibility.PUBLIC -> Status.Visibility.Public
-                            Visibility.UNLISTED -> Status.Visibility.Unlisted
-                            Visibility.PRIVATE -> Status.Visibility.Private
-                        }
-                    })
-                    .toJob()
-                    .await() ?: return@launch
-
-                showShortNotify(result)
+                    .executeCatching()
+                    ?.id
             }
+            val result = Statuses(mastodonClient).postStatus(
+                subject,
+                null,
+                mediaId?.let { listOf(it) },
+                false,
+                null,
+                sharedPreferences.getVisibilityMastodon().let {
+                    when (it) {
+                        Visibility.PUBLIC -> Status.Visibility.Public
+                        Visibility.UNLISTED -> Status.Visibility.Unlisted
+                        Visibility.PRIVATE -> Status.Visibility.Private
+                    }
+                })
+                .executeCatching() ?: return
+
+            showShortNotify(result)
         }
     }
 
-    private fun showShortNotify(status: Status) {
+    private suspend fun showShortNotify(status: Status) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
-            launch {
-                notificationManager.apply {
-                    showNotification(status)
-                    delay(2500)
-                    cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
-                }
+            notificationManager.apply {
+                showNotification(status)
+                delay(2500)
+                cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
             }
         }
     }
@@ -648,7 +641,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         Timber.d("np4d artwork resolve method: $it")
                         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
                             this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                                getBitmapFromUri(this@NotificationService, this)?.apply {
+                                this.getBitmapFromUri(this@NotificationService)?.apply {
                                     refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
                                         return this
                                     }
@@ -693,19 +686,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         return null
     }
 
-    private fun Notification.getArtworkBitmap(): Deferred<Bitmap?> =
-        async {
-            return@async (getLargeIcon()?.loadDrawable(this@NotificationService)
-                    as? BitmapDrawable)
-                ?.bitmap
-                ?.let {
-                    try {
-                        it.copy(it.config, false)
-                    } catch (t: Throwable) {
-                        Timber.e(t)
-                        null
-                    }
-                }
+    private fun Notification.getArtworkBitmap(): Bitmap? =
+        (getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable)?.bitmap?.let {
+            try {
+                it.copy(it.config, false)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                null
+            }
         }
 
     private suspend fun NotificationManager.showNotification(trackInfo: TrackInfo) {

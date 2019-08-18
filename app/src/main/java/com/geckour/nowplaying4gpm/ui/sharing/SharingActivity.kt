@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceManager
-import androidx.lifecycle.ViewModelProviders
+import androidx.activity.viewModels
 import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 
@@ -21,12 +21,11 @@ class SharingActivity : WithCrashlyticsActivity() {
         fun getIntent(context: Context, requireUnlock: Boolean = true): Intent =
             Intent(context, SharingActivity::class.java).apply {
                 putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
+                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
             }
     }
 
-    private val viewModel: SharingViewModel by lazy {
-        ViewModelProviders.of(this)[SharingViewModel::class.java]
-    }
+    private val viewModel: SharingViewModel by viewModels()
 
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(this)

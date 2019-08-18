@@ -11,6 +11,7 @@ import com.geckour.nowplaying4gpm.util.FormatPatternModifier
 
 class FormatPatternModifierListAdapter(val items: MutableList<FormatPatternModifier>) :
     RecyclerView.Adapter<FormatPatternModifierListAdapter.ViewHolder>() {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
         ViewHolder(
             ItemDialogListFormatPatternModifierBinding.inflate(

@@ -6,6 +6,7 @@ import android.net.Uri
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
+import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -22,7 +23,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD(false),
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
     PREF_KEY_DELAY_POST_MASTODON(2000L),
-    PREF_KEY_VISIBILITY_MASTODON,
+    PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON(emptyList<String>()),
     PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON(false),
     PREF_KEY_WHETHER_RESIDE(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION(true),
@@ -60,21 +61,23 @@ data class FormatPatternModifier(
     val suffix: String? = null
 )
 
+data class PlayerPackageState(
+    val packageName: String,
+    val appName: String,
+    val state: Boolean
+)
+
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
-    edit().apply {
-        putString(
-            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-            Gson().toJson(trackInfo)
-        )
-    }.apply()
+    edit().putString(
+        PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
+        Gson().toJson(trackInfo)
+    ).apply()
 
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
-    edit().apply {
-        putString(
-            PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
-            Gson().toJson(order)
-        )
-    }.apply()
+    edit().putString(
+        PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
+        Gson().toJson(order)
+    ).apply()
 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
@@ -85,12 +88,10 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
         .map { ArtworkResolveMethod(it, true) }
 
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
-    edit().apply {
-        putString(
-            PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
-            Gson().toJson(modifiers)
-        )
-    }.apply()
+    edit().putString(
+        PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
+        Gson().toJson(modifiers)
+    ).apply()
 
 fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
@@ -118,7 +119,7 @@ private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
     return if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
         Gson().fromJsonOrNull(
-            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null) ?: return null,
+            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null),
             ArtworkInfo::class.java
         )
     } else null
@@ -145,13 +146,18 @@ fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = g
         getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
     else null
 
-fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
-    return if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
-        Gson().fromJsonOrNull(
-            getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null) ?: return null,
-            TrackInfo::class.java
-        ) { refreshCurrentTrackInfo(TrackInfo.empty) }
-    } else null
+fun SharedPreferences.getCurrentTrackInfo(): TrackInfo {
+    val json =
+        if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
+            getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null)
+        else null
+    Gson().fromJsonOrNull<TrackInfo>(
+        json,
+        TrackInfo::class.java
+    )?.apply { return this }
+
+    refreshCurrentTrackInfo(TrackInfo.empty)
+    return TrackInfo.empty
 }
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
@@ -183,6 +189,27 @@ fun SharedPreferences.getVisibilityMastodon(): Visibility =
         )
     ) ?: Visibility.PUBLIC
 
+fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
+    if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name))
+        getString(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name, null)?.let {
+            val type = object : TypeToken<List<PackageState>>() {}.type
+            Gson().fromJson<List<PackageState>>(it, type)
+        } ?: emptyList()
+    else emptyList()
+
+fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
+    val toStore = getPackageStateListPostMastodon().let { stateList ->
+        val index = stateList.indexOfFirst { it.packageName == packageName }
+        if (index > -1)
+            stateList.apply { stateList[index].state = state ?: return@apply }
+        else stateList + PackageState(packageName)
+    }
+    edit().putString(
+        PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
+        Gson().toJson(toStore)
+    ).apply()
+}
+
 fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
     edit().putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration).apply()
 }
@@ -204,8 +231,7 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
             getString(
                 PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
                 PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
-            )
-                ?: return null,
+            ),
             AccessToken::class.java
         )
     else null
@@ -222,7 +248,7 @@ fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
             getString(
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String
-            ) ?: return null,
+            ),
             MastodonUserInfo::class.java
         )
     else null

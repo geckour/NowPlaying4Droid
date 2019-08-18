@@ -11,8 +11,8 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
+import androidx.activity.viewModels
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.ViewModelProviders
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
@@ -42,7 +42,9 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
-            Intent(context, SettingsActivity::class.java)
+            Intent(context, SettingsActivity::class.java).apply {
+                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
     }
 
     private data class EasterEggTag(
@@ -50,9 +52,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         val time: Long
     )
 
-    private val viewModel: SettingsViewModel by lazy {
-        ViewModelProviders.of(this)[SettingsViewModel::class.java]
-    }
+    private val viewModel: SettingsViewModel by viewModels()
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -216,14 +216,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         binding.itemAuthMastodon.also { b ->
-            b.maskInactive.visibility =
-                if (sharedPreferences.getSwitchState(
-                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
-                    )
-                )
-                    View.GONE
-                else View.VISIBLE
-
             val userInfo = sharedPreferences.getMastodonUserInfo()
             if (userInfo != null) {
                 b.summary =
@@ -236,35 +228,25 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         binding.itemDelayMastodon.also { b ->
-            b.maskInactive.visibility =
-                if (sharedPreferences.getSwitchState(
-                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
-                    )
-                )
-                    View.GONE
-                else View.VISIBLE
-
             b.summary = getString(
                 R.string.pref_item_summary_delay_mastodon,
                 sharedPreferences.getDelayDurationPostMastodon()
             )
             b.root.setOnClickListener {
-                viewModel.onClickDelayMastodon(this, sharedPreferences, binding.itemDelayMastodon)
+                viewModel.onClickDelayMastodon(this, sharedPreferences, b)
             }
         }
 
         binding.itemVisibilityMastodon.also { b ->
-            b.maskInactive.visibility =
-                if (sharedPreferences.getSwitchState(
-                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
-                    )
-                )
-                    View.GONE
-                else View.VISIBLE
-
             b.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
             b.root.setOnClickListener {
-                viewModel.onClickVisibilityMastodon(this, sharedPreferences, binding.itemVisibilityMastodon)
+                viewModel.onClickVisibilityMastodon(this, sharedPreferences, b)
+            }
+        }
+
+        binding.itemPlayerPackageMastodon.also { b ->
+            b.root.setOnClickListener {
+                viewModel.onClickPlayerPackageMastodon(this, sharedPreferences)
             }
         }
 
@@ -462,19 +444,20 @@ class SettingsActivity : WithCrashlyticsActivity() {
             RequestCode.BILLING.ordinal -> {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
-                        data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)?.apply {
-                            val purchaseResult: PurchaseResult? =
-                                Gson().fromJsonOrNull(this, PurchaseResult::class.java)
+                        val purchaseResult: PurchaseResult? =
+                            Gson().fromJsonOrNull(
+                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA),
+                                PurchaseResult::class.java
+                            )
 
-                            if (purchaseResult?.purchaseState == 0) {
-                                onReflectDonation(true)
-                            } else {
-                                viewModel.showErrorDialog(
-                                    this@SettingsActivity,
-                                    R.string.dialog_title_alert_failure_purchase,
-                                    R.string.dialog_message_alert_failure_purchase
-                                )
-                            }
+                        if (purchaseResult?.purchaseState == 0) {
+                            onReflectDonation(true)
+                        } else {
+                            viewModel.showErrorDialog(
+                                this@SettingsActivity,
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_failure_purchase
+                            )
                         }
                     }
 
