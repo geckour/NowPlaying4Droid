@@ -404,13 +404,18 @@ class SettingsViewModel : ViewModel() {
             sharedPreferences
                 .getPackageStateListPostMastodon()
                 .mapNotNull { packageState ->
-                    val appName = context.packageManager.let {
-                        it.getApplicationLabel(
-                            it.getApplicationInfo(
-                                packageState.packageName,
-                                PackageManager.GET_META_DATA
+                    val appName = context.packageManager?.let {
+                        try {
+                            it.getApplicationLabel(
+                                it.getApplicationInfo(
+                                    packageState.packageName,
+                                    PackageManager.GET_META_DATA
+                                )
                             )
-                        )
+                        } catch (t: Throwable) {
+                            Timber.e(t)
+                            null
+                        }
                     }?.toString()
                     if (appName == null) {
                         sharedPreferences.storePackageStatePostMastodon(packageState.packageName, false)
