@@ -197,7 +197,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         if (currentSbn == null) {
             try {
-                activeNotifications.sortedBy { it.postTime }
+                activeNotifications
+                    .sortedBy { it.postTime }
                     .lastOrNull { fetchMetadata(it.packageName) != null }
                     .apply { onNotificationPosted(this) }
             } catch (t: Throwable) {

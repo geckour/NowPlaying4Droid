@@ -366,7 +366,7 @@ fun Context.setCrashlytics() {
 }
 
 fun <T> Gson.fromJsonOrNull(
-    json: String, type: Type,
+    json: String?, type: Type,
     onError: Throwable.() -> Unit = { Timber.e(this) }
 ): T? =
     try {

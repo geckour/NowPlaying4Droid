@@ -3,8 +3,8 @@ package com.geckour.nowplaying4gpm.ui.license
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.geckour.nowplaying4gpm.R
@@ -19,9 +19,7 @@ class LicensesActivity : WithCrashlyticsActivity() {
     }
 
     private lateinit var binding: ActivityLicensesBinding
-    private val viewModel: LicenseViewModel by lazy {
-        ViewModelProviders.of(this)[LicenseViewModel::class.java]
-    }
+    private val viewModel: LicenseViewModel by viewModels()
     private lateinit var adapter: LicenseListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {

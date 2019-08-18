@@ -10,6 +10,7 @@ import com.geckour.nowplaying4gpm.util.swap
 
 class ArtworkResolveMethodListAdapter(val items: MutableList<ArtworkResolveMethod>) :
     RecyclerView.Adapter<ArtworkResolveMethodListAdapter.ViewHolder>() {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
         ViewHolder(ItemDialogListArtworkMethodBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 

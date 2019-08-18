@@ -69,6 +69,13 @@ android {
     }
 
     dataBinding.enabled = true
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
 }
 
 static def getKey(keyName) {
@@ -125,6 +132,8 @@ dependencies {
 
     // KTX
     implementation "androidx.core:core-ktx:1.0.2"
+    implementation 'androidx.fragment:fragment-ktx:1.2.0-alpha02'
+    implementation 'androidx.activity:activity-ktx:1.1.0-alpha02'
 
     // Permission
     implementation "org.permissionsdispatcher:permissionsdispatcher:$permission_dispatcher_version"

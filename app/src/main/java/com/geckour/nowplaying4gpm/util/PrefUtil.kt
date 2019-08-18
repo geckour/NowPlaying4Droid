@@ -61,20 +61,16 @@ data class FormatPatternModifier(
 )
 
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
-    edit().apply {
-        putString(
-            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-            Gson().toJson(trackInfo)
-        )
-    }.apply()
+    edit().putString(
+        PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
+        Gson().toJson(trackInfo)
+    ).apply()
 
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
-    edit().apply {
-        putString(
-            PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
-            Gson().toJson(order)
-        )
-    }.apply()
+    edit().putString(
+        PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
+        Gson().toJson(order)
+    ).apply()
 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
@@ -85,12 +81,10 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
         .map { ArtworkResolveMethod(it, true) }
 
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
-    edit().apply {
-        putString(
-            PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
-            Gson().toJson(modifiers)
-        )
-    }.apply()
+    edit().putString(
+        PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
+        Gson().toJson(modifiers)
+    ).apply()
 
 fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
@@ -118,7 +112,7 @@ private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
     return if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
         Gson().fromJsonOrNull(
-            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null) ?: return null,
+            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null),
             ArtworkInfo::class.java
         )
     } else null
@@ -145,13 +139,18 @@ fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = g
         getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
     else null
 
-fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
-    return if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name)) {
-        Gson().fromJsonOrNull(
-            getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null) ?: return null,
-            TrackInfo::class.java
-        ) { refreshCurrentTrackInfo(TrackInfo.empty) }
-    } else null
+fun SharedPreferences.getCurrentTrackInfo(): TrackInfo {
+    val json =
+        if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
+            getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null)
+        else null
+    Gson().fromJsonOrNull<TrackInfo>(
+        json,
+        TrackInfo::class.java
+    )?.apply { return this }
+
+    refreshCurrentTrackInfo(TrackInfo.empty)
+    return TrackInfo.empty
 }
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
@@ -204,8 +203,7 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
             getString(
                 PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
                 PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
-            )
-                ?: return null,
+            ),
             AccessToken::class.java
         )
     else null
@@ -222,7 +220,7 @@ fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
             getString(
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String
-            ) ?: return null,
+            ),
             MastodonUserInfo::class.java
         )
     else null
