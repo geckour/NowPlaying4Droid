@@ -1,12 +1,12 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
 
 data class SpotifySearchResult(
     val tracks: SpotifyTracks?
 ) {
     data class SpotifyTracks(
-        @SerializedName("href")
+        @Json(name = "href")
         val queryUrl: String,
 
         val items: List<SpotifyTrack>
@@ -14,7 +14,7 @@ data class SpotifySearchResult(
         data class SpotifyTrack(
             val id: String,
 
-            @SerializedName("external_urls")
+            @Json(name = "external_urls")
             val urls: HashMap<String, String>
         )
     }

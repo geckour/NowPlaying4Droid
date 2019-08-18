@@ -99,10 +99,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         if (context == null) return
 
                         launch {
-                            reflectTrackInfo(
-                                sharedPreferences.getCurrentTrackInfo()
-                                    ?: return@launch
-                            )
+                            reflectTrackInfo(sharedPreferences.getCurrentTrackInfo())
                         }
                     }
 
@@ -490,7 +487,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
             val mastodonClient = MastodonClient.Builder(
                 userInfo.instanceName,
-                OkHttpProvider.clientBuilder, Gson()
+                OkHttpProvider.clientBuilder,
+                Gson()
             )
                 .accessToken(userInfo.accessToken.accessToken)
                 .build()

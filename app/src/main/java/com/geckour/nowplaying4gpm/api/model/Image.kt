@@ -1,9 +1,9 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
 
 data class Image(
-    @SerializedName("#text")
+    @Json(name = "#text")
     val url: String,
 
     val size: String

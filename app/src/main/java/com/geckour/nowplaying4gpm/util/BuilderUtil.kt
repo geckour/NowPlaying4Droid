@@ -18,7 +18,11 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.sys1yagi.mastodon4j.api.entity.Status
+
+val moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
     "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
@@ -28,11 +32,10 @@ suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
         val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
-        val summary = info?.let {
+        val summary =
             sharedPreferences.getFormatPattern(context)
                 .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
                 ?.foldBreak()
-        }
 
         setTextViewText(
             R.id.widget_summary_share,
@@ -42,7 +45,7 @@ suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
             && blockCount > 1
         ) {
-            val artwork = info?.artworkUriString?.getUri().getBitmapFromUri(context)?.let {
+            val artwork = info.artworkUriString?.getUri().getBitmapFromUri(context)?.let {
                 Bitmap.createScaledBitmap(it, 600, 600, false)
             }
             if (summary != null && artwork != null) {
@@ -75,7 +78,7 @@ suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo
             if (sharedPreferences.getSwitchState(
                     PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK
                 )
-            ) info?.playerPackageName
+            ) info.playerPackageName
             else null
         val launchIntent = packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
         setOnClickPendingIntent(
@@ -194,7 +197,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo): Notificatio
     }.build()
 }
 
-suspend fun getNotification(context: Context, status: Status): Notification? {
+fun getNotification(context: Context, status: Status): Notification? {
     val notificationBuilder =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             Notification.Builder(context, NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name)

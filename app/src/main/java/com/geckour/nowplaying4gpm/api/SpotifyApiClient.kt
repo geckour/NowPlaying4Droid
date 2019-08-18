@@ -4,14 +4,14 @@ import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.moshi.MoshiConverterFactory
 import timber.log.Timber
 
 class SpotifyApiClient {
     private val authService = Retrofit.Builder()
         .client(OkHttpProvider.spotifyAuthClient)
         .baseUrl("https://accounts.spotify.com/")
-        .addConverterFactory(GsonConverterFactory.create())
+        .addConverterFactory(MoshiConverterFactory.create())
         .addCallAdapterFactory(CoroutineCallAdapterFactory())
         .build()
         .create(SpotifyAuthService::class.java)
@@ -20,7 +20,7 @@ class SpotifyApiClient {
         get() = Retrofit.Builder()
             .client(OkHttpProvider.spotifyApiClient)
             .baseUrl("https://api.spotify.com/")
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create())
             .addCallAdapterFactory(CoroutineCallAdapterFactory())
             .build()
             .create(SpotifyApiService::class.java)

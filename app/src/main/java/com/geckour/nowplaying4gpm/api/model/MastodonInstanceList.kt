@@ -1,7 +1,8 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
 
 data class MastodonInstanceList(
-    @SerializedName("instances") val value: List<MastodonInstance>
+    @Json(name = "instances")
+    val value: List<MastodonInstance>
 )

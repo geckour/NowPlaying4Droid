@@ -27,7 +27,6 @@ import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 import com.geckour.nowplaying4gpm.ui.license.LicensesActivity
 import com.geckour.nowplaying4gpm.ui.observe
 import com.geckour.nowplaying4gpm.util.*
-import com.google.gson.Gson
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.RuntimePermissions
@@ -445,7 +444,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         val purchaseResult: PurchaseResult? =
-                            Gson().fromJsonOrNull(
+                            moshi.fromJsonOrNull(
                                 data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA),
                                 PurchaseResult::class.java
                             )

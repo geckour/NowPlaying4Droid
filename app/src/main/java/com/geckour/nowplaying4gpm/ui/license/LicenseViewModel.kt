@@ -19,7 +19,7 @@ class LicenseViewModel : ViewModel() {
         ),
         LicenseListAdapter.LicenseItem(R.string.library_glide, R.string.license_glide, false),
         LicenseListAdapter.LicenseItem(R.string.library_twitter4j, R.string.license_twitter4j, false),
-        LicenseListAdapter.LicenseItem(R.string.library_gson, R.string.license_gson, false),
+        LicenseListAdapter.LicenseItem(R.string.library_moshi, R.string.license_moshi, false),
         LicenseListAdapter.LicenseItem(R.string.library_mastodon4j, R.string.license_mastodon4j, false)
     )
 }

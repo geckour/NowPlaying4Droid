@@ -8,8 +8,7 @@ import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.squareup.moshi.Types
 import timber.log.Timber
 import twitter4j.auth.AccessToken
 
@@ -70,19 +69,26 @@ data class PlayerPackageState(
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
     edit().putString(
         PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-        Gson().toJson(trackInfo)
+        moshi.adapter(TrackInfo::class.java).toJson(trackInfo)
     ).apply()
 
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
     edit().putString(
         PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
-        Gson().toJson(order)
+        moshi.adapter<List<ArtworkResolveMethod>>(
+            Types.newParameterizedType(
+                List::class.java,
+                ArtworkResolveMethod::class.java
+            )
+        ).toJson(order)
     ).apply()
 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
-        val type = object : TypeToken<List<ArtworkResolveMethod>>() {}.type
-        Gson().fromJson<List<ArtworkResolveMethod>>(it, type)
+        moshi.fromJsonOrNull<List<ArtworkResolveMethod>>(
+            it,
+            Types.newParameterizedType(List::class.java, ArtworkResolveMethod::class.java)
+        )
     } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
         .values()
         .map { ArtworkResolveMethod(it, true) }
@@ -90,13 +96,20 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
     edit().putString(
         PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
-        Gson().toJson(modifiers)
+        moshi.adapter<List<FormatPatternModifier>>(
+            Types.newParameterizedType(
+                List::class.java,
+                FormatPatternModifier::class.java
+            )
+        ).toJson(modifiers)
     ).apply()
 
 fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
-        val type = object : TypeToken<List<FormatPatternModifier>>() {}.type
-        val stored = Gson().fromJson<List<FormatPatternModifier>>(json, type)
+        val stored = moshi.fromJsonOrNull<List<FormatPatternModifier>>(
+            json,
+            Types.newParameterizedType(List::class.java, FormatPatternModifier::class.java)
+        ) ?: return@let null
         FormatPattern.replaceablePatterns
             .map { pattern ->
                 val modifier = stored.firstOrNull { it.key == pattern }
@@ -112,13 +125,13 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit().putString(
         PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
-        Gson().toJson(ArtworkInfo(artworkUri?.toString()))
+        moshi.adapter(ArtworkInfo::class.java).toJson(ArtworkInfo(artworkUri?.toString()))
     ).apply()
 }
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
     return if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
-        Gson().fromJsonOrNull(
+        moshi.fromJsonOrNull(
             getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null),
             ArtworkInfo::class.java
         )
@@ -151,10 +164,7 @@ fun SharedPreferences.getCurrentTrackInfo(): TrackInfo {
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
             getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null)
         else null
-    Gson().fromJsonOrNull<TrackInfo>(
-        json,
-        TrackInfo::class.java
-    )?.apply { return this }
+    moshi.fromJsonOrNull<TrackInfo>(json, TrackInfo::class.java)?.apply { return this }
 
     refreshCurrentTrackInfo(TrackInfo.empty)
     return TrackInfo.empty
@@ -192,8 +202,10 @@ fun SharedPreferences.getVisibilityMastodon(): Visibility =
 fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
     if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name))
         getString(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name, null)?.let {
-            val type = object : TypeToken<List<PackageState>>() {}.type
-            Gson().fromJson<List<PackageState>>(it, type)
+            moshi.fromJsonOrNull<List<PackageState>>(
+                it,
+                Types.newParameterizedType(List::class.java, PackageState::class.java)
+            )
         } ?: emptyList()
     else emptyList()
 
@@ -206,7 +218,12 @@ fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: 
     }
     edit().putString(
         PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
-        Gson().toJson(toStore)
+        moshi.adapter<List<PackageState>>(
+            Types.newParameterizedType(
+                List::class.java,
+                PackageState::class.java
+            )
+        ).toJson(toStore)
     ).apply()
 }
 
@@ -222,12 +239,15 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
     )
 
 fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
-    edit().putString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, Gson().toJson(accessToken)).apply()
+    edit().putString(
+        PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
+        moshi.adapter(AccessToken::class.java).toJson(accessToken)
+    ).apply()
 }
 
 fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
-        Gson().fromJsonOrNull(
+        moshi.fromJsonOrNull(
             getString(
                 PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
                 PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
@@ -238,13 +258,15 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
 }
 
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
-    edit().putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, Gson().toJson(userInfo))
-        .apply()
+    edit().putString(
+        PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
+        moshi.adapter(MastodonUserInfo::class.java).toJson(userInfo)
+    ).apply()
 }
 
 fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
     return if (contains(PrefKey.PREF_KEY_MASTODON_USER_INFO.name))
-        Gson().fromJsonOrNull(
+        moshi.fromJsonOrNull(
             getString(
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String
