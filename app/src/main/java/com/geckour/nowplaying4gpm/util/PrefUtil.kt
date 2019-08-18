@@ -6,6 +6,7 @@ import android.net.Uri
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
+import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -22,7 +23,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD(false),
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
     PREF_KEY_DELAY_POST_MASTODON(2000L),
-    PREF_KEY_VISIBILITY_MASTODON,
+    PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON(emptyList<String>()),
     PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON(false),
     PREF_KEY_WHETHER_RESIDE(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION(true),
@@ -58,6 +59,12 @@ data class FormatPatternModifier(
     val key: FormatPattern,
     val prefix: String? = null,
     val suffix: String? = null
+)
+
+data class PlayerPackageState(
+    val packageName: String,
+    val appName: String,
+    val state: Boolean
 )
 
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
@@ -181,6 +188,27 @@ fun SharedPreferences.getVisibilityMastodon(): Visibility =
             Visibility.PUBLIC.ordinal
         )
     ) ?: Visibility.PUBLIC
+
+fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
+    if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name))
+        getString(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name, null)?.let {
+            val type = object : TypeToken<List<PackageState>>() {}.type
+            Gson().fromJson<List<PackageState>>(it, type)
+        } ?: emptyList()
+    else emptyList()
+
+fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
+    val toStore = getPackageStateListPostMastodon().let { stateList ->
+        val index = stateList.indexOfFirst { it.packageName == packageName }
+        if (index > -1)
+            stateList.apply { stateList[index].state = state ?: return@apply }
+        else stateList + PackageState(packageName)
+    }
+    edit().putString(
+        PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
+        Gson().toJson(toStore)
+    ).apply()
+}
 
 fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
     edit().putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration).apply()

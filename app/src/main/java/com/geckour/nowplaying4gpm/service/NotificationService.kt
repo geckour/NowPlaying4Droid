@@ -226,6 +226,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         ) {
             fetchMetadata(sbn.packageName)?.apply {
                 currentSbn = sbn
+                sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
                 onMetadataChanged(this@apply, sbn.packageName, sbn.notification)
             }
         }
@@ -289,7 +290,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     notification,
                     metadata.getTrackCoreElement()
                 ) ?: return@launch
-                postMastodon(trackInfo)
+                if (sharedPreferences.getPackageStateListPostMastodon()
+                        .firstOrNull { it.packageName == playerPackageName }
+                        ?.state == true
+                ) {
+                    postMastodon(trackInfo)
+                }
             }
         }
     }

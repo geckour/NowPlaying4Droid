@@ -53,6 +53,8 @@
     <string name="pref_item_summary_delay_mastodon" translatable="false">%1$d ms</string>
     <string name="pref_item_title_visibility_mastodon">Visibility of auto post</string>
     <string name="pref_item_desc_visibility_mastodon">Select visibility of auto post for Mastodon</string>
+    <string name="pref_item_title_player_package_mastodon">Select player apps for Mastodon</string>
+    <string name="pref_item_desc_player_package_mastodon">Select which player apps can be used for auto post for Mastodon</string>
     <string name="pref_item_title_success_notification_mastodon">Show notification on succeeded</string>
     <string name="pref_item_desc_success_notification_mastodon">
         Show short notification on succeeded to post for Mastodon
@@ -131,6 +133,8 @@
     <string name="dialog_title_mastodon_delay">Input delay duration</string>
     <string name="dialog_title_mastodon_visibility">Visibility of Mastodon</string>
     <string name="dialog_message_mastodon_visibility">Select visibility of auto post for Mastodon</string>
+    <string name="dialog_title_player_package_mastodon">Select player apps for Mastodon</string>
+    <string name="dialog_message_player_package_mastodon">Specify which player apps can be used for auto post for Mastodon</string>
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_title_alert_no_metadata">Failure to share</string>

@@ -43,6 +43,8 @@
     <string name="pref_item_desc_delay_mastodon">Mastodonへの自動投稿が確定するまでの遅延時間を設定する</string>
     <string name="pref_item_title_visibility_mastodon">自動投稿の公開範囲</string>
     <string name="pref_item_desc_visibility_mastodon">Mastodonへの自動投稿の公開範囲を選択</string>
+    <string name="pref_item_title_player_package_mastodon">自動投稿に用いるプレイヤーアプリ</string>
+    <string name="pref_item_desc_player_package_mastodon">Mastodonへの自動投稿に用いるプレイヤーアプリを指定する</string>
     <string name="pref_item_title_success_notification_mastodon">成功時の通知</string>
     <string name="pref_item_desc_success_notification_mastodon">
         Mastodonへの自動投稿が成功した際に短い通知を表示する
@@ -130,6 +132,8 @@
     <string name="dialog_title_mastodon_delay">遅延時間を入力</string>
     <string name="dialog_title_mastodon_visibility">Mastodonの公開範囲</string>
     <string name="dialog_message_mastodon_visibility">Mastodonへの自動投稿の公開範囲を選択</string>
+    <string name="dialog_title_player_package_mastodon">自動投稿に用いるプレイヤーアプリ</string>
+    <string name="dialog_message_player_package_mastodon">Mastodonへの自動投稿に用いるプレイヤーアプリを指定</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
     <string name="dialog_title_alert_no_metadata">共有できません</string>

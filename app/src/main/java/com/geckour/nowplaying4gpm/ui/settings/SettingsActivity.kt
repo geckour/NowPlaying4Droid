@@ -244,9 +244,9 @@ class SettingsActivity : WithCrashlyticsActivity() {
             }
         }
 
-            b.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
+        binding.itemPlayerPackageMastodon.also { b ->
             b.root.setOnClickListener {
-                viewModel.onClickVisibilityMastodon(this, sharedPreferences, binding.itemVisibilityMastodon)
+                viewModel.onClickPlayerPackageMastodon(this, sharedPreferences)
             }
         }
 
