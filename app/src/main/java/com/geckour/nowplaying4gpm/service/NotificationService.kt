@@ -264,8 +264,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         sharedPreferences.refreshTempArtwork(null)
 
-        val info = TrackInfo.empty
-        currentTrackClearJob = launch { reflectTrackInfo(info) }
+        currentTrackClearJob = launch { reflectTrackInfo(null) }
 
         notificationManager.destroyNotification()
     }
@@ -390,7 +389,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         return true
     }
 
-    private suspend fun reflectTrackInfo(info: TrackInfo, withArtwork: Boolean = true) {
+    private suspend fun reflectTrackInfo(info: TrackInfo?, withArtwork: Boolean = true) {
         updateSharedPreference(info)
         updateWidget(info)
         updateNotification(info)
@@ -399,15 +398,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
 
-    private fun updateSharedPreference(trackInfo: TrackInfo) {
+    private fun updateSharedPreference(trackInfo: TrackInfo?) {
         sharedPreferences.refreshCurrentTrackInfo(trackInfo)
     }
 
-    private suspend fun updateNotification(trackInfo: TrackInfo) {
+    private suspend fun updateNotification(trackInfo: TrackInfo?) {
         notificationManager.showNotification(trackInfo)
     }
 
-    private suspend fun updateWidget(trackInfo: TrackInfo) {
+    private suspend fun updateWidget(trackInfo: TrackInfo?) {
         AppWidgetManager.getInstance(this).apply {
             val ids = getAppWidgetIds(
                 ComponentName(this@NotificationService, ShareWidgetProvider::class.java)
@@ -426,10 +425,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
 
-    private fun updateWear(trackInfo: TrackInfo) {
+    private fun updateWear(trackInfo: TrackInfo?) {
         val subject = sharedPreferences.getFormatPattern(this@NotificationService)
             .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-        val artwork = trackInfo.artworkUriString?.getUri()
+        val artwork = trackInfo?.artworkUriString?.getUri()
 
         Wearable.getDataClient(this@NotificationService)
             .putDataItem(
@@ -449,9 +448,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun postMastodon(trackInfo: TrackInfo) {
-        if (trackInfo != TrackInfo.empty &&
-            sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)
-        ) {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
             delay(sharedPreferences.getDelayDurationPostMastodon())
 
             val subject = sharedPreferences.getSharingText(this@NotificationService, trackInfo)
@@ -694,7 +691,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             }
         }
 
-    private suspend fun NotificationManager.showNotification(trackInfo: TrackInfo) {
+    private suspend fun NotificationManager.showNotification(trackInfo: TrackInfo?) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
             && sharedPreferences.readyForShare(this@NotificationService, trackInfo)
         ) {

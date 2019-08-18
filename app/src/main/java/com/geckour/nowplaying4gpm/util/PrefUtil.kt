@@ -66,10 +66,10 @@ data class PlayerPackageState(
     val state: Boolean
 )
 
-fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo) =
+fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) =
     edit().putString(
         PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-        moshi.adapter(TrackInfo::class.java).toJson(trackInfo)
+        trackInfo?.let { moshi.adapter(TrackInfo::class.java).toJson(it) }
     ).apply()
 
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
@@ -159,15 +159,15 @@ fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = g
         getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
     else null
 
-fun SharedPreferences.getCurrentTrackInfo(): TrackInfo {
+fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
     val json =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
             getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null)
         else null
     moshi.fromJsonOrNull<TrackInfo>(json, TrackInfo::class.java)?.apply { return this }
 
-    refreshCurrentTrackInfo(TrackInfo.empty)
-    return TrackInfo.empty
+    refreshCurrentTrackInfo(null)
+    return null
 }
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
@@ -302,6 +302,6 @@ fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
 
 fun SharedPreferences.readyForShare(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): Boolean {
     return trackInfo != null &&
-            (!getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE) ||
+            (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
                     trackInfo.isSatisfiedSpecifier(getFormatPattern(context)))
 }

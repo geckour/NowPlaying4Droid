@@ -153,28 +153,29 @@ enum class FormatPattern(val value: String) {
     }
 }
 
-fun String.getSharingText(trackInfo: TrackInfo, modifiers: List<FormatPatternModifier>): String? =
-    if (trackInfo == TrackInfo.empty) null
-    else this.splitConsideringEscape().joinToString("") {
-        return@joinToString Regex("^'(.+)'$").let { regex ->
-            if (it.matches(regex)) it.replace(regex, "$1")
-            else when (it) {
-                FormatPattern.S_QUOTE.value -> ""
-                FormatPattern.S_QUOTE_DOUBLE.value -> "'"
-                FormatPattern.TITLE.value ->
-                    trackInfo.coreElement.title?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.ARTIST.value ->
-                    trackInfo.coreElement.artist?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.ALBUM.value ->
-                    trackInfo.coreElement.album?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.COMPOSER.value ->
-                    trackInfo.coreElement.composer?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.PLAYER_NAME.value ->
-                    trackInfo.playerAppName?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.SPOTIFY_URL.value ->
-                    trackInfo.spotifyUrl?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.NEW_LINE.value -> "\n"
-                else -> it
+fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
+    trackInfo?.let { info ->
+        this.splitConsideringEscape().joinToString("") {
+            return@joinToString Regex("^'(.+)'$").let { regex ->
+                if (it.matches(regex)) it.replace(regex, "$1")
+                else when (it) {
+                    FormatPattern.S_QUOTE.value -> ""
+                    FormatPattern.S_QUOTE_DOUBLE.value -> "'"
+                    FormatPattern.TITLE.value ->
+                        info.coreElement.title?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.ARTIST.value ->
+                        info.coreElement.artist?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.ALBUM.value ->
+                        info.coreElement.album?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.COMPOSER.value ->
+                        info.coreElement.composer?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.PLAYER_NAME.value ->
+                        info.playerAppName?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.SPOTIFY_URL.value ->
+                        info.spotifyUrl?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.NEW_LINE.value -> "\n"
+                    else -> it
+                }
             }
         }
     }
