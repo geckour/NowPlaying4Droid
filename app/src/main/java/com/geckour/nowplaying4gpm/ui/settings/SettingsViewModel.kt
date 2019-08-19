@@ -232,9 +232,9 @@ class SettingsViewModel : ViewModel() {
             launch {
                 val instances = MastodonInstancesApiClient().getList()
                 editText.setAdapter(
-                    ArrayAdapter<String>(context,
+                    ArrayAdapter(context,
                         android.R.layout.simple_dropdown_item_1line,
-                        instances.map { it.name })
+                        instances.mapNotNull { it.name })
                 )
             }
         }

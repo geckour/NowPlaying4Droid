@@ -4,5 +4,5 @@ import com.squareup.moshi.Json
 
 data class MastodonInstanceList(
     @Json(name = "instances")
-    val value: List<MastodonInstance>
+    val value: List<MastodonInstance>?
 )

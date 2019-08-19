@@ -15,7 +15,7 @@ data class SpotifySearchResult(
             val id: String,
 
             @Json(name = "external_urls")
-            val urls: HashMap<String, String>
+            val urls: Map<String, String>
         )
     }
 }
