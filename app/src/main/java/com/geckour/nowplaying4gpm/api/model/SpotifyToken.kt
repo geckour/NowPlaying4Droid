@@ -1,14 +1,14 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
 
 data class SpotifyToken(
-    @SerializedName("access_token")
+    @Json(name = "access_token")
     val accessToken: String,
 
-    @SerializedName("token_type")
+    @Json(name = "token_type")
     val tokenType: String,
 
-    @SerializedName("expires_in")
+    @Json(name = "expires_in")
     val expiresIn: Int
 )

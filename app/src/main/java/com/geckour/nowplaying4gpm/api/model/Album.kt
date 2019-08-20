@@ -1,16 +1,9 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
 
 data class Album(
-    @SerializedName("mbid")
-    val id: String,
 
-    @SerializedName("name")
-    val title: String,
-
-    val artist: String,
-
-    @SerializedName("image")
+    @Json(name = "image")
     val artworks: List<Image>
 )

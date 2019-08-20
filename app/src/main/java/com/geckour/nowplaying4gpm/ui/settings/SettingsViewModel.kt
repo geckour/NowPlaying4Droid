@@ -17,7 +17,6 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.NotificationManagerCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.android.vending.billing.IInAppBillingService
 import com.crashlytics.android.Crashlytics
 import com.facebook.stetho.okhttp3.StethoInterceptor
@@ -233,9 +232,9 @@ class SettingsViewModel : ViewModel() {
             launch {
                 val instances = MastodonInstancesApiClient().getList()
                 editText.setAdapter(
-                    ArrayAdapter<String>(context,
+                    ArrayAdapter(context,
                         android.R.layout.simple_dropdown_item_1line,
-                        instances.map { it.name })
+                        instances.mapNotNull { it.name })
                 )
             }
         }
@@ -464,7 +463,7 @@ class SettingsViewModel : ViewModel() {
     internal fun startBillingTransaction(activity: Activity, billingService: IInAppBillingService?, skuName: String) {
         launch {
             billingService?.let {
-                BillingApiClient(viewModelScope, it).apply {
+                BillingApiClient(it).apply {
                     val sku =
                         getSkuDetails(activity, skuName).firstOrNull()
                             ?: run {
@@ -488,7 +487,7 @@ class SettingsViewModel : ViewModel() {
                 }
 
                 activity.startIntentSenderForResult(
-                    BillingApiClient(viewModelScope, it)
+                    BillingApiClient(it)
                         .getBuyIntent(activity, skuName)
                         ?.intentSender,
                     SettingsActivity.RequestCode.BILLING.ordinal,

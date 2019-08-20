@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.preference.PreferenceManager
@@ -21,14 +20,15 @@ import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
-import com.google.gson.Gson
+import com.squareup.moshi.Moshi
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.reflect.Type
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.math.absoluteValue
 
 enum class PaletteColor {
     LIGHT_VIBRANT {
@@ -112,7 +112,7 @@ enum class PaletteColor {
 
     companion object {
         fun getFromIndex(index: Int): PaletteColor =
-            PaletteColor.values().getOrNull(index) ?: LIGHT_VIBRANT
+            values().getOrNull(index) ?: LIGHT_VIBRANT
     }
 }
 
@@ -130,7 +130,7 @@ enum class Visibility {
 
     companion object {
         fun getFromIndex(index: Int): Visibility =
-            Visibility.values().getOrNull(index) ?: PUBLIC
+            values().getOrNull(index) ?: PUBLIC
     }
 }
 
@@ -153,28 +153,29 @@ enum class FormatPattern(val value: String) {
     }
 }
 
-fun String.getSharingText(trackInfo: TrackInfo, modifiers: List<FormatPatternModifier>): String? =
-    if (trackInfo == TrackInfo.empty) null
-    else this.splitConsideringEscape().joinToString("") {
-        return@joinToString Regex("^'(.+)'$").let { regex ->
-            if (it.matches(regex)) it.replace(regex, "$1")
-            else when (it) {
-                FormatPattern.S_QUOTE.value -> ""
-                FormatPattern.S_QUOTE_DOUBLE.value -> "'"
-                FormatPattern.TITLE.value -> trackInfo.coreElement.title
-                    ?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.ARTIST.value -> trackInfo.coreElement.artist
-                    ?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.ALBUM.value -> trackInfo.coreElement.album
-                    ?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.COMPOSER.value -> trackInfo.coreElement.composer
-                    ?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.PLAYER_NAME.value -> trackInfo.playerAppName
-                    ?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.SPOTIFY_URL.value -> trackInfo.spotifyUrl
-                    ?.getReplacerWithModifier(modifiers, it) ?: ""
-                FormatPattern.NEW_LINE.value -> "\n"
-                else -> it
+fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
+    trackInfo?.let { info ->
+        this.splitConsideringEscape().joinToString("") {
+            return@joinToString Regex("^'(.+)'$").let { regex ->
+                if (it.matches(regex)) it.replace(regex, "$1")
+                else when (it) {
+                    FormatPattern.S_QUOTE.value -> ""
+                    FormatPattern.S_QUOTE_DOUBLE.value -> "'"
+                    FormatPattern.TITLE.value ->
+                        info.coreElement.title?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.ARTIST.value ->
+                        info.coreElement.artist?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.ALBUM.value ->
+                        info.coreElement.album?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.COMPOSER.value ->
+                        info.coreElement.composer?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.PLAYER_NAME.value ->
+                        info.playerAppName?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.SPOTIFY_URL.value ->
+                        info.spotifyUrl?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.NEW_LINE.value -> "\n"
+                    else -> it
+                }
             }
         }
     }
@@ -304,28 +305,6 @@ suspend fun Context.checkStoragePermissionAsync(
     }
 }
 
-fun Bitmap.similarity(bitmap: Bitmap): Deferred<Float?> = GlobalScope.async(Dispatchers.IO) {
-    if (this@similarity.isRecycled) {
-        Timber.e(IllegalStateException("Bitmap is recycled"))
-        return@async null
-    }
-
-    val origin = this@similarity.copy(this@similarity.config, false)
-    val other =
-        if (origin.width != bitmap.width || origin.height != bitmap.height)
-            Bitmap.createScaledBitmap(bitmap, origin.width, origin.height, false)
-        else bitmap
-
-    var count = 0
-    for (x in 0 until origin.width) {
-        for (y in 0 until origin.height) {
-            if (origin.getPixel(x, y).colorSimilarity(other.getPixel(x, y)) > 0.9) count++
-        }
-    }
-
-    return@async (count.toFloat() / (origin.width * origin.height))
-}
-
 fun String.getUri(): Uri? =
     try {
         Uri.parse(this)
@@ -333,11 +312,6 @@ fun String.getUri(): Uri? =
         Timber.e(e)
         null
     }
-
-fun Int.colorSimilarity(colorInt: Int): Float =
-    1f - ((Color.red(this) - Color.red(colorInt)).absoluteValue
-            + (Color.green(this) - Color.green(colorInt)).absoluteValue
-            + (Color.blue(this) - Color.blue(colorInt)).absoluteValue).toFloat() / (255 * 3)
 
 private fun Palette.getColorFromPaletteColor(paletteColor: PaletteColor): Int =
     when (paletteColor) {
@@ -365,12 +339,13 @@ fun Context.setCrashlytics() {
     if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
 }
 
-fun <T> Gson.fromJsonOrNull(
-    json: String?, type: Type,
+inline fun <reified T> Moshi.fromJsonOrNull(
+    json: String?,
+    type: Type,
     onError: Throwable.() -> Unit = { Timber.e(this) }
 ): T? =
     try {
-        this.fromJson(json, type)
+        this.adapter<T>(type).fromJson(json)
     } catch (t: Throwable) {
         onError(t)
         null

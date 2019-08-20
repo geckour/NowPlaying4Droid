@@ -11,16 +11,6 @@ data class TrackInfo(
     val playerAppName: String?,
     val spotifyUrl: String?
 ) : Serializable {
-    companion object {
-        val empty: TrackInfo =
-            TrackInfo(
-                TrackCoreElement.empty,
-                null,
-                null,
-                null,
-                null
-            )
-    }
 
     fun isSatisfiedSpecifier(sharingFormatText: String): Boolean =
         sharingFormatText.containedPatterns.all {
@@ -41,17 +31,15 @@ data class TrackInfo(
         val album: String?,
         val composer: String?
     ) : Serializable {
-        companion object {
-            val empty: TrackCoreElement = TrackCoreElement(null, null, null, null)
-        }
 
-        val isAllNonNull: Boolean =
-            title != null && artist != null && album != null
+        val isAllNonNull: Boolean
+            get() = title != null && artist != null && album != null
 
-        val spotifySearchQuery: String? =
-            if (this.isAllNonNull)
-                "track:\"$title\" \"$artist\" album:\"$album\""
-            else null
+        val spotifySearchQuery: String?
+            get() =
+                if (this.isAllNonNull)
+                    "track:\"$title\" \"$artist\" album:\"$album\""
+                else null
     }
 }
 

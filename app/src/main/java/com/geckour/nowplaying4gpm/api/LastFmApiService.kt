@@ -2,14 +2,13 @@ package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.model.AlbumWrapper
-import kotlinx.coroutines.Deferred
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface LastFmApiService {
 
     @GET("2.0")
-    fun searchAlbum(
+    suspend fun searchAlbum(
         @Query("album")
         album: String,
 
@@ -24,5 +23,5 @@ interface LastFmApiService {
 
         @Query("format")
         format: String = "json"
-    ): Deferred<AlbumWrapper>
+    ): AlbumWrapper
 }

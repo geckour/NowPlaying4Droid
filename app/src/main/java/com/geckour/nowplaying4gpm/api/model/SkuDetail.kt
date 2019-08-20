@@ -1,6 +1,6 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
 
 data class SkuDetail(
     val productId: String,
@@ -9,10 +9,10 @@ data class SkuDetail(
 
     val price: String,
 
-    @SerializedName("price_amount_micros")
+    @Json(name = "price_amount_micros")
     val priceInMicros: String,
 
-    @SerializedName("price_currency_code")
+    @Json(name = "price_currency_code")
     val priceCode: String,
 
     val title: String,
