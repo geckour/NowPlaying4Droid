@@ -54,7 +54,7 @@ class SharingViewModel : ViewModel() {
                 .setChooserTitle(R.string.share_title)
                 .setText(sharingText)
                 .also {
-                    artworkUri?.apply { it.setStream(this).setType("image/jpeg") }
+                    artworkUri?.apply { it.setStream(this).setType("image/bmp") }
                         ?: it.setType("text/plain")
                 }
                 .createChooserIntent()
