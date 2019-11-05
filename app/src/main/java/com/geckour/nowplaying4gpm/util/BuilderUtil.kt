@@ -23,8 +23,11 @@ import com.sys1yagi.mastodon4j.api.entity.Status
 
 val moshi: Moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
-fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
-    "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
+const val contentQuerySelection: String =
+    "${MediaStore.Audio.Media.TITLE}=? and ${MediaStore.Audio.Media.ARTIST}=? and ${MediaStore.Audio.Media.ALBUM}=?"
+
+fun getContentQueryArgs(title: String, artist: String, album: String): Array<String> =
+    arrayOf(title, artist, album)
 
 suspend fun getShareWidgetViews(
     context: Context,

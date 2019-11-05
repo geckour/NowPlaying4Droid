@@ -382,12 +382,12 @@ fun Context.getAlbumIdFromDevice(
     return contentResolver.query(
         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
         arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
-        getContentQuerySelection(
+        contentQuerySelection,
+        getContentQueryArgs(
             requireNotNull(trackCoreElement.title),
             requireNotNull(trackCoreElement.artist),
             requireNotNull(trackCoreElement.album)
         ),
-        null,
         null
     )?.use { it.getAlbumIdFromDevice() }
 }
