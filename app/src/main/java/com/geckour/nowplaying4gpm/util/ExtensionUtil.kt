@@ -2,22 +2,32 @@ package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.ContentUris
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.preference.PreferenceManager
+import android.provider.MediaStore
 import android.view.View
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.RequestOptions
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.squareup.moshi.Moshi
@@ -26,7 +36,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
 import java.lang.reflect.Type
+import java.nio.ByteBuffer
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -180,7 +193,10 @@ fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternMo
         }
     }
 
-fun String.getReplacerWithModifier(modifiers: List<FormatPatternModifier>, identifier: String): String =
+fun String.getReplacerWithModifier(
+    modifiers: List<FormatPatternModifier>,
+    identifier: String
+): String =
     "${modifiers.getPrefix(identifier)}$this${modifiers.getSuffix(identifier)}"
 
 fun List<FormatPatternModifier>.getPrefix(value: String): String =
@@ -285,26 +301,6 @@ fun Context.checkStoragePermission(
     }
 }
 
-suspend fun Context.checkStoragePermissionAsync(
-    onNotGranted: (suspend (Context) -> Unit)? = null,
-    onGranted: suspend (Context) -> Unit = {}
-) {
-    if (ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        )
-        == PackageManager.PERMISSION_GRANTED
-    ) {
-        onGranted(this)
-    } else {
-        onNotGranted?.invoke(this)
-            ?: startActivity(
-                SettingsActivity.getIntent(this).apply {
-                    flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
-                })
-    }
-}
-
 fun String.getUri(): Uri? =
     try {
         Uri.parse(this)
@@ -376,3 +372,105 @@ fun ViewModel.launch(
 ) {
     viewModelScope.launch(context, start, block)
 }
+
+
+fun Context.getAlbumIdFromDevice(
+    trackCoreElement: TrackInfo.TrackCoreElement
+): MediaIdInfo? {
+    if (trackCoreElement.isAllNonNull.not()) return null
+
+    return contentResolver.query(
+        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+        arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
+        getContentQuerySelection(
+            requireNotNull(trackCoreElement.title),
+            requireNotNull(trackCoreElement.artist),
+            requireNotNull(trackCoreElement.album)
+        ),
+        null,
+        null
+    )?.use { it.getAlbumIdFromDevice() }
+}
+
+fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? =
+    this?.let {
+        (if (it.moveToFirst()) {
+            MediaIdInfo(
+                it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
+                it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+            )
+        } else null)
+    }
+
+fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? =
+    mediaIdInfo?.let {
+        try {
+            val contentUri = ContentUris.withAppendedId(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                it.mediaTrackId
+            )
+            val retriever = MediaMetadataRetriever().apply {
+                setDataSource(this@getArtworkUriFromDevice, contentUri)
+            }
+            retriever.embeddedPicture?.refreshArtworkUri(this)
+                ?: ContentUris.withAppendedId(
+                    Uri.parse("content://media/external/audio/albumart"),
+                    it.mediaAlbumId
+                )?.also { uri ->
+                    contentResolver.openInputStream(uri)?.close()
+                        ?: throw IllegalStateException()
+                    PreferenceManager.getDefaultSharedPreferences(this)
+                        .refreshTempArtwork(uri)
+                }
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            null
+        }
+    }
+
+fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
+    getArtworkUriFromDevice(getAlbumIdFromDevice(trackCoreElement))
+
+fun ByteArray.refreshArtworkUri(context: Context): Uri? {
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    val dirName = "images"
+    val fileName = "temp_artwork.jpg"
+    val dir = File(context.filesDir, dirName)
+    val file = File(dir, fileName)
+
+    if (file.exists()) file.delete()
+    if (dir.exists().not()) dir.mkdir()
+
+    FileOutputStream(file).use {
+        it.write(this)
+        it.flush()
+    }
+
+    return FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
+        sharedPreferences.refreshTempArtwork(this)
+    }
+}
+
+fun Context.getFileFromUrl(url: String?): File? =
+    url?.let {
+        try {
+            val glideOptions =
+                RequestOptions()
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .signature { System.currentTimeMillis().toString() }
+            Glide.with(this)
+                .asFile().load(it).apply(glideOptions)
+                .submit().get()
+        } catch (t: Throwable) {
+            Timber.e(t)
+            Crashlytics.logException(t)
+            null
+        }
+    }
+
+fun Bitmap.toByteArray(): ByteArray? =
+    ByteBuffer.allocate(byteCount)?.also {
+        copyPixelsToBuffer(it)
+    }?.array()

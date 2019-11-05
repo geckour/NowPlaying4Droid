@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.util
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.preference.PreferenceManager
@@ -27,7 +26,11 @@ val moshi: Moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 fun getContentQuerySelection(title: String?, artist: String?, album: String?): String =
     "${MediaStore.Audio.Media.TITLE}='${title?.escapeSql()}' and ${MediaStore.Audio.Media.ARTIST}='${artist?.escapeSql()}' and ${MediaStore.Audio.Media.ALBUM}='${album?.escapeSql()}'"
 
-suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo: TrackInfo? = null): RemoteViews {
+suspend fun getShareWidgetViews(
+    context: Context,
+    blockCount: Int = 0,
+    trackInfo: TrackInfo? = null
+): RemoteViews {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return RemoteViews(context.packageName, R.layout.widget_share).apply {
@@ -45,8 +48,8 @@ suspend fun getShareWidgetViews(context: Context, blockCount: Int = 0, trackInfo
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
             && blockCount > 1
         ) {
-            val artwork = info?.artworkUriString?.getUri().getBitmapFromUri(context)?.let {
-                Bitmap.createScaledBitmap(it, 600, 600, false)
+            val artwork = info?.artworkUriString?.let {
+                context.getBitmapFromUriString(it)
             }
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
@@ -117,7 +120,10 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo?): Notificati
 
     val notificationBuilder =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            Notification.Builder(context, NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
         else Notification.Builder(context)
 
     return notificationBuilder.apply {
@@ -156,9 +162,7 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo?): Notificati
                     PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION
                 )
             ) {
-                trackInfo.artworkUriString?.let {
-                    getBitmapFromUriString(context, it)
-                }
+                trackInfo.artworkUriString?.let { context.getBitmapFromUriString(it) }
             } else null
 
         setSmallIcon(R.drawable.ic_notification)
@@ -195,16 +199,20 @@ suspend fun getNotification(context: Context, trackInfo: TrackInfo?): Notificati
     }.build()
 }
 
-fun getNotification(context: Context, status: Status): Notification? {
+suspend fun getNotification(context: Context, status: Status): Notification? {
     val notificationBuilder =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            Notification.Builder(context, NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
         else Notification.Builder(context)
 
     return notificationBuilder.apply {
         val notificationText = Html.fromHtml(status.content, Html.FROM_HTML_MODE_COMPACT).toString()
 
-        val thumb = getBitmapFromUrl(context, status.mediaAttachments.firstOrNull()?.url)
+        val thumb =
+            status.mediaAttachments.firstOrNull()?.url?.let { context.getBitmapFromUriString(it) }
 
         setSmallIcon(R.drawable.ic_notification_notify)
         setLargeIcon(thumb)

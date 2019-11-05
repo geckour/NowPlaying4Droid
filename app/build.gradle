@@ -11,7 +11,7 @@ apply plugin: "io.fabric"
 kapt.mapDiagnosticLocations = true
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
 
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"

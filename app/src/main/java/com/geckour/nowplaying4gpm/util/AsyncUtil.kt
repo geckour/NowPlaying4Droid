@@ -1,110 +1,47 @@
 package com.geckour.nowplaying4gpm.util
 
-import android.content.ContentUris
+import android.Manifest
 import android.content.Context
-import android.database.Cursor
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.preference.PreferenceManager
-import android.provider.MediaStore
-import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.crashlytics.android.Crashlytics
-import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
-import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
 import kotlinx.coroutines.*
 import timber.log.Timber
 import java.io.File
-import java.io.FileOutputStream
 
 suspend fun <T> asyncOrNull(
     onError: (Throwable) -> Unit = { Timber.e(it) },
     block: suspend CoroutineScope.() -> T
-) =
-    coroutineScope {
-        async {
-            try {
-                block()
-            } catch (t: Throwable) {
-                onError(t)
-                Crashlytics.logException(t)
-                null
-            }
-        }
-    }
-
-fun <T> MastodonRequest<T>.executeCatching(): T? =
-    try {
-        execute()
-    } catch (t: Throwable) {
-        Timber.e(t)
-        null
-    }
-
-private fun getAlbumIdFromDevice(context: Context, trackCoreElement: TrackInfo.TrackCoreElement): MediaIdInfo? {
-    if (trackCoreElement.isAllNonNull.not()) return null
-
-    return context.contentResolver.query(
-        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-        arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
-        getContentQuerySelection(
-            requireNotNull(trackCoreElement.title),
-            requireNotNull(trackCoreElement.artist),
-            requireNotNull(trackCoreElement.album)
-        ),
-        null,
-        null
-    )?.use { it.getAlbumIdFromDevice() }
-}
-
-private fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? =
-    this?.let {
-        (if (it.moveToFirst()) {
-            MediaIdInfo(
-                it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
-                it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-            )
-        } else null)
-    }
-
-private suspend fun getArtworkUriFromDevice(context: Context, mediaIdInfo: MediaIdInfo?): Uri? =
-    mediaIdInfo?.let {
-        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId)
+) = coroutineScope {
+    async {
         try {
-            val retriever = MediaMetadataRetriever().apply { setDataSource(context, uri) }
-            retriever.embeddedPicture?.let uri@{ biteArray ->
-                refreshArtworkUriFromBitmap(
-                    context,
-                    BitmapFactory.decodeByteArray(biteArray, 0, biteArray.size)
-                        ?: return@uri null
-                )
-            } ?: ContentUris.withAppendedId(
-                Uri.parse("content://media/external/audio/albumart"),
-                it.mediaAlbumId
-            )?.let {
-                context.contentResolver.openInputStream(it)?.close()
-                    ?: throw IllegalStateException()
-                PreferenceManager.getDefaultSharedPreferences(context)
-                    .refreshTempArtwork(it)
-                it
-            }
+            block()
         } catch (t: Throwable) {
-            Timber.e(t)
+            onError(t)
             Crashlytics.logException(t)
             null
         }
     }
+}
 
-suspend fun getArtworkUriFromDevice(context: Context, trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
-    getArtworkUriFromDevice(context, getAlbumIdFromDevice(context, trackCoreElement))
+fun <T> MastodonRequest<T>.executeCatching(onCatch: ((Throwable) -> Unit)? = null): T? =
+    try {
+        execute()
+    } catch (t: Throwable) {
+        onCatch?.invoke(t) ?: Timber.e(t)
+        null
+    }
 
 private suspend fun getArtworkUrlFromLastFmApi(
     client: LastFmApiClient,
@@ -116,7 +53,7 @@ private suspend fun getArtworkUrlFromLastFmApi(
         trackCoreElement.album,
         trackCoreElement.artist
     )?.artworks?.let {
-        it.find { it.size == size.rawStr } ?: it.lastOrNull()
+        it.find { image -> image.size == size.rawStr } ?: it.lastOrNull()
     }?.url
 
 suspend fun refreshArtworkUriFromLastFmApi(
@@ -125,58 +62,12 @@ suspend fun refreshArtworkUriFromLastFmApi(
     trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
-    val bitmap = getBitmapFromUrl(context, url)?.let { it.copy(it.config, false) }
-        ?: return null
-    val uri = refreshArtworkUriFromBitmap(context, bitmap)
-    bitmap.recycle()
+    val file = context.getFileFromUrl(url) ?: return null
 
-    return uri
+    return file.readBytes().refreshArtworkUri(context)
 }
 
-fun refreshArtworkUriFromBitmap(context: Context, bitmap: Bitmap): Uri? {
-    if (bitmap.isRecycled) {
-        Timber.e(IllegalStateException("Bitmap is recycled"))
-        return null
-    }
-
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-    val dirName = "images"
-    val fileName = "temp_artwork.jpg"
-    val dir = File(context.filesDir, dirName)
-    val file = File(dir, fileName)
-
-    if (file.exists()) file.delete()
-    if (dir.exists().not()) dir.mkdir()
-
-    FileOutputStream(file).use {
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
-        it.flush()
-    }
-
-    return FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
-        sharedPreferences.refreshTempArtwork(this)
-    }
-}
-
-fun getBitmapFromUrl(context: Context, url: String?): Bitmap? =
-    url?.let {
-        try {
-            val glideOptions =
-                RequestOptions()
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
-                    .signature { System.currentTimeMillis().toString() }
-            Glide.with(context)
-                .asBitmap().load(it).apply(glideOptions)
-                .submit().get()
-        } catch (t: Throwable) {
-            Timber.e(t)
-            Crashlytics.logException(t)
-            null
-        }
-    }
-
-suspend fun Uri?.getBitmapFromUri(context: Context): Bitmap? =
+suspend fun Uri?.getFile(context: Context): File? =
     this?.let {
         try {
             val glideOptions =
@@ -186,7 +77,7 @@ suspend fun Uri?.getBitmapFromUri(context: Context): Bitmap? =
                     .signature { System.currentTimeMillis().toString() }
             withContext(Dispatchers.IO) {
                 Glide.with(context)
-                    .asBitmap().load(it).apply(glideOptions)
+                    .asFile().load(it).apply(glideOptions)
                     .submit().get()
             }
         } catch (t: Throwable) {
@@ -196,11 +87,49 @@ suspend fun Uri?.getBitmapFromUri(context: Context): Bitmap? =
         }
     }
 
-suspend fun getBitmapFromUriString(context: Context, uriString: String): Bitmap? =
+suspend fun Context.getFileFromUriString(uriString: String): File? =
     try {
-        Uri.parse(uriString).getBitmapFromUri(context)
+        Uri.parse(uriString).getFile(this)
     } catch (t: Throwable) {
         Timber.e(t)
         Crashlytics.logException(t)
         null
     }
+
+suspend fun Context.getBitmapFromUriString(uriString: String): Bitmap? =
+    try {
+        val glideOptions =
+            RequestOptions()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .signature { System.currentTimeMillis().toString() }
+        withContext(Dispatchers.IO) {
+            Glide.with(this@getBitmapFromUriString)
+                .asBitmap().load(uriString).apply(glideOptions)
+                .submit().get()
+        }
+    } catch (t: Throwable) {
+        Timber.e(t)
+        Crashlytics.logException(t)
+        null
+    }
+
+suspend fun Context.checkStoragePermissionAsync(
+    onNotGranted: (suspend (Context) -> Unit)? = null,
+    onGranted: suspend (Context) -> Unit = {}
+) {
+    if (ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        == PackageManager.PERMISSION_GRANTED
+    ) {
+        onGranted(this)
+    } else {
+        onNotGranted?.invoke(this)
+            ?: startActivity(
+                SettingsActivity.getIntent(this).apply {
+                    flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
+                })
+    }
+}
