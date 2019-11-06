@@ -49,9 +49,9 @@ class BillingApiClient(private val service: IInAppBillingService) {
             }
         ).let {
             if (it.getInt(BUNDLE_KEY_RESPONSE_CODE) == ResponseCode.RESPONSE_OK.code) {
-                it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST)?.mapNotNull {
+                it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST).orEmpty().mapNotNull {
                     moshi.fromJsonOrNull<SkuDetail>(it, SkuDetail::class.java)
-                } ?: emptyList()
+                }
             } else emptyList()
         }
     }.await() ?: emptyList()

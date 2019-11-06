@@ -40,7 +40,6 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import timber.log.Timber
-import java.io.ByteArrayOutputStream
 import kotlin.coroutines.CoroutineContext
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
@@ -418,7 +417,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     id,
                     getShareWidgetViews(
                         this@NotificationService,
-                        ShareWidgetProvider.blockCount(widgetOptions), trackInfo
+                        ShareWidgetProvider.blockCount(widgetOptions),
+                        trackInfo
                     )
                 )
             }
@@ -461,18 +461,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 }
             )
 
-            val artwork =
+            val artworkBytes =
                 if (sharedPreferences.getSwitchState(
                         PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
                     )
                 ) {
                     trackInfo.artworkUriString?.let {
                         return@let try {
-                            getBitmapFromUriString(this@NotificationService, it)?.let { bitmap ->
-                                ByteArrayOutputStream().apply {
-                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, this)
-                                }.toByteArray()
-                            }
+                            getFileFromUriString(it)?.readBytes()
                         } catch (t: Throwable) {
                             Timber.e(t)
                             null
@@ -490,7 +486,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 .accessToken(userInfo.accessToken.accessToken)
                 .build()
 
-            val mediaId = artwork?.let {
+            val mediaId = artworkBytes?.let {
                 Media(mastodonClient)
                     .postMedia(
                         MultipartBody.Part.createFormData(
@@ -589,7 +585,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         val artwork =
             trackInfo.artworkUriString?.let {
-                getBitmapFromUriString(this@NotificationService, it)
+                getBitmapFromUriString(it)
             }
 
         val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
@@ -627,7 +623,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 when (it.key) {
                     ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
                         Timber.d("np4d artwork resolve method: $it")
-                        getArtworkUriFromDevice(this@NotificationService, coreElement)?.apply {
+                        this@NotificationService.getArtworkUriFromDevice(coreElement)?.apply {
                             sharedPreferences.refreshTempArtwork(this)
                             return this
                         }
@@ -635,13 +631,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
                         Timber.d("np4d artwork resolve method: $it")
                         if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
-                            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()?.apply {
-                                this.getBitmapFromUri(this@NotificationService)?.apply {
-                                    refreshArtworkUriFromBitmap(this@NotificationService, this)?.apply {
-                                        return this
+                            this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.getUri()
+                                ?.apply {
+                                    this.getFile(this@NotificationService)?.apply {
+                                        this.readBytes().refreshArtworkUri(this@NotificationService)
+                                            ?.apply { return this }
                                     }
                                 }
-                            }
                         }
                     }
                     ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_BITMAP -> {
@@ -652,17 +648,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                             else null
 
                         if (metadataBitmap != null) {
-                            refreshArtworkUriFromBitmap(this@NotificationService, metadataBitmap)?.apply {
-                                return this
-                            }
+                            val byteArray = metadataBitmap.toByteArray() ?: return null
+                            byteArray.refreshArtworkUri(this@NotificationService)
+                                ?.apply { return this }
                         }
                     }
                     ArtworkResolveMethod.ArtworkResolveMethodKey.NOTIFICATION_BITMAP -> {
                         Timber.d("np4d artwork resolve method: $it")
                         if (notificationBitmap != null) {
-                            refreshArtworkUriFromBitmap(this@NotificationService, notificationBitmap)?.apply {
-                                return this
-                            }
+                            val byteArray = notificationBitmap.toByteArray() ?: return null
+                            byteArray.refreshArtworkUri(this@NotificationService)
+                                ?.apply { return this }
                         }
                     }
                     ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {

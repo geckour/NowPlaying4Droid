@@ -55,14 +55,19 @@ class SettingsViewModel : ViewModel() {
         TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
 
     private val mastodonScope = Scope(Scope.Name.ALL)
-    internal var mastodonRegistrationInfo: AppRegistration? = null
+    private var mastodonRegistrationInfo: AppRegistration? = null
 
     private var showingNotificationServicePermissionDialog = false
 
     internal val requestUpdate = SingleLiveEvent<Unit>()
     internal val reflectDonation = SingleLiveEvent<Boolean>()
 
-    internal fun showErrorDialog(context: Context, titleResId: Int, messageResId: Int, onDismiss: () -> Unit = {}) {
+    internal fun showErrorDialog(
+        context: Context,
+        titleResId: Int,
+        messageResId: Int,
+        onDismiss: () -> Unit = {}
+    ) {
         AlertDialog.Builder(context)
             .setTitle(titleResId)
             .setMessage(messageResId)
@@ -71,7 +76,7 @@ class SettingsViewModel : ViewModel() {
             .show()
     }
 
-    internal fun onAuthMastodonError(context: Context) {
+    private fun onAuthMastodonError(context: Context) {
         showErrorDialog(
             context,
             R.string.dialog_title_alert_failure_auth_mastodon,
@@ -79,7 +84,7 @@ class SettingsViewModel : ViewModel() {
         )
     }
 
-    internal fun onAuthTwitterError(context: Context) {
+    private fun onAuthTwitterError(context: Context) {
         showErrorDialog(
             context,
             R.string.dialog_title_alert_failure_auth_twitter,
@@ -110,7 +115,8 @@ class SettingsViewModel : ViewModel() {
                         id,
                         getShareWidgetViews(
                             context,
-                            ShareWidgetProvider.blockCount(widgetOptions), trackInfo
+                            ShareWidgetProvider.blockCount(widgetOptions),
+                            trackInfo
                         )
                     )
                 }
@@ -118,7 +124,10 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
-    internal fun requestNotificationListenerPermission(activity: Activity, onGranted: () -> Unit = {}) {
+    internal fun requestNotificationListenerPermission(
+        activity: Activity,
+        onGranted: () -> Unit = {}
+    ) {
         if (NotificationManagerCompat.getEnabledListenerPackages(activity)
                 .contains(activity.packageName).not()
         ) {
@@ -140,7 +149,10 @@ class SettingsViewModel : ViewModel() {
         } else onGranted()
     }
 
-    internal fun onClickChangeArtworkResolveOrder(context: Context, sharedPreferences: SharedPreferences) {
+    internal fun onClickChangeArtworkResolveOrder(
+        context: Context,
+        sharedPreferences: SharedPreferences
+    ) {
         val adapter = ArtworkResolveMethodListAdapter(
             sharedPreferences
                 .getArtworkResolveOrder()
@@ -171,7 +183,10 @@ class SettingsViewModel : ViewModel() {
         }.show()
     }
 
-    internal fun onClickFormatPatternModifiers(context: Context, sharedPreferences: SharedPreferences) {
+    internal fun onClickFormatPatternModifiers(
+        context: Context,
+        sharedPreferences: SharedPreferences
+    ) {
         val adapter = FormatPatternModifierListAdapter(
             sharedPreferences
                 .getFormatPatternModifiers()
@@ -207,7 +222,11 @@ class SettingsViewModel : ViewModel() {
     internal fun onClickAuthTwitter(context: Context, rootView: View) {
         launch(Dispatchers.IO) {
             val uri = twitterApiClient.getRequestOAuthUri() ?: run {
-                Snackbar.make(rootView, R.string.snackbar_text_failure_auth_twitter, Snackbar.LENGTH_SHORT)
+                Snackbar.make(
+                    rootView,
+                    R.string.snackbar_text_failure_auth_twitter,
+                    Snackbar.LENGTH_SHORT
+                )
                 return@launch
             }
 
@@ -259,29 +278,28 @@ class SettingsViewModel : ViewModel() {
                                     }
                                 }, Gson())
                                     .build()
-                            val registrationInfo = try {
-                                Apps(mastodonApiClient)
-                                    .createApp(
-                                        App.MASTODON_CLIENT_NAME,
-                                        App.MASTODON_CALLBACK,
-                                        mastodonScope,
-                                        App.MASTODON_WEB_URL
-                                    )
-                                    .executeCatching()
-                            } catch (e: Mastodon4jRequestException) {
-                                Timber.e(e)
-                                Crashlytics.logException(e)
-                                null
-                            } ?: run {
-                                onAuthMastodonError(context)
-                                return@launch
-                            }
+                            val registrationInfo = Apps(mastodonApiClient)
+                                .createApp(
+                                    App.MASTODON_CLIENT_NAME,
+                                    App.MASTODON_CALLBACK,
+                                    mastodonScope,
+                                    App.MASTODON_WEB_URL
+                                )
+                                .executeCatching {
+                                    Timber.e(it)
+                                    Crashlytics.logException(it)
+                                }
+                                ?: run {
+                                    onAuthMastodonError(context)
+                                    return@launch
+                                }
                             mastodonRegistrationInfo = registrationInfo
 
                             val authUrl = Apps(mastodonApiClient)
                                 .getOAuthUrl(
                                     registrationInfo.clientId,
-                                    mastodonScope, App.MASTODON_CALLBACK
+                                    mastodonScope,
+                                    App.MASTODON_CALLBACK
                                 )
 
                             CustomTabsIntent.Builder()
@@ -398,7 +416,10 @@ class SettingsViewModel : ViewModel() {
         }.show()
     }
 
-    internal fun onClickPlayerPackageMastodon(context: Context, sharedPreferences: SharedPreferences) {
+    internal fun onClickPlayerPackageMastodon(
+        context: Context,
+        sharedPreferences: SharedPreferences
+    ) {
         val adapter = PlayerPackageListAdapter(
             sharedPreferences
                 .getPackageStateListPostMastodon()
@@ -417,7 +438,10 @@ class SettingsViewModel : ViewModel() {
                         }
                     }?.toString()
                     if (appName == null) {
-                        sharedPreferences.storePackageStatePostMastodon(packageState.packageName, false)
+                        sharedPreferences.storePackageStatePostMastodon(
+                            packageState.packageName,
+                            false
+                        )
                         null
                     } else PlayerPackageState(packageState.packageName, appName, packageState.state)
                 }
@@ -460,7 +484,11 @@ class SettingsViewModel : ViewModel() {
         context.startActivity(SharingActivity.getIntent(context))
     }
 
-    internal fun startBillingTransaction(activity: Activity, billingService: IInAppBillingService?, skuName: String) {
+    internal fun startBillingTransaction(
+        activity: Activity,
+        billingService: IInAppBillingService?,
+        skuName: String
+    ) {
         launch {
             billingService?.let {
                 BillingApiClient(it).apply {

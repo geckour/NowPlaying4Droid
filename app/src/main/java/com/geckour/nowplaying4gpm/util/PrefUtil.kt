@@ -142,7 +142,7 @@ fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
     val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
 
     return try {
-        context.contentResolver.openInputStream(uri).close()
+        context.contentResolver.openInputStream(uri)?.close() ?: return null
         uri
     } catch (e: Throwable) {
         Timber.e(e)

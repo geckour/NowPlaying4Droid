@@ -30,6 +30,7 @@ import com.geckour.nowplaying4gpm.util.*
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.RuntimePermissions
+import timber.log.Timber
 
 @RuntimePermissions
 class SettingsActivity : WithCrashlyticsActivity() {
@@ -417,6 +418,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+
+        Timber.d("intent data: ${intent?.data?.toString()}")
 
         if (intent?.data?.toString()?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true)
             viewModel.onAuthTwitterCallback(
