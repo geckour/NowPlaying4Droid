@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -21,9 +22,6 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.RequestOptions
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -36,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.reflect.Type
@@ -47,122 +46,80 @@ enum class PaletteColor {
     LIGHT_VIBRANT {
         override val hierarchyList: List<PaletteColor>
             get() = listOf(
-                LIGHT_VIBRANT,
-                VIBRANT,
-                DARK_VIBRANT,
-                LIGHT_MUTED,
-                MUTED,
-                DARK_MUTED
+                LIGHT_VIBRANT, VIBRANT, DARK_VIBRANT, LIGHT_MUTED, MUTED, DARK_MUTED
             )
     },
     VIBRANT {
         override val hierarchyList: List<PaletteColor>
             get() = listOf(
-                VIBRANT,
-                LIGHT_VIBRANT,
-                DARK_VIBRANT,
-                MUTED,
-                LIGHT_MUTED,
-                DARK_MUTED
+                VIBRANT, LIGHT_VIBRANT, DARK_VIBRANT, MUTED, LIGHT_MUTED, DARK_MUTED
             )
     },
     DARK_VIBRANT {
         override val hierarchyList: List<PaletteColor>
             get() = listOf(
-                DARK_VIBRANT,
-                VIBRANT,
-                LIGHT_VIBRANT,
-                DARK_MUTED,
-                MUTED,
-                LIGHT_MUTED
+                DARK_VIBRANT, VIBRANT, LIGHT_VIBRANT, DARK_MUTED, MUTED, LIGHT_MUTED
             )
     },
     LIGHT_MUTED {
         override val hierarchyList: List<PaletteColor>
             get() = listOf(
-                LIGHT_MUTED,
-                MUTED,
-                DARK_MUTED,
-                LIGHT_VIBRANT,
-                VIBRANT,
-                DARK_VIBRANT
+                LIGHT_MUTED, MUTED, DARK_MUTED, LIGHT_VIBRANT, VIBRANT, DARK_VIBRANT
             )
     },
     MUTED {
         override val hierarchyList: List<PaletteColor>
             get() = listOf(
-                MUTED,
-                LIGHT_MUTED,
-                DARK_MUTED,
-                VIBRANT,
-                LIGHT_VIBRANT,
-                DARK_VIBRANT
+                MUTED, LIGHT_MUTED, DARK_MUTED, VIBRANT, LIGHT_VIBRANT, DARK_VIBRANT
             )
     },
     DARK_MUTED {
         override val hierarchyList: List<PaletteColor>
             get() = listOf(
-                DARK_MUTED,
-                MUTED,
-                LIGHT_MUTED,
-                DARK_VIBRANT,
-                VIBRANT,
-                LIGHT_VIBRANT
+                DARK_MUTED, MUTED, LIGHT_MUTED, DARK_VIBRANT, VIBRANT, LIGHT_VIBRANT
             )
     };
 
     abstract val hierarchyList: List<PaletteColor>
 
-    fun getSummaryResId(): Int =
-        when (this) {
-            LIGHT_VIBRANT -> R.string.palette_light_vibrant
-            VIBRANT -> R.string.palette_vibrant
-            DARK_VIBRANT -> R.string.palette_dark_vibrant
-            LIGHT_MUTED -> R.string.palette_light_muted
-            MUTED -> R.string.palette_muted
-            DARK_MUTED -> R.string.palette_dark_muted
-        }
+    fun getSummaryResId(): Int = when (this) {
+        LIGHT_VIBRANT -> R.string.palette_light_vibrant
+        VIBRANT -> R.string.palette_vibrant
+        DARK_VIBRANT -> R.string.palette_dark_vibrant
+        LIGHT_MUTED -> R.string.palette_light_muted
+        MUTED -> R.string.palette_muted
+        DARK_MUTED -> R.string.palette_dark_muted
+    }
 
     companion object {
-        fun getFromIndex(index: Int): PaletteColor =
-            values().getOrNull(index) ?: LIGHT_VIBRANT
+        fun getFromIndex(index: Int): PaletteColor = values().getOrNull(index) ?: LIGHT_VIBRANT
     }
 }
 
 enum class Visibility {
-    PUBLIC,
-    UNLISTED,
-    PRIVATE;
+    PUBLIC, UNLISTED, PRIVATE;
 
-    fun getSummaryResId(): Int =
-        when (this) {
-            PUBLIC -> R.string.mastodon_visibility_public
-            UNLISTED -> R.string.mastodon_visibility_unlisted
-            PRIVATE -> R.string.mastodon_visibility_private
-        }
+    fun getSummaryResId(): Int = when (this) {
+        PUBLIC -> R.string.mastodon_visibility_public
+        UNLISTED -> R.string.mastodon_visibility_unlisted
+        PRIVATE -> R.string.mastodon_visibility_private
+    }
 
     companion object {
-        fun getFromIndex(index: Int): Visibility =
-            values().getOrNull(index) ?: PUBLIC
+        fun getFromIndex(index: Int): Visibility = values().getOrNull(index) ?: PUBLIC
     }
 }
 
 enum class FormatPattern(val value: String) {
-    S_QUOTE("'"),
-    S_QUOTE_DOUBLE("''"),
-    TITLE("TI"),
-    ARTIST("AR"),
-    ALBUM("AL"),
-    COMPOSER("CO"),
-    PLAYER_NAME("PN"),
-    SPOTIFY_URL("SU"),
-    NEW_LINE("\\n");
+    S_QUOTE("'"), S_QUOTE_DOUBLE("''"), TITLE("TI"), ARTIST("AR"), ALBUM("AL"), COMPOSER("CO"), PLAYER_NAME(
+        "PN"
+    ),
+    SPOTIFY_URL("SU"), NEW_LINE("\\n");
 
     companion object {
-        val replaceablePatterns: List<FormatPattern> =
-            values().toMutableList().apply {
-                removeAll(listOf(S_QUOTE, S_QUOTE_DOUBLE, NEW_LINE))
-            }
+        val replaceablePatterns: List<FormatPattern> = values().toMutableList().apply {
+            removeAll(listOf(S_QUOTE, S_QUOTE_DOUBLE, NEW_LINE))
+        }
     }
 }
 
@@ -174,18 +131,24 @@ fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternMo
                 else when (it) {
                     FormatPattern.S_QUOTE.value -> ""
                     FormatPattern.S_QUOTE_DOUBLE.value -> "'"
-                    FormatPattern.TITLE.value ->
-                        info.coreElement.title?.getReplacerWithModifier(modifiers, it) ?: ""
-                    FormatPattern.ARTIST.value ->
-                        info.coreElement.artist?.getReplacerWithModifier(modifiers, it) ?: ""
-                    FormatPattern.ALBUM.value ->
-                        info.coreElement.album?.getReplacerWithModifier(modifiers, it) ?: ""
-                    FormatPattern.COMPOSER.value ->
-                        info.coreElement.composer?.getReplacerWithModifier(modifiers, it) ?: ""
-                    FormatPattern.PLAYER_NAME.value ->
-                        info.playerAppName?.getReplacerWithModifier(modifiers, it) ?: ""
-                    FormatPattern.SPOTIFY_URL.value ->
-                        info.spotifyUrl?.getReplacerWithModifier(modifiers, it) ?: ""
+                    FormatPattern.TITLE.value -> info.coreElement.title?.getReplacerWithModifier(
+                        modifiers, it
+                    ) ?: ""
+                    FormatPattern.ARTIST.value -> info.coreElement.artist?.getReplacerWithModifier(
+                        modifiers, it
+                    ) ?: ""
+                    FormatPattern.ALBUM.value -> info.coreElement.album?.getReplacerWithModifier(
+                        modifiers, it
+                    ) ?: ""
+                    FormatPattern.COMPOSER.value -> info.coreElement.composer?.getReplacerWithModifier(
+                        modifiers, it
+                    ) ?: ""
+                    FormatPattern.PLAYER_NAME.value -> info.playerAppName?.getReplacerWithModifier(
+                        modifiers, it
+                    ) ?: ""
+                    FormatPattern.SPOTIFY_URL.value -> info.spotifyUrl?.getReplacerWithModifier(
+                        modifiers, it
+                    ) ?: ""
                     FormatPattern.NEW_LINE.value -> "\n"
                     else -> it
                 }
@@ -194,10 +157,8 @@ fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternMo
     }
 
 fun String.getReplacerWithModifier(
-    modifiers: List<FormatPatternModifier>,
-    identifier: String
-): String =
-    "${modifiers.getPrefix(identifier)}$this${modifiers.getSuffix(identifier)}"
+    modifiers: List<FormatPatternModifier>, identifier: String
+): String = "${modifiers.getPrefix(identifier)}$this${modifiers.getSuffix(identifier)}"
 
 fun List<FormatPatternModifier>.getPrefix(value: String): String =
     this.firstOrNull { m -> m.key.value == value }?.prefix ?: ""
@@ -209,62 +170,52 @@ fun String.containsPattern(pattern: FormatPattern): Boolean =
     this.splitConsideringEscape().contains(pattern.value)
 
 val String.containedPatterns: List<FormatPattern>
-    get() =
-        this.splitConsideringEscape().mapNotNull { delimiter ->
-            FormatPattern.values().firstOrNull { it.value == delimiter }
-        }
-
-private fun String.splitConsideringEscape(): List<String> =
-    this.splitIncludeDelimiter(
-        FormatPattern.S_QUOTE_DOUBLE.value,
-        FormatPattern.S_QUOTE.value,
-        FormatPattern.TITLE.value,
-        FormatPattern.ARTIST.value,
-        FormatPattern.ALBUM.value,
-        FormatPattern.COMPOSER.value,
-        FormatPattern.PLAYER_NAME.value,
-        FormatPattern.SPOTIFY_URL.value,
-        "\\\\n"
-    ).let { splitList ->
-        val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }
-            .filter { it.second == "'" }
-            .apply { if (lastIndex < 0) return@let splitList }
-
-        return@let ArrayList<String>().apply {
-            for (i in 0 until escapes.lastIndex step 2) {
-                this.addAll(
-                    splitList.subList(
-                        if (i == 0) 0 else escapes[i - 1].first + 1,
-                        escapes[i].first
-                    )
-                )
-
-                this.add(
-                    splitList.subList(
-                        escapes[i].first,
-                        escapes[i + 1].first + 1
-                    ).joinToString("")
-                )
-            }
-
-            this.addAll(
-                splitList.subList(
-                    if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex)
-                        escapes[escapes.lastIndex].first + 1
-                    else splitList.lastIndex,
-                    splitList.size
-                )
-            )
-        }
+    get() = this.splitConsideringEscape().mapNotNull { delimiter ->
+        FormatPattern.values().firstOrNull { it.value == delimiter }
     }
 
-fun String.splitIncludeDelimiter(vararg delimiters: String) =
-    delimiters.joinToString("|")
-        .let { pattern ->
-            this.split(Regex("(?<=$pattern)|(?=$pattern)"))
+private fun String.splitConsideringEscape(): List<String> = this.splitIncludeDelimiter(
+    FormatPattern.S_QUOTE_DOUBLE.value,
+    FormatPattern.S_QUOTE.value,
+    FormatPattern.TITLE.value,
+    FormatPattern.ARTIST.value,
+    FormatPattern.ALBUM.value,
+    FormatPattern.COMPOSER.value,
+    FormatPattern.PLAYER_NAME.value,
+    FormatPattern.SPOTIFY_URL.value,
+    "\\\\n"
+).let { splitList ->
+    val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }
+        .apply { if (lastIndex < 0) return@let splitList }
+
+    return@let ArrayList<String>().apply {
+        for (i in 0 until escapes.lastIndex step 2) {
+            this.addAll(
+                splitList.subList(
+                    if (i == 0) 0 else escapes[i - 1].first + 1, escapes[i].first
+                )
+            )
+
+            this.add(
+                splitList.subList(
+                    escapes[i].first, escapes[i + 1].first + 1
+                ).joinToString("")
+            )
         }
 
-fun String.escapeSql(): String = replace("'", "''")
+        this.addAll(
+            splitList.subList(
+                if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex) escapes[escapes.lastIndex].first + 1
+                else splitList.lastIndex, splitList.size
+            )
+        )
+    }
+}
+
+fun String.splitIncludeDelimiter(vararg delimiters: String) =
+    delimiters.joinToString("|").let { pattern ->
+        this.split(Regex("(?<=$pattern)|(?=$pattern)"))
+    }
 
 fun AlertDialog.Builder.generate(
     view: View,
@@ -282,32 +233,26 @@ fun AlertDialog.Builder.generate(
 }
 
 fun Context.checkStoragePermission(
-    onNotGranted: ((context: Context) -> Unit)? = null,
-    onGranted: (context: Context) -> Unit = {}
+    onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}
 ) {
     if (ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        )
-        == PackageManager.PERMISSION_GRANTED
+            this, Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
     ) {
         onGranted(this)
     } else {
-        onNotGranted?.invoke(this)
-            ?: startActivity(
-                SettingsActivity.getIntent(this).apply {
-                    flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
-                })
+        onNotGranted?.invoke(this) ?: startActivity(SettingsActivity.getIntent(this).apply {
+            flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
+        })
     }
 }
 
-fun String.getUri(): Uri? =
-    try {
-        Uri.parse(this)
-    } catch (e: Exception) {
-        Timber.e(e)
-        null
-    }
+fun String.getUri(): Uri? = try {
+    Uri.parse(this)
+} catch (e: Exception) {
+    Timber.e(e)
+    null
+}
 
 private fun Palette.getColorFromPaletteColor(paletteColor: PaletteColor): Int =
     when (paletteColor) {
@@ -322,9 +267,7 @@ private fun Palette.getColorFromPaletteColor(paletteColor: PaletteColor): Int =
 @ColorInt
 fun Palette.getOptimizedColor(context: Context): Int {
     val paletteColorHierarchies =
-        PreferenceManager.getDefaultSharedPreferences(context)
-            .getChosePaletteColor()
-            .hierarchyList
+        PreferenceManager.getDefaultSharedPreferences(context).getChosePaletteColor().hierarchyList
 
     return paletteColorHierarchies.firstOrNull {
         getColorFromPaletteColor(it) != Color.TRANSPARENT
@@ -336,28 +279,23 @@ fun Context.setCrashlytics() {
 }
 
 inline fun <reified T> Moshi.fromJsonOrNull(
-    json: String?,
-    type: Type,
-    onError: Throwable.() -> Unit = { Timber.e(this) }
-): T? =
-    try {
-        this.adapter<T>(type).fromJson(json)
-    } catch (t: Throwable) {
-        onError(t)
-        null
-    }
+    json: String?, type: Type, onError: Throwable.() -> Unit = { Timber.e(this) }
+): T? = try {
+    this.adapter<T>(type).fromJson(json)
+} catch (t: Throwable) {
+    onError(t)
+    null
+}
 
-fun String.foldBreak(): String =
-    this.replace(Regex("[\r\n]"), " ")
+fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
 
-fun String.getAppName(context: Context): String? =
-    try {
-        context.packageManager.let {
-            it.getApplicationLabel(it.getApplicationInfo(this, 0)).toString()
-        }
-    } catch (t: PackageManager.NameNotFoundException) {
-        null
+fun String.getAppName(context: Context): String? = try {
+    context.packageManager.let {
+        it.getApplicationLabel(it.getApplicationInfo(this, 0)).toString()
     }
+} catch (t: PackageManager.NameNotFoundException) {
+    null
+}
 
 fun <T> MutableList<T>.swap(from: Int, to: Int) {
     val tmp = this[to]
@@ -392,50 +330,51 @@ fun Context.getAlbumIdFromDevice(
     )?.use { it.getAlbumIdFromDevice() }
 }
 
-fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? =
-    this?.let {
-        (if (it.moveToFirst()) {
-            MediaIdInfo(
-                it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
-                it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-            )
-        } else null)
-    }
+fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? = this?.let {
+    (if (it.moveToFirst()) {
+        MediaIdInfo(
+            it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
+            it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+        )
+    } else null)
+}
 
-fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? =
-    mediaIdInfo?.let {
-        try {
-            val contentUri = ContentUris.withAppendedId(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                it.mediaTrackId
-            )
-            val retriever = MediaMetadataRetriever().apply {
-                setDataSource(this@getArtworkUriFromDevice, contentUri)
-            }
-            retriever.embeddedPicture?.refreshArtworkUri(this)
-                ?: ContentUris.withAppendedId(
-                    Uri.parse("content://media/external/audio/albumart"),
-                    it.mediaAlbumId
-                )?.also { uri ->
-                    contentResolver.openInputStream(uri)?.close()
-                        ?: throw IllegalStateException()
-                    PreferenceManager.getDefaultSharedPreferences(this)
-                        .refreshTempArtwork(uri)
-                }
-        } catch (t: Throwable) {
-            Timber.e(t)
-            Crashlytics.logException(t)
-            null
+fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdInfo?.let {
+    try {
+        val contentUri = ContentUris.withAppendedId(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId
+        )
+        val retriever = MediaMetadataRetriever().apply {
+            setDataSource(this@getArtworkUriFromDevice, contentUri)
         }
+        retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this) ?: ContentUris.withAppendedId(
+            Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
+        )?.also { uri ->
+            contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
+            PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
+        }
+    } catch (t: Throwable) {
+        Timber.e(t)
+        Crashlytics.logException(t)
+        null
     }
+}
 
 fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
     getArtworkUriFromDevice(getAlbumIdFromDevice(trackCoreElement))
 
-fun ByteArray.refreshArtworkUri(context: Context): Uri? {
+fun ByteArray.toBitmap(): Bitmap? =
+    try {
+        BitmapFactory.decodeByteArray(this, 0, this.size)
+    } catch (t: Throwable) {
+        Timber.e(t)
+        null
+    }
+
+fun Bitmap.refreshArtworkUri(context: Context): Uri? {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     val dirName = "images"
-    val fileName = "temp_artwork.jpg"
+    val fileName = "temp_artwork.png"
     val dir = File(context.filesDir, dirName)
     val file = File(dir, fileName)
 
@@ -443,7 +382,7 @@ fun ByteArray.refreshArtworkUri(context: Context): Uri? {
     if (dir.exists().not()) dir.mkdir()
 
     FileOutputStream(file).use {
-        it.write(this)
+        compress(Bitmap.CompressFormat.PNG, 100, it)
         it.flush()
     }
 
@@ -452,25 +391,6 @@ fun ByteArray.refreshArtworkUri(context: Context): Uri? {
     }
 }
 
-fun Context.getFileFromUrl(url: String?): File? =
-    url?.let {
-        try {
-            val glideOptions =
-                RequestOptions()
-                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                    .skipMemoryCache(true)
-                    .signature { System.currentTimeMillis().toString() }
-            Glide.with(this)
-                .asFile().load(it).apply(glideOptions)
-                .submit().get()
-        } catch (t: Throwable) {
-            Timber.e(t)
-            Crashlytics.logException(t)
-            null
-        }
-    }
-
-fun Bitmap.toByteArray(): ByteArray? =
-    ByteBuffer.allocate(byteCount)?.also {
-        copyPixelsToBuffer(it)
-    }?.array()
+fun Bitmap.toByteArray(): ByteArray? = ByteArrayOutputStream().apply {
+    compress(Bitmap.CompressFormat.PNG, 100, this)
+}.toByteArray()
