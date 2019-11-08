@@ -5,12 +5,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.graphics.drawable.Icon
 import android.os.Build
-import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.text.Html
 import android.view.View
 import android.widget.RemoteViews
 import androidx.palette.graphics.Palette
+import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
