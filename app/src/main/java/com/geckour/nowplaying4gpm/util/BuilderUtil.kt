@@ -34,87 +34,85 @@ suspend fun getShareWidgetViews(
     context: Context,
     blockCount: Int = 0,
     trackInfo: TrackInfo? = null
-): RemoteViews {
+): RemoteViews = RemoteViews(context.packageName, R.layout.widget_share).apply {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-    return RemoteViews(context.packageName, R.layout.widget_share).apply {
-        val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
-        val summary =
-            sharedPreferences.getFormatPattern(context)
-                .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
-                ?.foldBreak()
+    val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
+    val summary =
+        sharedPreferences.getFormatPattern(context)
+            .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
+            ?.foldBreak()
 
-        setTextViewText(
-            R.id.widget_summary_share,
-            summary ?: context.getString(R.string.dialog_message_alert_no_metadata)
-        )
+    setTextViewText(
+        R.id.widget_summary_share,
+        summary ?: context.getString(R.string.dialog_message_alert_no_metadata)
+    )
 
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
-            && blockCount > 1
-        ) {
-            val artwork = info?.artworkUriString?.let {
-                context.getBitmapFromUriString(it)
-            }
-            if (summary != null && artwork != null) {
-                setImageViewBitmap(R.id.artwork, artwork)
-            } else {
-                setImageViewResource(R.id.artwork, R.drawable.ic_placeholder)
-            }
-            setViewVisibility(R.id.artwork, View.VISIBLE)
-        } else {
-            setViewVisibility(R.id.artwork, View.GONE)
+    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
+        && blockCount > 1
+    ) {
+        val artwork = info?.artworkUriString?.let {
+            context.getBitmapFromUriString(it, maxHeight = 500)
         }
+        if (summary != null && artwork != null) {
+            setImageViewBitmap(R.id.artwork, artwork)
+        } else {
+            setImageViewResource(R.id.artwork, R.drawable.ic_placeholder)
+        }
+        setViewVisibility(R.id.artwork, View.VISIBLE)
+    } else {
+        setViewVisibility(R.id.artwork, View.GONE)
+    }
 
-        setViewVisibility(
-            R.id.widget_button_clear,
-            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET)
-                && blockCount > 2
-            ) View.VISIBLE
-            else View.GONE
+    setViewVisibility(
+        R.id.widget_button_clear,
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET)
+            && blockCount > 2
+        ) View.VISIBLE
+        else View.GONE
+    )
+
+    setOnClickPendingIntent(
+        R.id.widget_share_root,
+        ShareWidgetProvider.getPendingIntent(
+            context,
+            ShareWidgetProvider.Action.SHARE
         )
+    )
 
-        setOnClickPendingIntent(
-            R.id.widget_share_root,
+    val packageName =
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
+            info?.playerPackageName
+        else null
+    val launchIntent = packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
+    setOnClickPendingIntent(
+        R.id.artwork,
+        if (launchIntent != null) {
+            PendingIntent.getActivity(
+                context, 0,
+                launchIntent,
+                PendingIntent.FLAG_CANCEL_CURRENT
+            )
+        } else {
             ShareWidgetProvider.getPendingIntent(
                 context,
                 ShareWidgetProvider.Action.SHARE
             )
-        )
+        }
+    )
 
-        val packageName =
-            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
-                info?.playerPackageName
-            else null
-        val launchIntent = packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
-        setOnClickPendingIntent(
-            R.id.artwork,
-            if (launchIntent != null) {
-                PendingIntent.getActivity(
-                    context, 0,
-                    launchIntent,
-                    PendingIntent.FLAG_CANCEL_CURRENT
-                )
-            } else {
-                ShareWidgetProvider.getPendingIntent(
-                    context,
-                    ShareWidgetProvider.Action.SHARE
-                )
-            }
+    setOnClickPendingIntent(
+        R.id.widget_button_setting,
+        ShareWidgetProvider.getPendingIntent(
+            context,
+            ShareWidgetProvider.Action.OPEN_SETTING
         )
+    )
 
-        setOnClickPendingIntent(
-            R.id.widget_button_setting,
-            ShareWidgetProvider.getPendingIntent(
-                context,
-                ShareWidgetProvider.Action.OPEN_SETTING
-            )
-        )
-
-        setOnClickPendingIntent(
-            R.id.widget_button_clear,
-            NotificationService.getClearTrackInfoPendingIntent(context)
-        )
-    }
+    setOnClickPendingIntent(
+        R.id.widget_button_clear,
+        NotificationService.getClearTrackInfoPendingIntent(context)
+    )
 }
 
 suspend fun getNotification(context: Context, trackInfo: TrackInfo?): Notification? {
