@@ -13,7 +13,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.view.View
 import androidx.annotation.ColorInt
@@ -22,6 +21,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
+import androidx.preference.PreferenceManager
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -38,7 +38,6 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.reflect.Type
-import java.nio.ByteBuffer
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -321,11 +320,7 @@ fun Context.getAlbumIdFromDevice(
         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
         arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
         contentQuerySelection,
-        getContentQueryArgs(
-            requireNotNull(trackCoreElement.title),
-            requireNotNull(trackCoreElement.artist),
-            requireNotNull(trackCoreElement.album)
-        ),
+        trackCoreElement.contentQueryArgs,
         null
     )?.use { it.getAlbumIdFromDevice() }
 }

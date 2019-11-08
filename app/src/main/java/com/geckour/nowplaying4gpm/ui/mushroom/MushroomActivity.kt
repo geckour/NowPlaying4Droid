@@ -3,7 +3,7 @@ package com.geckour.nowplaying4gpm.ui.mushroom
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.setCrashlytics
 

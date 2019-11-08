@@ -1,6 +1,6 @@
 package com.geckour.nowplaying4gpm.ui.license
 
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.annotation.StringRes

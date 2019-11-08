@@ -4,7 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import androidx.annotation.RequiresApi
 import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.service.NotificationService

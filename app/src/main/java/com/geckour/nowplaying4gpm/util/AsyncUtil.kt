@@ -17,11 +17,7 @@ import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import timber.log.Timber
 
 suspend fun <T> asyncOrNull(
@@ -64,12 +60,22 @@ suspend fun refreshArtworkUriFromLastFmApi(
     return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
 }
 
-suspend fun Context.getBitmapFromUriString(uriString: String): Bitmap? = try {
+suspend fun Context.getBitmapFromUriString(
+    uriString: String,
+    maxWidth: Int? = null,
+    maxHeight: Int? = null
+): Bitmap? = try {
     val glideOptions =
         RequestOptions().diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
             .signature { System.currentTimeMillis().toString() }
     withContext(Dispatchers.IO) {
         Glide.with(this@getBitmapFromUriString).asBitmap().load(uriString).apply(glideOptions)
+            .apply {
+                when {
+                    maxWidth != null -> override(maxWidth, maxHeight ?: maxWidth)
+                    maxHeight != null -> override(maxWidth ?: maxHeight, maxHeight)
+                }
+            }
             .submit().get()
     }
 } catch (e: GlideException) {

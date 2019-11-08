@@ -6,13 +6,13 @@ import android.content.*
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.preference.PreferenceManager
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
 import androidx.activity.viewModels
 import androidx.databinding.DataBindingUtil
+import androidx.preference.PreferenceManager
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig

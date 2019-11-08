@@ -16,8 +16,8 @@ android {
     defaultConfig {
         applicationId "com.geckour.nowplaying4gpm"
         minSdkVersion 24
-        versionCode 84
-        versionName "2.8.5"
+        versionCode 85
+        versionName "2.8.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -89,6 +89,7 @@ dependencies {
     def stetho_version = "1.5.1"
     def moshi_version = "1.8.0"
     def firebase_version = "16.0.4"
+    def preference_version = "1.1.0"
     def lifecycle_version = "2.2.0-rc01"
     def permission_dispatcher_version = "4.5.0"
     def retrofit2_version = "2.6.1"
@@ -148,6 +149,9 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     kapt "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
+
+    // Preference
+    implementation "androidx.preference:preference-ktx:$preference_version"
 
     // Palette API
     implementation "androidx.palette:palette:1.0.0"
