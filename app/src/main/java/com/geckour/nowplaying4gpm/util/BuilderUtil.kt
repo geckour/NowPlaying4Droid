@@ -26,8 +26,9 @@ val moshi: Moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 const val contentQuerySelection: String =
     "${MediaStore.Audio.Media.TITLE}=? and ${MediaStore.Audio.Media.ARTIST}=? and ${MediaStore.Audio.Media.ALBUM}=?"
 
-fun getContentQueryArgs(title: String, artist: String, album: String): Array<String> =
-    arrayOf(title, artist, album)
+val TrackInfo.TrackCoreElement.contentQueryArgs: Array<String>
+    get() =
+        arrayOf(requireNotNull(title), requireNotNull(artist), requireNotNull(album))
 
 suspend fun getShareWidgetViews(
     context: Context,
