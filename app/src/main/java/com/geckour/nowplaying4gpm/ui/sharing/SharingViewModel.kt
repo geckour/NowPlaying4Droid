@@ -60,7 +60,7 @@ class SharingViewModel : ViewModel() {
                         PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD
                     )
                     if (copyIntoClipboard) {
-                        activity.getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                        activity.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
                             ClipData.newPlainText(activity.packageName, sharingText)
                         )
                     }

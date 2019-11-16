@@ -28,7 +28,8 @@ object OkHttpProvider {
             )
             return@addInterceptor it.proceed(
                 it.request()
-                    .newBuilder().header("Authorization", "Basic $tokenString")
+                    .newBuilder()
+                    .header("Authorization", "Basic $tokenString")
                     .build()
             )
         }
@@ -41,10 +42,8 @@ object OkHttpProvider {
                 .addInterceptor {
                     return@addInterceptor it.proceed(
                         it.request()
-                            .newBuilder().header(
-                                "Authorization",
-                                "Bearer $token"
-                            )
+                            .newBuilder()
+                            .header("Authorization", "Bearer $token")
                             .build()
                     )
                 }
@@ -56,10 +55,8 @@ object OkHttpProvider {
         .addInterceptor {
             return@addInterceptor it.proceed(
                 it.request()
-                    .newBuilder().header(
-                        "Authorization",
-                        "Bearer ${BuildConfig.MASTODON_INSTANCES_SECRET}"
-                    )
+                    .newBuilder()
+                    .header("Authorization", "Bearer ${BuildConfig.MASTODON_INSTANCES_SECRET}")
                     .build()
             )
         }
