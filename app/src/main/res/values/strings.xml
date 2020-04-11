@@ -34,6 +34,9 @@
     <string name="pref_item_desc_pattern">Track name: TI, Artist name: AR, Album name: AL</string>
     <string name="pref_item_title_pattern_modifiers">Specify modifier of formatting patterns</string>
     <string name="pref_item_desc_pattern_modifiers">Specify prefix / suffix for each patterns</string>
+    <string name="pref_item_title_auth_spotify">Spotify Authentication</string>
+    <string name="pref_item_desc_auth_spotify">Authenticate Spotify account for get share link</string>
+    <string name="pref_item_summary_auth_spotify" translatable="false">%s</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
     <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are satisfied</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
@@ -111,7 +114,7 @@
     <string name="dialog_title_artwork_resolve_order">Specify resolving order of artwork</string>
     <string name="dialog_message_artwork_resolve_order">Reorder by D\'n\'D, toggle enabled by switch</string>
     <string name="dialog_title_pattern_format">Specify formatting pattern of a sentence to post</string>
-    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name: CO\nPlayer name: PN\nSpotify URL: SU\nescape sequence: Wrap by \' \'\nline break: \\n</string>
+    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name: CO\nPlayer name: PN\nSpotify URL: SU *Authentication required\nescape sequence: Wrap by \' \'\nline break: \\n</string>
     <string name="dialog_title_mastodon_instance">Select Mastodon instance</string>
     <string name="dialog_title_mastodon_delay">Input delay duration</string>
     <string name="dialog_title_mastodon_visibility">Visibility of Mastodon</string>
@@ -129,6 +132,8 @@
     <string name="dialog_message_alert_on_cancel_purchase">Canceled the purchase process</string>
     <string name="dialog_title_alert_grant_notification_listener">Need to grant permission</string>
     <string name="dialog_message_alert_grant_notification_listener">Open system settings to grant permission for listen notifications </string>
+    <string name="dialog_title_alert_failure_auth_spotify">Failure authentication</string>
+    <string name="dialog_message_alert_failure_auth_spotify">Failure to authenticate the Spotify account</string>
     <string name="dialog_title_alert_failure_auth_twitter">Failure authentication</string>
     <string name="dialog_message_alert_failure_auth_twitter">Failure to authenticate the Twitter account</string>
     <string name="dialog_title_alert_failure_auth_mastodon">Failure authentication</string>
@@ -147,6 +152,7 @@
     <string name="dialog_list_item_last_fm">Last.fm (over network service)</string>
 
 
+    <string name="snackbar_text_success_auth_spotify">Succeeded to authenticate the Spotify account.</string>
     <string name="snackbar_text_success_auth_twitter">Succeeded to authenticate the Twitter account.</string>
     <string name="snackbar_text_failure_auth_twitter">Failed to authenticate the Twitter account.</string>
     <string name="snackbar_text_success_auth_mastodon">Succeeded to authenticate the Mastodon account.</string>

@@ -9,7 +9,13 @@ interface SpotifyAuthService {
     @FormUrlEncoded
     @POST("/api/token")
     suspend fun getToken(
+        @Field("code")
+        code: String,
+
+        @Field("redirect_uri")
+        redirectUri: String = SpotifyApiClient.SPOTIFY_CALLBACK,
+
         @Field("grant_type")
-        grantType: String = "client_credentials"
+        grantType: String = "authorization_code"
     ): SpotifyToken
 }

@@ -27,6 +27,8 @@
     <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="pref_item_title_pattern_modifiers">フォーマット指定子の修飾辞を指定</string>
     <string name="pref_item_desc_pattern_modifiers">各指定子の接頭辞 / 接尾辞を指定する</string>
+    <string name="pref_item_title_auth_spotify">Spotify認証</string>
+    <string name="pref_item_desc_auth_spotify">共有リンクの取得のためにSpotifyアカウントを認証する</string>
     <string name="pref_item_title_strict_match_pattern">全てのフォーマットパターンの解決</string>
     <string name="pref_item_desc_strict_match_pattern">全てのフォーマットパターンが解決されたときのみ共有文を生成する </string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
@@ -102,7 +104,7 @@
     <string name="dialog_title_artwork_resolve_order">アートワーク解決の順序を指定</string>
     <string name="dialog_message_artwork_resolve_order">ドラッグ&amp;ドロップで並べ替え、スイッチで有効性の切り替え </string>
     <string name="dialog_title_pattern_format">投稿文のフォーマットを指定</string>
-    <string name="dialog_message_pattern_format">曲名: TI\n アーティスト名: AR\n アルバム名: AL\n 作曲者名: CO\n プレイヤー名: PN\n Spotify URL: SU\n エスケープ: \' \' で囲む\n 改行: \\n </string>
+    <string name="dialog_message_pattern_format">曲名: TI\nアーティスト名: AR\nアルバム名: AL\n作曲者名: CO\nプレイヤー名: PN\nSpotify URL: SU *要認証\nエスケープ: \' \' で囲む\n改行: \\n</string>
     <string name="dialog_title_mastodon_instance">Mastodonのインスタンスを選択</string>
     <string name="dialog_title_mastodon_delay">遅延時間を入力</string>
     <string name="dialog_title_mastodon_visibility">Mastodonの公開範囲</string>
@@ -124,6 +126,8 @@
     <string name="dialog_message_alert_failure_auth_mastodon">Mastodonアカウントの認証に失敗しました</string>
     <string name="dialog_title_alert_invalid_duration_value">無効な遅延時間</string>
     <string name="dialog_message_alert_invalid_duration_value">入力された遅延時間は無効な値です。再入力してください </string>
+    <string name="dialog_title_alert_failure_auth_spotify">認証失敗</string>
+    <string name="dialog_message_alert_failure_auth_spotify">Spotifyアカウントの認証に失敗しました</string>
     <string name="dialog_title_alert_failure_auth_twitter">認証失敗</string>
     <string name="dialog_message_alert_failure_auth_twitter">Twitterアカウントの認証に失敗しました</string>
     <string name="dialog_title_alert_must_auth_twitter">Wearからの共有に失敗しています</string>
@@ -137,9 +141,10 @@
     <string name="dialog_list_item_last_fm">Last.fm (外部サービス提供)</string>
 
 
-    <string name="snackbar_text_success_auth_twitter">Twitterアカウントの認証に成功しました</string>
-    <string name="snackbar_text_failure_auth_twitter">Twitterアカウントの認証に失敗しました</string>
-    <string name="snackbar_text_success_auth_mastodon">Mastodonアカウントの認証に成功しました</string>
+    <string name="snackbar_text_success_auth_spotify">Spotifyアカウントの認証に 成功 しました</string>
+    <string name="snackbar_text_success_auth_twitter">Twitterアカウントの認証に 成功 しました</string>
+    <string name="snackbar_text_failure_auth_twitter">Twitterアカウントの認証に 失敗 しました</string>
+    <string name="snackbar_text_success_auth_mastodon">Mastodonアカウントの認証に 成功 しました</string>
 
     <string name="share_title">共有先を選択…</string>
 

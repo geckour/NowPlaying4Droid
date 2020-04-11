@@ -144,8 +144,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     ACTION_INVOKE_UPDATE -> {
                         if (context == null) return
 
+                        val trackInfo = sharedPreferences.getCurrentTrackInfo()
                         launch {
-                            reflectTrackInfo(sharedPreferences.getCurrentTrackInfo())
+                            reflectTrackInfo(trackInfo)
                         }
                     }
 
@@ -177,7 +178,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
-    private val spotifyApiClient: SpotifyApiClient = SpotifyApiClient()
+    private val spotifyApiClient: SpotifyApiClient by lazy { SpotifyApiClient(this) }
     private val twitterApiClient: TwitterApiClient by lazy {
         TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
     }

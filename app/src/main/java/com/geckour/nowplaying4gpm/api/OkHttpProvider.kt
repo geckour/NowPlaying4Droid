@@ -1,8 +1,11 @@
 package com.geckour.nowplaying4gpm.api
 
+import android.content.Context
 import android.util.Base64
+import androidx.preference.PreferenceManager
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.BuildConfig
+import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
@@ -16,8 +19,6 @@ object OkHttpProvider {
     val client: OkHttpClient = clientBuilder
         .applyDebugger()
         .build()
-
-    var spotifyAuthToken: String? = null
 
     val spotifyAuthClient: OkHttpClient = clientBuilder
         .addInterceptor {
@@ -36,20 +37,25 @@ object OkHttpProvider {
         .applyDebugger()
         .build()
 
-    val spotifyApiClient: OkHttpClient
-        get() = spotifyAuthToken?.let { token ->
-            clientBuilder
-                .addInterceptor {
-                    return@addInterceptor it.proceed(
-                        it.request()
-                            .newBuilder()
-                            .header("Authorization", "Bearer $token")
-                            .build()
-                    )
-                }
-                .applyDebugger()
-                .build()
-        } ?: throw IllegalStateException("Init auth token first.")
+    fun getSpotifyApiClient(context: Context): OkHttpClient {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+            .getSpotifyUserInfo()
+            ?.token
+            ?.accessToken
+            ?.let { token ->
+                clientBuilder
+                    .addInterceptor {
+                        return@addInterceptor it.proceed(
+                            it.request()
+                                .newBuilder()
+                                .header("Authorization", "Bearer $token")
+                                .build()
+                        )
+                    }
+                    .applyDebugger()
+                    .build()
+            } ?: throw IllegalStateException("Init token first.")
+    }
 
     val mastodonInstancesClient: OkHttpClient = clientBuilder
         .addInterceptor {
@@ -63,7 +69,7 @@ object OkHttpProvider {
         .applyDebugger()
         .build()
 
-    fun OkHttpClient.Builder.applyDebugger(): OkHttpClient.Builder =
+    private fun OkHttpClient.Builder.applyDebugger(): OkHttpClient.Builder =
         apply {
             if (BuildConfig.DEBUG) {
                 addNetworkInterceptor(
