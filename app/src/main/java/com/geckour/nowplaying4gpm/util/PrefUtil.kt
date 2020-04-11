@@ -246,13 +246,6 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
         PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
     )
 
-fun SharedPreferences.storeSpotifyUserInfo(spotifyUserInfo: SpotifyUserInfo) {
-    edit().putString(
-        PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,
-        moshi.adapter(SpotifyUserInfo::class.java).toJson(spotifyUserInfo)
-    ).apply()
-}
-
 fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
     edit().putString(
         PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,

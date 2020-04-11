@@ -33,13 +33,14 @@ class SpotifyApiClient(private val context: Context) {
         .build()
         .create(SpotifyAuthService::class.java)
 
-    private val service: SpotifyApiService
-        get() = Retrofit.Builder()
-            .client(OkHttpProvider.getSpotifyApiClient(context))
-            .baseUrl("https://api.spotify.com/")
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(SpotifyApiService::class.java)
+    private fun getService(token: String): SpotifyApiService = Retrofit.Builder()
+        .client(OkHttpProvider.getSpotifyApiClient(token))
+        .baseUrl("https://api.spotify.com/")
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build()
+        .create(SpotifyApiService::class.java)
+
+    private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     suspend fun storeSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
         val token = try {
@@ -50,9 +51,7 @@ class SpotifyApiClient(private val context: Context) {
             null
         }
         return@withContext token?.let {
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            sharedPreferences.storeSpotifyUserInfoImmediately(SpotifyUserInfo(it, ""))
-            val userName = getUser().displayName
+            val userName = getUser(it.accessToken).displayName
             SpotifyUserInfo(token, userName).apply {
                 sharedPreferences.storeSpotifyUserInfoImmediately(this)
             }
@@ -60,21 +59,27 @@ class SpotifyApiClient(private val context: Context) {
     }
 
     private suspend fun refreshTokenIfNeeded() {
-        val token =
-            PreferenceManager.getDefaultSharedPreferences(context).getSpotifyUserInfo()?.token
-                ?: return
+        val token = sharedPreferences.getSpotifyUserInfo()?.token ?: return
         if (System.currentTimeMillis() > token.expiresIn) {
             storeSpotifyUserInfo(token.codeForRefreshToken)
         }
     }
 
-    private suspend fun getUser(): SpotifyUser = service.getUser()
+    private suspend fun getUser(token: String): SpotifyUser = getService(token).getUser()
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): String? {
         return trackCoreElement.spotifySearchQuery?.let {
             try {
                 refreshTokenIfNeeded()
-                service.searchSpotifyItem(it).tracks?.items?.firstOrNull()?.urls?.get("spotify")
+                val token =
+                    sharedPreferences.getSpotifyUserInfo()?.token?.accessToken
+                        ?: throw IllegalStateException("Init token first.")
+                getService(token).searchSpotifyItem(it)
+                    .tracks
+                    ?.items
+                    ?.firstOrNull()
+                    ?.urls
+                    ?.get("spotify")
             } catch (t: Throwable) {
                 Timber.e(t)
                 Crashlytics.logException(t)

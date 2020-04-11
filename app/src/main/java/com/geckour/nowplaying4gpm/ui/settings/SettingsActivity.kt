@@ -517,7 +517,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
             uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
                 onAuthSpotifyCallback(
                     intent,
-                    sharedPreferences,
                     binding.root,
                     binding.itemAuthSpotify
                 )
@@ -1130,7 +1129,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     private fun onAuthSpotifyCallback(
         intent: Intent,
-        sharedPreferences: SharedPreferences,
         rootView: View,
         authSpotifyBinding: ItemPrefItemBinding
     ) {
