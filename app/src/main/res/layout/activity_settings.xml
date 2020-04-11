@@ -306,17 +306,6 @@
             </LinearLayout>
         </ScrollView>
 
-        <View
-            android:id="@+id/toolbar_cover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:elevation="5dp"
-            app:layout_constraintBottom_toBottomOf="@id/toolbar"
-            app:layout_constraintEnd_toEndOf="@id/toolbar"
-            app:layout_constraintStart_toStartOf="@id/toolbar"
-            app:layout_constraintTop_toTopOf="@id/toolbar" />
-
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="0dp"
@@ -329,6 +318,17 @@
             app:layout_constraintTop_toTopOf="parent"
             app:titleTextColor="@android:color/white"
             tools:title="ツールバータイトル" />
+
+        <View
+            android:id="@+id/toolbar_cover"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:elevation="5dp"
+            app:layout_constraintBottom_toBottomOf="@id/toolbar"
+            app:layout_constraintEnd_toEndOf="@id/toolbar"
+            app:layout_constraintStart_toStartOf="@id/toolbar"
+            app:layout_constraintTop_toTopOf="@id/toolbar" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab"
