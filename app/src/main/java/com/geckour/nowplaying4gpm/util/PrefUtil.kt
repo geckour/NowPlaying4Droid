@@ -7,6 +7,7 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.PackageState
+import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.squareup.moshi.Types
 import timber.log.Timber
@@ -35,6 +36,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE(false),
+    PREF_KEY_SPOTIFY_ACCESS_TOKEN,
     PREF_KEY_TWITTER_ACCESS_TOKEN,
     PREF_KEY_MASTODON_USER_INFO,
     PREF_KEY_FLAG_ALERT_AUTH_TWITTER(false),
@@ -154,9 +156,15 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
     setTempArtworkInfo(artworkUri)
 }
 
-fun SharedPreferences.getSharingText(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): String? =
+fun SharedPreferences.getSharingText(
+    context: Context,
+    trackInfo: TrackInfo? = getCurrentTrackInfo()
+): String? =
     if (readyForShare(context, trackInfo))
-        getFormatPattern(context).getSharingText(requireNotNull(trackInfo), getFormatPatternModifiers())
+        getFormatPattern(context).getSharingText(
+            requireNotNull(trackInfo),
+            getFormatPatternModifiers()
+        )
     else null
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
@@ -238,6 +246,25 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
         PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
     )
 
+fun SharedPreferences.storeSpotifyUserInfo(spotifyUserInfo: SpotifyUserInfo) {
+    edit().putString(
+        PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,
+        moshi.adapter(SpotifyUserInfo::class.java).toJson(spotifyUserInfo)
+    ).apply()
+}
+
+fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
+    return if (contains(PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name))
+        moshi.fromJsonOrNull(
+            getString(
+                PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,
+                PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.defaultValue as? String
+            ),
+            SpotifyUserInfo::class.java
+        )
+    else null
+}
+
 fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
     edit().putString(
         PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
@@ -300,7 +327,10 @@ fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
         )
     else null
 
-fun SharedPreferences.readyForShare(context: Context, trackInfo: TrackInfo? = getCurrentTrackInfo()): Boolean {
+fun SharedPreferences.readyForShare(
+    context: Context,
+    trackInfo: TrackInfo? = getCurrentTrackInfo()
+): Boolean {
     return trackInfo != null &&
             (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
                     trackInfo.isSatisfiedSpecifier(getFormatPattern(context)))

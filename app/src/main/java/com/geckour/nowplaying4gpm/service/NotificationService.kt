@@ -14,13 +14,16 @@ import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
@@ -109,8 +112,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
-        private const val SPOTIFY_PACKAGE_NAME = "com.spotify.music"
-
         fun sendRequestInvokeUpdate(context: Context) {
             context.checkStoragePermission {
                 it.sendBroadcast(Intent().apply {
@@ -143,8 +144,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     ACTION_INVOKE_UPDATE -> {
                         if (context == null) return
 
+                        val trackInfo = sharedPreferences.getCurrentTrackInfo()
                         launch {
-                            reflectTrackInfo(sharedPreferences.getCurrentTrackInfo())
+                            reflectTrackInfo(trackInfo)
                         }
                     }
 
@@ -176,7 +178,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
-    private val spotifyApiClient: SpotifyApiClient = SpotifyApiClient()
+    private val spotifyApiClient: SpotifyApiClient by lazy { SpotifyApiClient(this) }
     private val twitterApiClient: TwitterApiClient by lazy {
         TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
     }
@@ -238,8 +240,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         if (currentSbn == null) {
             try {
-                activeNotifications.sortedBy { it.postTime }
-                    .lastOrNull { fetchMetadata(it.packageName) != null }
+                activeNotifications.sortedByDescending { it.postTime }
+                    .firstOrNull { it.notification.mediaMetadata != null }
                     .apply { onNotificationPosted(this) }
             } catch (t: Throwable) {
                 Timber.e(t)
@@ -259,12 +261,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
+        sbn ?: return
 
-        if (sbn != null && sbn.packageName != packageName && (sbn.packageName != SPOTIFY_PACKAGE_NAME || sbn.notification.existMediaSessionToken)) {
-            fetchMetadata(sbn.packageName)?.apply {
+        if (sbn.packageName != packageName && sbn.notification.isPlaying) {
+            sbn.notification.mediaMetadata?.let {
                 currentSbn = sbn
                 sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
-                onMetadataChanged(this@apply, sbn.packageName, sbn.notification)
+                onMetadataChanged(it, sbn.packageName, sbn.notification)
             }
         }
     }
@@ -280,17 +283,22 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
 
-    private fun fetchMetadata(playerPackageName: String): MediaMetadata? {
-        val componentName = ComponentName(
-            this@NotificationService, NotificationService::class.java
-        )
-
-        return mediaSessionManager.getActiveSessions(componentName)
-            .firstOrNull { it.packageName == playerPackageName }?.metadata
-    }
-
     private val Notification.existMediaSessionToken: Boolean
         get() = extras.containsKey(Notification.EXTRA_MEDIA_SESSION)
+
+    private val Notification.mediaController: MediaController?
+        get() = extras.getParcelable<MediaSession.Token>(
+            Notification.EXTRA_MEDIA_SESSION
+        )?.let {
+            MediaController(this@NotificationService, it)
+        }
+
+    private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
+
+    private val Notification.isPlaying: Boolean get() = mediaController?.isPlaying == true
+
+    private val MediaController.isPlaying: Boolean
+        get() = playbackState?.state == PlaybackState.STATE_PLAYING
 
     private fun onMetadataCleared() {
         currentSbn = null
@@ -309,16 +317,20 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private fun onMetadataChanged(
         metadata: MediaMetadata, playerPackageName: String, notification: Notification? = null
     ) {
-        if (metadata != currentMetadata) {
+        val trackCoreElement = metadata.getTrackCoreElement()
+        if (trackCoreElement != currentMetadata?.getTrackCoreElement()) {
             refreshMetadataJob?.cancel()
+            currentMetadata = metadata
             refreshMetadataJob = launch {
                 currentTrackClearJob?.cancelAndJoin()
-                currentMetadata = metadata
 
                 val trackInfo = updateTrackInfo(
-                    metadata, playerPackageName, notification, metadata.getTrackCoreElement()
+                    metadata, playerPackageName, notification, trackCoreElement
                 ) ?: return@launch
-                if (sharedPreferences.getPackageStateListPostMastodon().firstOrNull { it.packageName == playerPackageName }?.state == true) {
+                val allowedPostMastodon = sharedPreferences.getPackageStateListPostMastodon()
+                    .firstOrNull { it.packageName == playerPackageName }
+                    ?.state == true
+                if (allowedPostMastodon) {
                     postMastodon(trackInfo)
                 }
             }
@@ -497,17 +509,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 ).executeCatching()?.id
             }
             val result = Statuses(mastodonClient).postStatus(subject,
-                                                             null,
-                                                             mediaId?.let { listOf(it) },
-                                                             false,
-                                                             null,
-                                                             sharedPreferences.getVisibilityMastodon().let {
-                                                                 when (it) {
-                                                                     Visibility.PUBLIC -> Status.Visibility.Public
-                                                                     Visibility.UNLISTED -> Status.Visibility.Unlisted
-                                                                     Visibility.PRIVATE -> Status.Visibility.Private
-                                                                 }
-                                                             }).executeCatching() ?: return
+                null,
+                mediaId?.let { listOf(it) },
+                false,
+                null,
+                sharedPreferences.getVisibilityMastodon().let {
+                    when (it) {
+                        Visibility.PUBLIC -> Status.Visibility.Public
+                        Visibility.UNLISTED -> Status.Visibility.Unlisted
+                        Visibility.PRIVATE -> Status.Visibility.Private
+                    }
+                }).executeCatching() ?: return
 
             showShortNotify(result)
         }
@@ -606,42 +618,31 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         sharedPreferences.getArtworkResolveOrder().filter { it.enabled }.forEach { method ->
+            Timber.d("np4d artwork resolve method: $method")
             when (method.key) {
                 ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
-                    Timber.d("np4d artwork resolve method: $method")
                     this@NotificationService.getArtworkUriFromDevice(coreElement)?.apply {
                         sharedPreferences.refreshTempArtwork(this)
                         return this
                     }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
-                    Timber.d("np4d artwork resolve method: $method")
-                    if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
-                        this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.apply {
-                            getBitmapFromUriString(this)?.refreshArtworkUri(this@NotificationService)
-                                ?.let { return it }
-                        }
+                    this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.let { uri ->
+                        getBitmapFromUriString(uri)?.refreshArtworkUri(this@NotificationService)
+                            ?.let { return it }
                     }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_BITMAP -> {
-                    Timber.d("np4d artwork resolve method: $method")
-                    val metadataBitmap =
-                        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART)) {
-                            this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                        } else null
-
-                    if (metadataBitmap != null) {
-                        metadataBitmap.refreshArtworkUri(this@NotificationService)
+                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)?.let { bitmap ->
+                        bitmap.refreshArtworkUri(this@NotificationService)
                             ?.let { return it }
                     }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.NOTIFICATION_BITMAP -> {
-                    Timber.d("np4d artwork resolve method: $method")
                     notificationBitmap?.refreshArtworkUri(this@NotificationService)
                         ?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
-                    Timber.d("np4d artwork resolve method: $method")
                     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
                         refreshArtworkUriFromLastFmApi(
                             this@NotificationService, lastFmApiClient, coreElement

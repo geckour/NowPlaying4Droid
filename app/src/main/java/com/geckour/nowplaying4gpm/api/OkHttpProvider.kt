@@ -1,8 +1,11 @@
 package com.geckour.nowplaying4gpm.api
 
+import android.content.Context
 import android.util.Base64
+import androidx.preference.PreferenceManager
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.BuildConfig
+import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
@@ -17,8 +20,6 @@ object OkHttpProvider {
         .applyDebugger()
         .build()
 
-    var spotifyAuthToken: String? = null
-
     val spotifyAuthClient: OkHttpClient = clientBuilder
         .addInterceptor {
             val tokenString = Base64.encodeToString(
@@ -28,45 +29,47 @@ object OkHttpProvider {
             )
             return@addInterceptor it.proceed(
                 it.request()
-                    .newBuilder().header("Authorization", "Basic $tokenString")
+                    .newBuilder()
+                    .header("Authorization", "Basic $tokenString")
                     .build()
             )
         }
         .applyDebugger()
         .build()
 
-    val spotifyApiClient: OkHttpClient
-        get() = spotifyAuthToken?.let { token ->
-            clientBuilder
-                .addInterceptor {
-                    return@addInterceptor it.proceed(
-                        it.request()
-                            .newBuilder().header(
-                                "Authorization",
-                                "Bearer $token"
-                            )
-                            .build()
-                    )
-                }
-                .applyDebugger()
-                .build()
-        } ?: throw IllegalStateException("Init auth token first.")
+    fun getSpotifyApiClient(context: Context): OkHttpClient {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+            .getSpotifyUserInfo()
+            ?.token
+            ?.accessToken
+            ?.let { token ->
+                clientBuilder
+                    .addInterceptor {
+                        return@addInterceptor it.proceed(
+                            it.request()
+                                .newBuilder()
+                                .header("Authorization", "Bearer $token")
+                                .build()
+                        )
+                    }
+                    .applyDebugger()
+                    .build()
+            } ?: throw IllegalStateException("Init token first.")
+    }
 
     val mastodonInstancesClient: OkHttpClient = clientBuilder
         .addInterceptor {
             return@addInterceptor it.proceed(
                 it.request()
-                    .newBuilder().header(
-                        "Authorization",
-                        "Bearer ${BuildConfig.MASTODON_INSTANCES_SECRET}"
-                    )
+                    .newBuilder()
+                    .header("Authorization", "Bearer ${BuildConfig.MASTODON_INSTANCES_SECRET}")
                     .build()
             )
         }
         .applyDebugger()
         .build()
 
-    fun OkHttpClient.Builder.applyDebugger(): OkHttpClient.Builder =
+    private fun OkHttpClient.Builder.applyDebugger(): OkHttpClient.Builder =
         apply {
             if (BuildConfig.DEBUG) {
                 addNetworkInterceptor(

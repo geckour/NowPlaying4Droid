@@ -1,357 +1,366 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
-
-    <data>
-
-        <import type="android.view.View"/>
-
-        <variable
-                name="toolbarTitle"
-                type="String"/>
-
-        <variable
-                name="donated"
-                type="Boolean"/>
-
-        <variable
-                name="mastodonEnabled"
-                type="Boolean"/>
-    </data>
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="0dp"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@color/colorPrimary"
-                android:elevation="5dp"
-                android:title="@{toolbarTitle}"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:titleTextColor="@android:color/white"
-                tools:title="ツールバータイトル"/>
+        <FrameLayout
+            android:id="@+id/mask_inactive_app"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/colorMaskInactive"
+            android:clickable="true"
+            android:elevation="8dp"
+            android:focusable="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <View
-                android:id="@+id/toolbar_cover"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:elevation="5dp"
-                app:layout_constraintBottom_toBottomOf="@id/toolbar"
-                app:layout_constraintEnd_toEndOf="@id/toolbar"
-                app:layout_constraintStart_toStartOf="@id/toolbar"
-                app:layout_constraintTop_toTopOf="@id/toolbar"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/pref_mask_inactive_app_desc"
+                android:textColor="@color/colorTextWeak" />
+        </FrameLayout>
 
         <ScrollView
-                android:id="@+id/scrollView"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/toolbar">
+            android:id="@+id/scrollView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <include
+                    android:id="@+id/category_general"
+                    layout="@layout/item_pref_category"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="vertical">
+                    app:title="@{@string/pref_category_general}" />
 
                 <include
-                        android:id="@+id/category_general"
-                        layout="@layout/item_pref_category"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:title="@{@string/pref_category_general}"/>
+                    android:id="@+id/item_switch_use_api"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_general}"
+                    app:desc="@{@string/pref_item_desc_switch_use_api}"
+                    app:maskInactiveDonateVisible="@{!donated}"
+                    app:title="@{@string/pref_item_title_switch_use_api}" />
 
                 <include
-                        android:id="@+id/item_switch_use_api"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_general}"
-                        app:desc="@{@string/pref_item_desc_switch_use_api}"
-                        app:maskInactiveDonateVisible="@{!donated}"
-                        app:title="@{@string/pref_item_title_switch_use_api}"/>
+                    android:id="@+id/item_change_artwork_resolve_order"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_general}"
+                    app:desc="@{@string/pref_item_desc_change_artwork_resolve_order}"
+                    app:maskInactiveDonateVisible="@{!donated}"
+                    app:title="@{@string/pref_item_title_change_artwork_resolve_order}" />
 
                 <include
-                        android:id="@+id/item_change_artwork_resolve_order"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_general}"
-                        app:desc="@{@string/pref_item_desc_change_artwork_resolve_order}"
-                        app:maskInactiveDonateVisible="@{!donated}"
-                        app:title="@{@string/pref_item_title_change_artwork_resolve_order}"/>
+                    android:id="@+id/category_share"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_share}" />
 
                 <include
-                        android:id="@+id/category_share"
-                        layout="@layout/item_pref_category"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:title="@{@string/pref_category_share}"/>
+                    android:id="@+id/item_pattern_format"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_pattern}"
+                    app:title="@{@string/pref_item_title_pattern}" />
 
                 <include
-                        android:id="@+id/item_pattern_format"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_pattern}"
-                        app:title="@{@string/pref_item_title_pattern}"/>
+                    android:id="@+id/item_format_pattern_modifiers"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_pattern_modifiers}"
+                    app:title="@{@string/pref_item_title_pattern_modifiers}" />
 
                 <include
-                        android:id="@+id/item_format_pattern_modifiers"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_pattern_modifiers}"
-                        app:title="@{@string/pref_item_title_pattern_modifiers}"/>
+                    android:id="@+id/item_auth_spotify"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_auth_spotify}"
+                    app:title="@{@string/pref_item_title_auth_spotify}" />
 
                 <include
-                        android:id="@+id/item_switch_strict_match_pattern"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_strict_match_pattern}"
-                        app:title="@{@string/pref_item_title_strict_match_pattern}"/>
+                    android:id="@+id/item_switch_strict_match_pattern"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_strict_match_pattern}"
+                    app:title="@{@string/pref_item_title_strict_match_pattern}" />
 
                 <include
-                        android:id="@+id/item_switch_bundle_artwork"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_switch_bundle_artwork}"
-                        app:title="@{@string/pref_item_title_switch_bundle_artwork}"/>
+                    android:id="@+id/item_switch_bundle_artwork"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_switch_bundle_artwork}"
+                    app:title="@{@string/pref_item_title_switch_bundle_artwork}" />
 
                 <include
-                        android:id="@+id/item_switch_copy_into_clipboard"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_switch_copy_into_clipboard}"
-                        app:title="@{@string/pref_item_title_switch_copy_into_clipboard}"/>
+                    android:id="@+id/item_switch_copy_into_clipboard"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_switch_copy_into_clipboard}"
+                    app:title="@{@string/pref_item_title_switch_copy_into_clipboard}" />
 
                 <include
-                        android:id="@+id/item_switch_auto_post_mastodon"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_switch_auto_post_mastodon}"
-                        app:title="@{@string/pref_item_title_switch_auto_post_mastodon}"/>
+                    android:id="@+id/item_switch_auto_post_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_switch_auto_post_mastodon}"
+                    app:title="@{@string/pref_item_title_switch_auto_post_mastodon}" />
 
                 <include
-                        android:id="@+id/item_auth_mastodon"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_auth_mastodon}"
-                        app:maskInactiveVisible="@{!mastodonEnabled}"
-                        app:title="@{@string/pref_item_title_auth_mastodon}"/>
+                    android:id="@+id/item_auth_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_auth_mastodon}"
+                    app:maskInactiveVisible="@{!mastodonEnabled}"
+                    app:title="@{@string/pref_item_title_auth_mastodon}" />
 
                 <include
-                        android:id="@+id/item_delay_mastodon"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_delay_mastodon}"
-                        app:maskInactiveVisible="@{!mastodonEnabled}"
-                        app:title="@{@string/pref_item_title_delay_mastodon}"/>
+                    android:id="@+id/item_delay_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_delay_mastodon}"
+                    app:maskInactiveVisible="@{!mastodonEnabled}"
+                    app:title="@{@string/pref_item_title_delay_mastodon}" />
 
                 <include
-                        android:id="@+id/item_visibility_mastodon"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_visibility_mastodon}"
-                        app:maskInactiveVisible="@{!mastodonEnabled}"
-                        app:title="@{@string/pref_item_title_visibility_mastodon}"/>
+                    android:id="@+id/item_visibility_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_visibility_mastodon}"
+                    app:maskInactiveVisible="@{!mastodonEnabled}"
+                    app:title="@{@string/pref_item_title_visibility_mastodon}" />
 
                 <include
-                        android:id="@+id/item_player_package_mastodon"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_player_package_mastodon}"
-                        app:maskInactiveVisible="@{!mastodonEnabled}"
-                        app:title="@{@string/pref_item_title_player_package_mastodon}"/>
+                    android:id="@+id/item_player_package_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_player_package_mastodon}"
+                    app:maskInactiveVisible="@{!mastodonEnabled}"
+                    app:title="@{@string/pref_item_title_player_package_mastodon}" />
 
                 <include
-                        android:id="@+id/item_switch_success_notification_mastodon"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_share}"
-                        app:desc="@{@string/pref_item_desc_success_notification_mastodon}"
-                        app:maskInactiveVisible="@{!mastodonEnabled}"
-                        app:title="@{@string/pref_item_title_success_notification_mastodon}"/>
+                    android:id="@+id/item_switch_success_notification_mastodon"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_success_notification_mastodon}"
+                    app:maskInactiveVisible="@{!mastodonEnabled}"
+                    app:title="@{@string/pref_item_title_success_notification_mastodon}" />
 
                 <include
-                        android:id="@+id/category_notification"
-                        layout="@layout/item_pref_category"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:title="@{@string/pref_category_notification}"/>
+                    android:id="@+id/category_notification"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_notification}" />
 
                 <include
-                        android:id="@+id/item_switch_reside"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_notification}"
-                        app:desc="@{@string/pref_item_desc_switch_reside_notification}"
-                        app:title="@{@string/pref_item_title_switch_reside_notification}"/>
+                    android:id="@+id/item_switch_reside"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
+                    app:desc="@{@string/pref_item_desc_switch_reside_notification}"
+                    app:title="@{@string/pref_item_title_switch_reside_notification}" />
 
                 <include
-                        android:id="@+id/item_switch_show_artwork_in_notification"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_notification}"
-                        app:desc="@{@string/pref_item_desc_switch_show_artwork_in_notification}"
-                        app:title="@{@string/pref_item_title_switch_show_artwork_in_notification}"/>
+                    android:id="@+id/item_switch_show_artwork_in_notification"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
+                    app:desc="@{@string/pref_item_desc_switch_show_artwork_in_notification}"
+                    app:title="@{@string/pref_item_title_switch_show_artwork_in_notification}" />
 
                 <include
-                        android:id="@+id/item_choose_color"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_notification}"
-                        app:desc="@{@string/pref_item_desc_choose_color}"
-                        app:title="@{@string/pref_item_title_choose_color}"/>
+                    android:id="@+id/item_choose_color"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
+                    app:desc="@{@string/pref_item_desc_choose_color}"
+                    app:title="@{@string/pref_item_title_choose_color}" />
 
                 <include
-                        android:id="@+id/item_switch_colorize_notification_bg"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_notification}"
-                        app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
-                        app:title="@{@string/pref_item_title_switch_colorize_notification_bg}"/>
+                    android:id="@+id/item_switch_colorize_notification_bg"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_notification}"
+                    app:desc="@{@string/pref_item_desc_switch_colorize_notification_bg}"
+                    app:title="@{@string/pref_item_title_switch_colorize_notification_bg}" />
 
                 <include
-                        android:id="@+id/category_widget"
-                        layout="@layout/item_pref_category"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:title="@{@string/pref_category_widget}"/>
+                    android:id="@+id/category_widget"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_widget}" />
 
                 <include
-                        android:id="@+id/item_switch_show_artwork_in_widget"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_widget}"
-                        app:desc="@{@string/pref_item_desc_switch_show_artwork_in_widget}"
-                        app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}"/>
+                    android:id="@+id/item_switch_show_artwork_in_widget"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_widget}"
+                    app:desc="@{@string/pref_item_desc_switch_show_artwork_in_widget}"
+                    app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}" />
 
                 <include
-                        android:id="@+id/item_switch_launch_gpm_on_click_widget_artwork"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_widget}"
-                        app:desc="@{@string/pref_item_desc_switch_launch_gpm_on_click_widget_artwork}"
-                        app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}"/>
+                    android:id="@+id/item_switch_launch_gpm_on_click_widget_artwork"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_widget}"
+                    app:desc="@{@string/pref_item_desc_switch_launch_gpm_on_click_widget_artwork}"
+                    app:title="@{@string/pref_item_title_switch_launch_gpm_on_click_widget_artwork}" />
 
                 <include
-                        android:id="@+id/item_switch_show_clear_button_in_widget"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_widget}"
-                        app:desc="@{@string/pref_item_desc_switch_show_clear_button_in_widget}"
-                        app:title="@{@string/pref_item_title_switch_show_clear_button_in_widget}"/>
+                    android:id="@+id/item_switch_show_clear_button_in_widget"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_widget}"
+                    app:desc="@{@string/pref_item_desc_switch_show_clear_button_in_widget}"
+                    app:title="@{@string/pref_item_title_switch_show_clear_button_in_widget}" />
 
                 <include
-                        android:id="@+id/category_wear"
-                        layout="@layout/item_pref_category"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:title="@{@string/pref_category_wear}"/>
+                    android:id="@+id/category_wear"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_wear}" />
 
                 <include
-                        android:id="@+id/item_auth_twitter"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:categoryId="@{@id/category_wear}"
-                        app:desc="@{@string/pref_item_desc_auth_twitter}"
-                        app:title="@{@string/pref_item_title_auth_twitter}"/>
+                    android:id="@+id/item_auth_twitter"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_wear}"
+                    app:desc="@{@string/pref_item_desc_auth_twitter}"
+                    app:title="@{@string/pref_item_title_auth_twitter}" />
 
                 <include
-                        android:id="@+id/category_others"
-                        layout="@layout/item_pref_category"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:title="@{@string/pref_category_others}"/>
+                    android:id="@+id/category_others"
+                    layout="@layout/item_pref_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:title="@{@string/pref_category_others}" />
 
                 <include
-                        android:id="@+id/item_donate"
-                        layout="@layout/item_pref_item"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="@{donated ? View.GONE : View.VISIBLE}"
-                        app:categoryId="@{@id/category_others}"
-                        app:desc="@{@string/pref_item_desc_donate}"
-                        app:title="@{@string/pref_item_title_donate}"/>
+                    android:id="@+id/item_donate"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="@{donated ? View.GONE : View.VISIBLE}"
+                    app:categoryId="@{@id/category_others}"
+                    app:desc="@{@string/pref_item_desc_donate}"
+                    app:title="@{@string/pref_item_title_donate}" />
 
             </LinearLayout>
         </ScrollView>
 
+        <View
+            android:id="@+id/toolbar_cover"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:elevation="5dp"
+            app:layout_constraintBottom_toBottomOf="@id/toolbar"
+            app:layout_constraintEnd_toEndOf="@id/toolbar"
+            app:layout_constraintStart_toStartOf="@id/toolbar"
+            app:layout_constraintTop_toTopOf="@id/toolbar" />
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="0dp"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/colorPrimary"
+            android:elevation="5dp"
+            android:title="@{toolbarTitle}"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:titleTextColor="@android:color/white"
+            tools:title="ツールバータイトル" />
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fab"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="16dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:scaleType="fitCenter"
-                app:backgroundTint="@color/colorPrimary"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:srcCompat="@drawable/ic_app_icon"
-                app:tint="@android:color/white"/>
-
-        <FrameLayout
-                android:id="@+id/mask_inactive_app"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:background="@color/colorMaskInactive"
-                android:clickable="true"
-                android:elevation="8dp"
-                android:focusable="true"
-                android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="@string/pref_mask_inactive_app_desc"
-                    android:textColor="@color/colorTextWeak"/>
-        </FrameLayout>
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:scaleType="fitCenter"
+            app:backgroundTint="@color/colorPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/ic_app_icon"
+            app:tint="@android:color/white" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <data>
+
+        <import type="android.view.View" />
+
+        <variable
+            name="toolbarTitle"
+            type="String" />
+
+        <variable
+            name="donated"
+            type="Boolean" />
+
+        <variable
+            name="mastodonEnabled"
+            type="Boolean" />
+    </data>
 </layout>

@@ -41,6 +41,8 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
 
                 <data android:scheme="np4gpm"/>
+                <data android:host="spotify"/>
+                <data android:host="spotify.callback"/>
                 <data android:host="twitter"/>
                 <data android:host="twitter.callback"/>
                 <data android:host="mastodon"/>
