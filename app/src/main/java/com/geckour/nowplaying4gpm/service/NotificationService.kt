@@ -18,9 +18,9 @@ import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.preference.PreferenceManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
@@ -497,17 +497,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 ).executeCatching()?.id
             }
             val result = Statuses(mastodonClient).postStatus(subject,
-                                                             null,
-                                                             mediaId?.let { listOf(it) },
-                                                             false,
-                                                             null,
-                                                             sharedPreferences.getVisibilityMastodon().let {
-                                                                 when (it) {
-                                                                     Visibility.PUBLIC -> Status.Visibility.Public
-                                                                     Visibility.UNLISTED -> Status.Visibility.Unlisted
-                                                                     Visibility.PRIVATE -> Status.Visibility.Private
-                                                                 }
-                                                             }).executeCatching() ?: return
+                null,
+                mediaId?.let { listOf(it) },
+                false,
+                null,
+                sharedPreferences.getVisibilityMastodon().let {
+                    when (it) {
+                        Visibility.PUBLIC -> Status.Visibility.Public
+                        Visibility.UNLISTED -> Status.Visibility.Unlisted
+                        Visibility.PRIVATE -> Status.Visibility.Private
+                    }
+                }).executeCatching() ?: return
 
             showShortNotify(result)
         }
@@ -606,42 +606,31 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         sharedPreferences.getArtworkResolveOrder().filter { it.enabled }.forEach { method ->
+            Timber.d("np4d artwork resolve method: $method")
             when (method.key) {
                 ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
-                    Timber.d("np4d artwork resolve method: $method")
                     this@NotificationService.getArtworkUriFromDevice(coreElement)?.apply {
                         sharedPreferences.refreshTempArtwork(this)
                         return this
                     }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
-                    Timber.d("np4d artwork resolve method: $method")
-                    if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)) {
-                        this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.apply {
-                            getBitmapFromUriString(this)?.refreshArtworkUri(this@NotificationService)
-                                ?.let { return it }
-                        }
+                    this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.let { uri ->
+                        getBitmapFromUriString(uri)?.refreshArtworkUri(this@NotificationService)
+                            ?.let { return it }
                     }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_BITMAP -> {
-                    Timber.d("np4d artwork resolve method: $method")
-                    val metadataBitmap =
-                        if (this.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ART)) {
-                            this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                        } else null
-
-                    if (metadataBitmap != null) {
-                        metadataBitmap.refreshArtworkUri(this@NotificationService)
+                    this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)?.let { bitmap ->
+                        bitmap.refreshArtworkUri(this@NotificationService)
                             ?.let { return it }
                     }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.NOTIFICATION_BITMAP -> {
-                    Timber.d("np4d artwork resolve method: $method")
                     notificationBitmap?.refreshArtworkUri(this@NotificationService)
                         ?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
-                    Timber.d("np4d artwork resolve method: $method")
                     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
                         refreshArtworkUriFromLastFmApi(
                             this@NotificationService, lastFmApiClient, coreElement
