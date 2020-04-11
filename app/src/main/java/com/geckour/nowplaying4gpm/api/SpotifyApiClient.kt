@@ -4,13 +4,14 @@ import android.content.Context
 import androidx.preference.PreferenceManager
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
-import com.geckour.nowplaying4gpm.api.model.SpotifyToken
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.moshi
-import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfo
+import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import timber.log.Timber
@@ -40,7 +41,7 @@ class SpotifyApiClient(private val context: Context) {
             .build()
             .create(SpotifyApiService::class.java)
 
-    suspend fun getToken(code: String): SpotifyToken? {
+    suspend fun storeSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
         val token = try {
             authService.getToken(code)
         } catch (t: Throwable) {
@@ -48,29 +49,26 @@ class SpotifyApiClient(private val context: Context) {
             Crashlytics.logException(t)
             null
         }
-        token?.let {
-            PreferenceManager.getDefaultSharedPreferences(context).apply {
-                storeSpotifyUserInfo(
-                    getSpotifyUserInfo()?.copy(token = it) ?: SpotifyUserInfo(
-                        it,
-                        ""
-                    )
-                )
+        return@withContext token?.let {
+            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+            sharedPreferences.storeSpotifyUserInfoImmediately(SpotifyUserInfo(it, ""))
+            val userName = getUser().displayName
+            SpotifyUserInfo(token, userName).apply {
+                sharedPreferences.storeSpotifyUserInfoImmediately(this)
             }
         }
-        return token
     }
 
-    suspend fun refreshTokenIfNeeded() {
+    private suspend fun refreshTokenIfNeeded() {
         val token =
             PreferenceManager.getDefaultSharedPreferences(context).getSpotifyUserInfo()?.token
                 ?: return
         if (System.currentTimeMillis() > token.expiresIn) {
-            getToken(token.codeForRefreshToken)
+            storeSpotifyUserInfo(token.codeForRefreshToken)
         }
     }
 
-    suspend fun getUser(): SpotifyUser = service.getUser()
+    private suspend fun getUser(): SpotifyUser = service.getUser()
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): String? {
         return trackCoreElement.spotifySearchQuery?.let {

@@ -50,7 +50,6 @@ import com.geckour.nowplaying4gpm.databinding.DialogRecyclerViewBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.databinding.ItemPrefItemBinding
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
-import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
@@ -90,7 +89,6 @@ import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
-import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -985,26 +983,27 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     private fun onClickPlayerPackageMastodon(sharedPreferences: SharedPreferences) {
         val adapter =
-            PlayerPackageListAdapter(sharedPreferences.getPackageStateListPostMastodon().mapNotNull { packageState ->
-                val appName = packageManager?.let {
-                    try {
-                        it.getApplicationLabel(
-                            it.getApplicationInfo(
-                                packageState.packageName, PackageManager.GET_META_DATA
+            PlayerPackageListAdapter(
+                sharedPreferences.getPackageStateListPostMastodon().mapNotNull { packageState ->
+                    val appName = packageManager?.let {
+                        try {
+                            it.getApplicationLabel(
+                                it.getApplicationInfo(
+                                    packageState.packageName, PackageManager.GET_META_DATA
+                                )
                             )
+                        } catch (t: Throwable) {
+                            Timber.e(t)
+                            null
+                        }
+                    }?.toString()
+                    if (appName == null) {
+                        sharedPreferences.storePackageStatePostMastodon(
+                            packageState.packageName, false
                         )
-                    } catch (t: Throwable) {
-                        Timber.e(t)
                         null
-                    }
-                }?.toString()
-                if (appName == null) {
-                    sharedPreferences.storePackageStatePostMastodon(
-                        packageState.packageName, false
-                    )
-                    null
-                } else PlayerPackageState(packageState.packageName, appName, packageState.state)
-            })
+                    } else PlayerPackageState(packageState.packageName, appName, packageState.state)
+                })
         val dialogRecyclerViewBinding = DialogRecyclerViewBinding.inflate(
             LayoutInflater.from(this), null, false
         ).apply {
@@ -1147,17 +1146,14 @@ class SettingsActivity : WithCrashlyticsActivity() {
         if (verifier == null) onAuthSpotifyError()
         else {
             viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val token = spotifyApiClient.getToken(verifier)
+                val userInfo = spotifyApiClient.storeSpotifyUserInfo(verifier)
 
-                if (token == null) onAuthSpotifyError()
+                if (userInfo == null) onAuthSpotifyError()
                 else {
-                    val userName = spotifyApiClient.getUser().displayName
-                    sharedPreferences.storeSpotifyUserInfo(SpotifyUserInfo(token, userName))
-
                     authSpotifyBinding.summary =
                         getString(
                             R.string.pref_item_summary_auth_spotify,
-                            userName
+                            userInfo.userName
                         )
                     Snackbar.make(
                         rootView, R.string.snackbar_text_success_auth_spotify, Snackbar.LENGTH_LONG

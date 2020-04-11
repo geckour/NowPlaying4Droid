@@ -253,6 +253,13 @@ fun SharedPreferences.storeSpotifyUserInfo(spotifyUserInfo: SpotifyUserInfo) {
     ).apply()
 }
 
+fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
+    edit().putString(
+        PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,
+        moshi.adapter(SpotifyUserInfo::class.java).toJson(spotifyUserInfo)
+    ).commit()
+}
+
 fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
     return if (contains(PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name))
         moshi.fromJsonOrNull(
