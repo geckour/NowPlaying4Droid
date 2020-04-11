@@ -14,7 +14,10 @@ import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -108,8 +111,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         private const val WEAR_PATH_SHARE_FAILURE = "/share/failure"
         private const val WEAR_KEY_SUBJECT = "key_subject"
         private const val WEAR_KEY_ARTWORK = "key_artwork"
-
-        private const val SPOTIFY_PACKAGE_NAME = "com.spotify.music"
 
         fun sendRequestInvokeUpdate(context: Context) {
             context.checkStoragePermission {
@@ -238,8 +239,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         if (currentSbn == null) {
             try {
-                activeNotifications.sortedBy { it.postTime }
-                    .lastOrNull { fetchMetadata(it.packageName) != null }
+                activeNotifications.sortedByDescending { it.postTime }
+                    .firstOrNull { it.notification.mediaMetadata != null }
                     .apply { onNotificationPosted(this) }
             } catch (t: Throwable) {
                 Timber.e(t)
@@ -259,12 +260,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
+        sbn ?: return
 
-        if (sbn != null && sbn.packageName != packageName && (sbn.packageName != SPOTIFY_PACKAGE_NAME || sbn.notification.existMediaSessionToken)) {
-            fetchMetadata(sbn.packageName)?.apply {
+        if (sbn.packageName != packageName && sbn.notification.isPlaying) {
+            sbn.notification.mediaMetadata?.let {
                 currentSbn = sbn
                 sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
-                onMetadataChanged(this@apply, sbn.packageName, sbn.notification)
+                onMetadataChanged(it, sbn.packageName, sbn.notification)
             }
         }
     }
@@ -280,17 +282,22 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
 
-    private fun fetchMetadata(playerPackageName: String): MediaMetadata? {
-        val componentName = ComponentName(
-            this@NotificationService, NotificationService::class.java
-        )
-
-        return mediaSessionManager.getActiveSessions(componentName)
-            .firstOrNull { it.packageName == playerPackageName }?.metadata
-    }
-
     private val Notification.existMediaSessionToken: Boolean
         get() = extras.containsKey(Notification.EXTRA_MEDIA_SESSION)
+
+    private val Notification.mediaController: MediaController?
+        get() = extras.getParcelable<MediaSession.Token>(
+            Notification.EXTRA_MEDIA_SESSION
+        )?.let {
+            MediaController(this@NotificationService, it)
+        }
+
+    private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
+
+    private val Notification.isPlaying: Boolean get() = mediaController?.isPlaying == true
+
+    private val MediaController.isPlaying: Boolean
+        get() = playbackState?.state == PlaybackState.STATE_PLAYING
 
     private fun onMetadataCleared() {
         currentSbn = null
@@ -309,16 +316,20 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private fun onMetadataChanged(
         metadata: MediaMetadata, playerPackageName: String, notification: Notification? = null
     ) {
-        if (metadata != currentMetadata) {
+        val trackCoreElement = metadata.getTrackCoreElement()
+        if (trackCoreElement != currentMetadata?.getTrackCoreElement()) {
             refreshMetadataJob?.cancel()
+            currentMetadata = metadata
             refreshMetadataJob = launch {
                 currentTrackClearJob?.cancelAndJoin()
-                currentMetadata = metadata
 
                 val trackInfo = updateTrackInfo(
-                    metadata, playerPackageName, notification, metadata.getTrackCoreElement()
+                    metadata, playerPackageName, notification, trackCoreElement
                 ) ?: return@launch
-                if (sharedPreferences.getPackageStateListPostMastodon().firstOrNull { it.packageName == playerPackageName }?.state == true) {
+                val allowedPostMastodon = sharedPreferences.getPackageStateListPostMastodon()
+                    .firstOrNull { it.packageName == playerPackageName }
+                    ?.state == true
+                if (allowedPostMastodon) {
                     postMastodon(trackInfo)
                 }
             }
