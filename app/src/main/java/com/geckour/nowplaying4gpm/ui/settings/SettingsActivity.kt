@@ -100,6 +100,7 @@ import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import permissions.dispatcher.NeedsPermission
@@ -827,11 +828,13 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
             viewModel.viewModelScope.launch(Dispatchers.IO) {
                 val instances = MastodonInstancesApiClient().getList()
-                editText.setAdapter(
-                    ArrayAdapter(this@SettingsActivity,
-                        android.R.layout.simple_dropdown_item_1line,
-                        instances.mapNotNull { it.name })
-                )
+                withContext(Dispatchers.Main) {
+                    editText.setAdapter(
+                        ArrayAdapter(this@SettingsActivity,
+                            android.R.layout.simple_dropdown_item_1line,
+                            instances.mapNotNull { it.name })
+                    )
+                }
             }
         }
 
