@@ -678,7 +678,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         @StringRes titleResId: Int,
         @StringRes messageResId: Int,
         onDismiss: () -> Unit = {}
-    ) {
+    ) = runOnUiThread {
         AlertDialog.Builder(this).setTitle(titleResId).setMessage(messageResId)
             .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
             .setOnDismissListener { onDismiss() }.show()
