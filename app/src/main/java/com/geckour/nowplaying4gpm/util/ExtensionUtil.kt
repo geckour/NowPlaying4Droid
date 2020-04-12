@@ -110,10 +110,15 @@ enum class Visibility {
 }
 
 enum class FormatPattern(val value: String) {
-    S_QUOTE("'"), S_QUOTE_DOUBLE("''"), TITLE("TI"), ARTIST("AR"), ALBUM("AL"), COMPOSER("CO"), PLAYER_NAME(
-        "PN"
-    ),
-    SPOTIFY_URL("SU"), NEW_LINE("\\n");
+    S_QUOTE("'"),
+    S_QUOTE_DOUBLE("''"),
+    TITLE("TI"),
+    ARTIST("AR"),
+    ALBUM("AL"),
+    COMPOSER("CO"),
+    PLAYER_NAME("PN"),
+    SPOTIFY_URL("SU"),
+    NEW_LINE("\\n");
 
     companion object {
         val replaceablePatterns: List<FormatPattern> = values().toMutableList().apply {
@@ -342,12 +347,13 @@ fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdIn
         val retriever = MediaMetadataRetriever().apply {
             setDataSource(this@getArtworkUriFromDevice, contentUri)
         }
-        retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this) ?: ContentUris.withAppendedId(
-            Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
-        )?.also { uri ->
-            contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
-            PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
-        }
+        retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
+            ?: ContentUris.withAppendedId(
+                Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
+            )?.also { uri ->
+                contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
+                PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
+            }
     } catch (t: Throwable) {
         Timber.e(t)
         Crashlytics.logException(t)

@@ -1142,8 +1142,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
             else null
         }
 
-        Timber.d("np4d Spotify verifier: $verifier")
-
         if (verifier == null) onAuthSpotifyError()
         else {
             viewModel.viewModelScope.launch(Dispatchers.IO) {
