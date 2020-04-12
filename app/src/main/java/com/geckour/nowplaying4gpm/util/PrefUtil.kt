@@ -10,7 +10,6 @@ import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.squareup.moshi.Types
-import timber.log.Timber
 import twitter4j.auth.AccessToken
 
 enum class PrefKey(val defaultValue: Any? = null) {
@@ -143,12 +142,9 @@ fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
     val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
 
-    return try {
+    return withCatching {
         context.contentResolver.openInputStream(uri)?.close() ?: return null
         uri
-    } catch (e: Throwable) {
-        Timber.e(e)
-        null
     }
 }
 

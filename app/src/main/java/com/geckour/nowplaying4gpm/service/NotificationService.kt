@@ -69,6 +69,7 @@ import com.geckour.nowplaying4gpm.util.setCrashlytics
 import com.geckour.nowplaying4gpm.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.toByteArray
+import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -170,12 +171,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         getSystemService(MediaSessionManager::class.java)
     }
     private val keyguardManager: KeyguardManager? by lazy {
-        try {
-            getSystemService(KeyguardManager::class.java)
-        } catch (t: Throwable) {
-            Timber.e(t)
-            null
-        }
+        withCatching { getSystemService(KeyguardManager::class.java) }
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val spotifyApiClient: SpotifyApiClient by lazy { SpotifyApiClient(this) }
@@ -225,11 +221,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onDestroy() {
         super.onDestroy()
 
-        try {
-            unregisterReceiver(receiver)
-        } catch (e: IllegalArgumentException) {
-            Timber.e(e)
-        }
+        withCatching { unregisterReceiver(receiver) }
 
         notificationManager.destroyNotification()
         job.cancel()
@@ -239,12 +231,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onListenerConnected()
 
         if (currentSbn == null) {
-            try {
+            withCatching {
                 activeNotifications.sortedByDescending { it.postTime }
                     .firstOrNull { it.notification.mediaMetadata != null }
                     .apply { onNotificationPosted(this) }
-            } catch (t: Throwable) {
-                Timber.e(t)
             }
         }
 
@@ -486,12 +476,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 )
             ) {
                 trackInfo.artworkUriString?.let {
-                    return@let try {
-                        getBitmapFromUriString(it)?.toByteArray()
-                    } catch (t: Throwable) {
-                        Timber.e(t)
-                        null
-                    }
+                    return@let withCatching { getBitmapFromUriString(it)?.toByteArray() }
                 }
             } else null
 
@@ -565,9 +550,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             sharedPreferences.setReceivedDelegateShareNodeId(sourceNodeId)
         }
 
-        if (invokeOnReleasedLock.not()) Wearable.getMessageClient(this@NotificationService).sendMessage(
-            sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null
-        )
+        if (invokeOnReleasedLock.not()) Wearable.getMessageClient(this@NotificationService)
+            .sendMessage(
+                sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null
+            )
     }
 
     private suspend fun onRequestPostToTwitterFromWear(sourceNodeId: String) {
@@ -657,12 +643,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private fun Notification.getArtworkBitmap(): Bitmap? =
         (getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable)?.bitmap?.let {
-            try {
-                it.copy(it.config, false)
-            } catch (t: Throwable) {
-                Timber.e(t)
-                null
-            }
+            withCatching { it.copy(it.config, false) }
         }
 
     private suspend fun NotificationManager.showNotification(trackInfo: TrackInfo?) {

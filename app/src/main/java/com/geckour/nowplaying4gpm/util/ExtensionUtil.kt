@@ -251,12 +251,7 @@ fun Context.checkStoragePermission(
     }
 }
 
-fun String.getUri(): Uri? = try {
-    Uri.parse(this)
-} catch (e: Exception) {
-    Timber.e(e)
-    null
-}
+fun String.getUri(): Uri? = withCatching { Uri.parse(this) }
 
 private fun Palette.getColorFromPaletteColor(paletteColor: PaletteColor): Int =
     when (paletteColor) {
@@ -284,21 +279,14 @@ fun Context.setCrashlytics() {
 
 inline fun <reified T> Moshi.fromJsonOrNull(
     json: String?, type: Type, onError: Throwable.() -> Unit = { Timber.e(this) }
-): T? = try {
-    this.adapter<T>(type).fromJson(json)
-} catch (t: Throwable) {
-    onError(t)
-    null
-}
+): T? = withCatching { this.adapter<T>(type).fromJson(json) }
 
 fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
 
-fun String.getAppName(context: Context): String? = try {
+fun String.getAppName(context: Context): String? = withCatching {
     context.packageManager.let {
         it.getApplicationLabel(it.getApplicationInfo(this, 0)).toString()
     }
-} catch (t: PackageManager.NameNotFoundException) {
-    null
 }
 
 fun <T> MutableList<T>.swap(from: Int, to: Int) {
@@ -340,7 +328,7 @@ fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? = this?.let {
 }
 
 fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdInfo?.let {
-    try {
+    withCatching {
         val contentUri = ContentUris.withAppendedId(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId
         )
@@ -350,14 +338,10 @@ fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdIn
         retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
             ?: ContentUris.withAppendedId(
                 Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
-            )?.also { uri ->
+            ).also { uri ->
                 contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
                 PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
             }
-    } catch (t: Throwable) {
-        Timber.e(t)
-        Crashlytics.logException(t)
-        null
     }
 }
 
@@ -365,12 +349,7 @@ fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement
     getArtworkUriFromDevice(getAlbumIdFromDevice(trackCoreElement))
 
 fun ByteArray.toBitmap(): Bitmap? =
-    try {
-        BitmapFactory.decodeByteArray(this, 0, this.size)
-    } catch (t: Throwable) {
-        Timber.e(t)
-        null
-    }
+    withCatching { BitmapFactory.decodeByteArray(this, 0, this.size) }
 
 fun Bitmap.refreshArtworkUri(context: Context): Uri? {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)

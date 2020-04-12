@@ -2,7 +2,6 @@ package com.geckour.nowplaying4gpm.api
 
 import android.content.Context
 import androidx.preference.PreferenceManager
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
@@ -10,11 +9,11 @@ import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.moshi
 import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
+import com.geckour.nowplaying4gpm.util.withCatching
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import timber.log.Timber
 import java.util.*
 
 class SpotifyApiClient(private val context: Context) {
@@ -44,19 +43,10 @@ class SpotifyApiClient(private val context: Context) {
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     suspend fun storeSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
-        val token = try {
-            authService.getToken(code)
-        } catch (t: Throwable) {
-            Timber.e(t)
-            Crashlytics.logException(t)
-            return@withContext null
-        }
-        val userName = try {
-            getUser(token.accessToken).displayName
-        } catch (t: Throwable) {
-            Timber.e(t)
-            return@withContext null
-        }
+        val token = withCatching { authService.getToken(code) }
+            ?: return@withContext null
+        val userName = withCatching { getUser(token.accessToken).displayName }
+            ?: return@withContext null
         return@withContext SpotifyUserInfo(token, userName).apply {
             sharedPreferences.storeSpotifyUserInfoImmediately(this)
         }
@@ -73,8 +63,8 @@ class SpotifyApiClient(private val context: Context) {
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): String? {
         return trackCoreElement.spotifySearchQuery?.let {
-            try {
-                refreshTokenIfNeeded()
+            withCatching { refreshTokenIfNeeded() }
+            withCatching {
                 val token =
                     sharedPreferences.getSpotifyUserInfo()?.token
                         ?: throw IllegalStateException("Init token first.")
@@ -87,10 +77,6 @@ class SpotifyApiClient(private val context: Context) {
                     ?.firstOrNull()
                     ?.urls
                     ?.get("spotify")
-            } catch (t: Throwable) {
-                Timber.e(t)
-                Crashlytics.logException(t)
-                null
             }
         }
     }

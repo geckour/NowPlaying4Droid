@@ -17,29 +17,23 @@ import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-suspend fun <T> asyncOrNull(
-    onError: (Throwable) -> Unit = { Timber.e(it) }, block: suspend CoroutineScope.() -> T
-) = coroutineScope {
-    async {
-        try {
-            block()
-        } catch (t: Throwable) {
-            onError(t)
-            Crashlytics.logException(t)
-            null
-        }
-    }
-}
-
-fun <T> MastodonRequest<T>.executeCatching(onCatch: ((Throwable) -> Unit)? = null): T? = try {
-    execute()
+inline fun <reified T> withCatching(
+    onError: (Throwable) -> Unit = { Timber.e(it) }, block: () -> T
+) = try {
+    block()
 } catch (t: Throwable) {
-    onCatch?.invoke(t) ?: Timber.e(t)
+    onError(t)
+    Crashlytics.logException(t)
     null
 }
+
+inline fun <reified T> MastodonRequest<T>.executeCatching(
+    noinline onCatch: ((Throwable) -> Unit)? = null
+): T? = withCatching({ onCatch?.invoke(it) }) { execute() }
 
 private suspend fun getArtworkUrlFromLastFmApi(
     client: LastFmApiClient,

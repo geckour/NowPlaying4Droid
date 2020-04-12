@@ -90,12 +90,12 @@ import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
+import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.sys1yagi.mastodon4j.MastodonClient
 import com.sys1yagi.mastodon4j.api.Scope
 import com.sys1yagi.mastodon4j.api.entity.auth.AppRegistration
-import com.sys1yagi.mastodon4j.api.exception.Mastodon4jRequestException
 import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
@@ -199,10 +199,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 var visibleCount = 0
                 (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
                     (0 until this.childCount).forEach {
-                        val itemBinding: ItemPrefItemBinding? = try {
-                            DataBindingUtil.findBinding(this.getChildAt(it))
-                        } catch (e: ClassCastException) {
-                            return@forEach
+                        val itemBinding: ItemPrefItemBinding? = withCatching {
+                            DataBindingUtil.findBinding<ItemPrefItemBinding>(this.getChildAt(it))
                         }
 
                         if (itemBinding?.root?.visibility == View.VISIBLE
@@ -905,11 +903,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
-                    val duration = try {
+                    val duration = withCatching {
                         delayTimeInputDialogBinding.editText.text.toString().toLong()
-                    } catch (t: Throwable) {
-                        Timber.e(t)
-                        null
                     }
                     if (duration != null && duration in (500..60000)) {
                         sharedPreferences.storeDelayDurationPostMastodon(duration)
@@ -988,15 +983,12 @@ class SettingsActivity : WithCrashlyticsActivity() {
             PlayerPackageListAdapter(
                 sharedPreferences.getPackageStateListPostMastodon().mapNotNull { packageState ->
                     val appName = packageManager?.let {
-                        try {
+                        withCatching {
                             it.getApplicationLabel(
                                 it.getApplicationInfo(
                                     packageState.packageName, PackageManager.GET_META_DATA
                                 )
                             )
-                        } catch (t: Throwable) {
-                            Timber.e(t)
-                            null
                         }
                     }?.toString()
                     if (appName == null) {
@@ -1223,17 +1215,13 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     }, Gson()
                 )
                 viewModel.viewModelScope.launch(Dispatchers.IO) {
-                    val accessToken = try {
+                    val accessToken = withCatching {
                         Apps(mastodonApiClientBuilder.build()).getAccessToken(
                             this@apply.clientId,
                             this@apply.clientSecret,
                             App.MASTODON_CALLBACK,
                             token
                         ).executeCatching()
-                    } catch (e: Mastodon4jRequestException) {
-                        Timber.e(e)
-                        Crashlytics.logException(e)
-                        null
                     }
 
                     if (accessToken == null) onAuthMastodonError()

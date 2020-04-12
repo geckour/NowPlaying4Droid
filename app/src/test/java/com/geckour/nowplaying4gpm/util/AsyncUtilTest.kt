@@ -5,7 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.crashlytics.android.Crashlytics
 import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -15,7 +14,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AsyncUtilTest {
 
-    private val sampleValidUrl = "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
+    private val sampleValidUrl =
+        "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Before
@@ -25,7 +25,7 @@ class AsyncUtilTest {
 
     @Test
     fun asyncOrNull_thrownError_returnNull() {
-        val actual = runBlocking { asyncOrNull<String?> { throw IllegalStateException() }.await() }
+        val actual = withCatching<String?> { throw IllegalStateException() }
         assertThat(actual).isNull()
     }
 

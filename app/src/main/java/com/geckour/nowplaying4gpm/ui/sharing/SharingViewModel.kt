@@ -16,6 +16,7 @@ import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTempArtworkUri
 import com.geckour.nowplaying4gpm.util.readyForShare
+import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.firebase.analytics.FirebaseAnalytics
 import timber.log.Timber
 
@@ -34,11 +35,8 @@ class SharingViewModel : ViewModel() {
                 putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
             })
 
-        val keyguardManager = try {
+        val keyguardManager = withCatching {
             activity.getSystemService(KeyguardManager::class.java)
-        } catch (t: Throwable) {
-            Timber.e(t)
-            null
         }
 
         if (requireUnlock.not() || keyguardManager?.isDeviceLocked != true) {
