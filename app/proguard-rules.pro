@@ -43,6 +43,12 @@
 
 -keep @com.squareup.moshi.JsonQualifier interface *
 
+-keepclassmembers class kotlin.Metadata {
+    public <methods>;
+}
+
+-keepattributes InnerClasses,Signature,*Annotation*,EnclosingMethod
+
 # Enum field names are used by the integrated EnumJsonAdapter.
 # Annotate enums with @JsonClass(generateAdapter = false) to use them with Moshi.
 -keepclassmembers @com.squareup.moshi.JsonClass class * extends java.lang.Enum {

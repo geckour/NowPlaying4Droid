@@ -62,12 +62,12 @@ object OkHttpProvider {
 
     private fun OkHttpClient.Builder.applyDebugger(): OkHttpClient.Builder =
         apply {
-            if (BuildConfig.DEBUG) {
+//            if (BuildConfig.DEBUG) {
                 addNetworkInterceptor(
                     HttpLoggingInterceptor()
                         .setLevel(HttpLoggingInterceptor.Level.BODY)
                 )
                 addNetworkInterceptor(StethoInterceptor())
-            }
+//            }
         }
 }
