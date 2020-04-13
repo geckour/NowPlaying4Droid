@@ -63,25 +63,24 @@ class SpotifyApiClient(context: Context) {
     private suspend fun getUser(token: String): SpotifyUser = getService(token).getUser()
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
-        return trackCoreElement.spotifySearchQuery?.let { query ->
-            withCatching({ return SpotifySearchResult.Failure(query, it) }) { refreshTokenIfNeeded() }
-            withCatching({ return SpotifySearchResult.Failure(query, it) }) {
-                val token =
-                    sharedPreferences.getSpotifyUserInfo()?.token
-                        ?: throw IllegalStateException("Init token first.")
-                val countryCode =
-                    if (token.scope == "user-read-private") "from_token"
-                    else Locale.getDefault().country
-                getService(token.accessToken).searchSpotifyItem(query, marketCountryCode = countryCode)
-                    .tracks
-                    ?.items
-                    ?.firstOrNull()
-                    ?.urls
-                    ?.get("spotify")
-                    ?.let {
-                        SpotifySearchResult.Success(query, it)
-                    }
-            }
-        } ?: return SpotifySearchResult.Failure(null, IllegalStateException("Cannot get"))
+        val query = trackCoreElement.spotifySearchQuery
+        withCatching({ return SpotifySearchResult.Failure(query, it) }) { refreshTokenIfNeeded() }
+        return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
+            val token =
+                sharedPreferences.getSpotifyUserInfo()?.token
+                    ?: throw IllegalStateException("Init token first.")
+            val countryCode =
+                if (token.scope == "user-read-private") "from_token"
+                else Locale.getDefault().country
+            getService(token.accessToken).searchSpotifyItem(query, marketCountryCode = countryCode)
+                .tracks
+                ?.items
+                ?.firstOrNull()
+                ?.urls
+                ?.get("spotify")
+                ?.let {
+                    SpotifySearchResult.Success(query, it)
+                } ?: SpotifySearchResult.Failure(query, IllegalStateException("No search result"))
+        } ?: SpotifySearchResult.Failure(null, IllegalStateException("Unknown error"))
     }
 }
