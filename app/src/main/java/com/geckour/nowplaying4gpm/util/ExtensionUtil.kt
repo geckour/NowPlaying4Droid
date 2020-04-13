@@ -127,6 +127,16 @@ enum class FormatPattern(val value: String) {
     }
 }
 
+inline fun <reified T> withCatching(
+    onError: (Throwable) -> Unit = { Timber.e(it) }, block: () -> T
+) = try {
+    block()
+} catch (t: Throwable) {
+    onError(t)
+    Crashlytics.logException(t)
+    null
+}
+
 fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
     trackInfo?.let { info ->
         this.splitConsideringEscape().joinToString("") {

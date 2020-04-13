@@ -21,16 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-inline fun <reified T> withCatching(
-    onError: (Throwable) -> Unit = { Timber.e(it) }, block: () -> T
-) = try {
-    block()
-} catch (t: Throwable) {
-    onError(t)
-    Crashlytics.logException(t)
-    null
-}
-
 inline fun <reified T> MastodonRequest<T>.executeCatching(
     noinline onCatch: ((Throwable) -> Unit)? = null
 ): T? = withCatching({ onCatch?.invoke(it) }) { execute() }
