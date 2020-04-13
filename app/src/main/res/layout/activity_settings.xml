@@ -30,23 +30,13 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/colorPrimary"
             android:elevation="5dp"
+            android:foreground="?android:attr/selectableItemBackground"
             android:title="@{toolbarTitle}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:titleTextColor="@android:color/white"
             tools:title="ツールバータイトル" />
-
-        <View
-            android:id="@+id/toolbar_cover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:elevation="5dp"
-            app:layout_constraintBottom_toBottomOf="@id/toolbar"
-            app:layout_constraintEnd_toEndOf="@id/toolbar"
-            app:layout_constraintStart_toStartOf="@id/toolbar"
-            app:layout_constraintTop_toTopOf="@id/toolbar" />
 
         <ScrollView
             android:id="@+id/scrollView"

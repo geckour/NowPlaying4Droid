@@ -1,78 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
         <variable
-                name="item"
-                type="com.geckour.nowplaying4gpm.util.ArtworkResolveMethod"/>
+            name="item"
+            type="com.geckour.nowplaying4gpm.util.ArtworkResolveMethod" />
 
-        <import type="android.view.View"/>
+        <import type="android.view.View" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:color/white"
-            android:foreground="?android:attr/selectableItemBackground">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:foreground="?android:attr/selectableItemBackground">
 
         <TextView
-                android:id="@+id/name"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:ellipsize="end"
-                android:lines="1"
-                android:maxLines="1"
-                android:paddingStart="8dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="10dp"
-                android:textAlignment="textStart"
-                android:textColor="@color/colorAccent"
-                android:textSize="12sp"
-                app:layout_constraintEnd_toStartOf="@id/enabled"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:strResId="@{item.key.strResId}"
-                tools:text="メソッド名"/>
+            android:id="@+id/name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:lines="1"
+            android:maxLines="1"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp"
+            android:textAlignment="textStart"
+            android:textColor="@color/colorAccent"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@id/enabled"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:strResId="@{item.key.strResId}"
+            tools:text="メソッド名" />
 
         <View
-                android:id="@+id/name_cover"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:background="@color/colorMaskInactive"
-                app:layout_constraintBottom_toTopOf="@id/barrier"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:visibility="@{!item.enabled}"/>
+            android:id="@+id/name_cover"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/colorMaskInactive"
+            app:layout_constraintBottom_toTopOf="@id/barrier"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:visibility="@{!item.enabled}" />
 
         <Switch
-                android:id="@+id/enabled"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:checked="@{item.enabled}"
-                app:layout_constraintBottom_toTopOf="@id/barrier"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/name"/>
+            android:id="@+id/enabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:checked="@{item.enabled}"
+            app:layout_constraintBottom_toTopOf="@id/barrier"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/name" />
 
         <androidx.constraintlayout.widget.Barrier
-                android:id="@+id/barrier"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:barrierDirection="bottom"
-                app:constraint_referenced_ids="name,enabled"/>
+            android:id="@+id/barrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="name,enabled" />
 
         <View
-                android:layout_width="0dp"
-                android:layout_height="0.7dp"
-                android:background="@color/colorDividerLicense"
-                app:layout_constraintBottom_toBottomOf="@id/barrier"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"/>
+            android:layout_width="0dp"
+            android:layout_height="0.7dp"
+            android:background="@color/colorDividerLicense"
+            app:layout_constraintBottom_toBottomOf="@id/barrier"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
