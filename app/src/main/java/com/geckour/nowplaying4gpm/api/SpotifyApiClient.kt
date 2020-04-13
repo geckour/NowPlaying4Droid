@@ -16,7 +16,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.*
 
-class SpotifyApiClient(private val context: Context) {
+class SpotifyApiClient(context: Context) {
 
     companion object {
 
