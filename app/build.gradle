@@ -50,7 +50,10 @@ android {
             storeFile file("${project.rootDir}/app/signing/debug.keystore")
             storePassword "android"
         }
-        release
+        release {
+            def releaseSettingGradleFile = new File("${project.rootDir}/app/signing/release.gradle")
+            apply from: releaseSettingGradleFile, to: android
+        }
     }
 
     buildTypes {
