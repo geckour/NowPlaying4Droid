@@ -157,7 +157,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
             "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
         setSupportActionBar(binding.toolbar)
 
-        binding.toolbarCover.apply {
+        binding.toolbar.apply {
             tag = EasterEggTag(0, -1L)
 
             setOnClickListener {

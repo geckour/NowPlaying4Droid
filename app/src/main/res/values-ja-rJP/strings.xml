@@ -4,6 +4,7 @@
 
     <string name="activity_title_settings">設定</string>
     <string name="activity_title_licenses">OSSライセンス</string>
+    <string name="activity_title_debug">デバッグメニュー</string>
 
 
     <string name="notification_title">NowPlayingを共有…</string>
@@ -152,4 +153,7 @@
     <string name="action_clear_notification">クリア</string>
 
     <string name="widget_desc">NowPlayingを共有…</string>
+
+
+    <string name="debug_spotify_search">Spotify Search APIの結果を表示する</string>
 </resources>

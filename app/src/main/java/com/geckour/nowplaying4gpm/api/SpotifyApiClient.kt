@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
@@ -61,23 +62,26 @@ class SpotifyApiClient(context: Context) {
 
     private suspend fun getUser(token: String): SpotifyUser = getService(token).getUser()
 
-    suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): String? {
-        return trackCoreElement.spotifySearchQuery?.let {
-            withCatching { refreshTokenIfNeeded() }
-            withCatching {
+    suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
+        return trackCoreElement.spotifySearchQuery?.let { query ->
+            withCatching({ return SpotifySearchResult.Failure(query, it) }) { refreshTokenIfNeeded() }
+            withCatching({ return SpotifySearchResult.Failure(query, it) }) {
                 val token =
                     sharedPreferences.getSpotifyUserInfo()?.token
                         ?: throw IllegalStateException("Init token first.")
                 val countryCode =
                     if (token.scope == "user-read-private") "from_token"
                     else Locale.getDefault().country
-                getService(token.accessToken).searchSpotifyItem(it, marketCountryCode = countryCode)
+                getService(token.accessToken).searchSpotifyItem(query, marketCountryCode = countryCode)
                     .tracks
                     ?.items
                     ?.firstOrNull()
                     ?.urls
                     ?.get("spotify")
+                    ?.let {
+                        SpotifySearchResult.Success(query, it)
+                    }
             }
-        }
+        } ?: return SpotifySearchResult.Failure(null, IllegalStateException("Cannot get"))
     }
 }

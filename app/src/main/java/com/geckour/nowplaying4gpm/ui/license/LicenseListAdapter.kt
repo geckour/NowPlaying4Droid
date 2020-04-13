@@ -1,20 +1,23 @@
 package com.geckour.nowplaying4gpm.ui.license
 
-import androidx.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.annotation.StringRes
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseBinding
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
+import com.geckour.nowplaying4gpm.ui.debug.DebugActivity
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 
-class LicenseListAdapter(private val viewModel: LicenseViewModel) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class LicenseListAdapter(private val viewModel: LicenseViewModel) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
-        private const val easterEggIconUrl = "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
+        private const val easterEggIconUrl =
+            "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
     }
 
     enum class ViewType {
@@ -66,7 +69,8 @@ class LicenseListAdapter(private val viewModel: LicenseViewModel) : RecyclerView
         }
     }
 
-    class NormalItemViewHolder(val binding: ItemLicenseBinding) : RecyclerView.ViewHolder(binding.root) {
+    class NormalItemViewHolder(private val binding: ItemLicenseBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: LicenseItem) {
             binding.item = item
@@ -78,18 +82,25 @@ class LicenseListAdapter(private val viewModel: LicenseViewModel) : RecyclerView
         }
     }
 
-    inner class FooterItemViewHolder(val binding: ItemLicenseFooterBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class FooterItemViewHolder(private val binding: ItemLicenseFooterBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        private val sharedPreferences =
+            PreferenceManager.getDefaultSharedPreferences(binding.root.context)
 
         fun bind() {
-            Glide.with(binding.button)
+            binding.buttonStart.setOnClickListener { openDebugActivity() }
+            Glide.with(binding.buttonEnd)
                 .load(easterEggIconUrl)
-                .into(binding.button)
-            binding.buttonCover.setOnClickListener { toggleDonateState() }
+                .into(binding.buttonEnd)
+            binding.buttonEnd.setOnClickListener { toggleDonateState() }
+        }
+
+        private fun openDebugActivity() {
+            with(binding.root.context) { startActivity(DebugActivity.getIntent(this)) }
         }
 
         private fun toggleDonateState() {
-            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(binding.root.context)
-
             sharedPreferences.edit().putBoolean(
                 PrefKey.PREF_KEY_BILLING_DONATE.name,
                 sharedPreferences.getDonateBillingState().not()

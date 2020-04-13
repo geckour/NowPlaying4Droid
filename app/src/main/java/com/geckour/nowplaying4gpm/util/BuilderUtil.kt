@@ -12,6 +12,7 @@ import android.widget.RemoteViews
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
@@ -231,4 +232,28 @@ suspend fun getNotification(context: Context, status: Status): Notification? {
             setColor(color)
         }
     }.build()
+}
+
+fun getNotification(
+    context: Context,
+    spotifySearchResult: SpotifySearchResult
+): Notification {
+    val notificationBuilder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
+        else Notification.Builder(context)
+
+    return notificationBuilder.setSmallIcon(R.drawable.ic_notification_notify)
+        .setStyle(Notification.BigTextStyle())
+        .setContentTitle(
+            when (spotifySearchResult) {
+                is SpotifySearchResult.Success -> spotifySearchResult.url
+                is SpotifySearchResult.Failure -> spotifySearchResult.cause.message
+            }
+        )
+        .setContentText(spotifySearchResult.query)
+        .build()
 }

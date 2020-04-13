@@ -29,6 +29,7 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
@@ -45,6 +46,7 @@ import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getArtworkUriFromDevice
 import com.geckour.nowplaying4gpm.util.getBitmapFromUriString
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
+import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
@@ -348,8 +350,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     else "Generated share sentence without Spotify specifier"
                 )
             })
-        val spotifyUrl = if (containsSpotifyPattern) spotifyApiClient.getSpotifyUrl(coreElement)
-        else null
+        val spotifyUrl =
+            if (containsSpotifyPattern) {
+                spotifyApiClient.getSpotifyUrl(coreElement).also {
+                    notificationManager.showDebugSpotifySearchNotificationIfNeeded(it)
+                }
+            } else null
 
         val artworkUri = metadata.storeArtworkUri(
             coreElement, notification?.getArtworkBitmap()
@@ -360,7 +366,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             artworkUri?.toString(),
             playerPackageName,
             playerPackageName.getAppName(this),
-            spotifyUrl
+            (spotifyUrl as? SpotifySearchResult.Success)?.url
         )
 
         reflectTrackInfo(trackInfo)
@@ -652,13 +658,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
         ) {
             checkStoragePermissionAsync {
-                getNotification(this@NotificationService, trackInfo)?.apply {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
-                    } else {
-                        notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                getNotification(this@NotificationService, trackInfo)
+                    ?.apply {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                        } else {
+                            notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                        }
                     }
-                }
             }
         } else this.destroyNotification()
     }
@@ -680,5 +687,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             this.cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
         }
         this.cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
+    }
+
+    private fun NotificationManager.showDebugSpotifySearchNotificationIfNeeded(
+        spotifySearchResult: SpotifySearchResult
+    ) {
+        if (sharedPreferences.getDebugSpotifySearchFlag()) {
+            val notification =
+                getNotification(this@NotificationService, spotifySearchResult)
+            notify(Channel.NOTIFICATION_CHANNEL_NOTIFY.id, notification)
+        }
     }
 }

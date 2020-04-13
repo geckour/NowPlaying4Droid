@@ -39,7 +39,8 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_TWITTER_ACCESS_TOKEN,
     PREF_KEY_MASTODON_USER_INFO,
     PREF_KEY_FLAG_ALERT_AUTH_TWITTER(false),
-    PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE
+    PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE,
+    PREF_KEY_DEBUG_SPOTIFY_SEARCH(false)
 }
 
 data class ArtworkResolveMethod(
@@ -322,6 +323,20 @@ fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
             PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.defaultValue as? String
         )
     else null
+
+fun SharedPreferences.getDebugSpotifySearchFlag(): Boolean =
+    PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH.let { key ->
+        getBoolean(key.name, key.defaultValue as Boolean)
+    }
+
+fun SharedPreferences.toggleDebugSpotifySearchFlag(): Boolean {
+    val key = PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH
+
+    val setTo = getDebugSpotifySearchFlag().not()
+    edit().putBoolean(key.name, setTo).apply()
+
+    return setTo
+}
 
 fun SharedPreferences.readyForShare(
     context: Context,
