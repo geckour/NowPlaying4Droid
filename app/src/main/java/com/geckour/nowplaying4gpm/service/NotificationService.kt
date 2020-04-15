@@ -95,8 +95,14 @@ import kotlin.coroutines.CoroutineContext
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
 
-    enum class Channel(val id: Int) {
-        NOTIFICATION_CHANNEL_SHARE(180), NOTIFICATION_CHANNEL_NOTIFY(190)
+    enum class Channel {
+        NOTIFICATION_CHANNEL_SHARE, NOTIFICATION_CHANNEL_NOTIFY
+    }
+
+    enum class NotificationType(val id: Int, val channel: Channel) {
+        SHARE(180, Channel.NOTIFICATION_CHANNEL_SHARE),
+        NOTIFY_SUCCESS_MASTODON(190, Channel.NOTIFICATION_CHANNEL_NOTIFY),
+        DEBUG_SPOTIFY_SEARCH_RESULT(191, Channel.NOTIFICATION_CHANNEL_NOTIFY)
     }
 
     companion object {
@@ -514,7 +520,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             notificationManager.apply {
                 showNotification(status)
                 delay(2500)
-                cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
+                cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
             }
         }
     }
@@ -654,9 +660,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 getNotification(this@NotificationService, trackInfo)
                     ?.apply {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                            startForeground(NotificationType.SHARE.id, this)
                         } else {
-                            notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                            notify(NotificationType.SHARE.id, this)
                         }
                     }
             }
@@ -667,7 +673,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
             checkStoragePermissionAsync {
                 getNotification(this@NotificationService, status)?.apply {
-                    notify(Channel.NOTIFICATION_CHANNEL_NOTIFY.id, this)
+                    notify(NotificationType.NOTIFY_SUCCESS_MASTODON.id, this)
                 }
             }
         }
@@ -677,9 +683,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             stopForeground(true)
         } else {
-            this.cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
+            this.cancel(NotificationType.SHARE.id)
         }
-        this.cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
+        this.cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
+        this.cancel(NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id)
     }
 
     private fun NotificationManager.showDebugSpotifySearchNotificationIfNeeded(
@@ -688,7 +695,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sharedPreferences.getDebugSpotifySearchFlag()) {
             val notification =
                 getNotification(this@NotificationService, spotifySearchResult)
-            notify(Channel.NOTIFICATION_CHANNEL_NOTIFY.id, notification)
+            notify(NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id, notification)
         }
     }
 }

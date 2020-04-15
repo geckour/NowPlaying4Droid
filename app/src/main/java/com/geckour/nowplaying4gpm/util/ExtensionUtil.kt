@@ -128,12 +128,13 @@ enum class FormatPattern(val value: String) {
 }
 
 inline fun <reified T> withCatching(
-    onError: (Throwable) -> Unit = { Timber.e(it) }, block: () -> T
+    onError: (Throwable) -> Unit = {}, block: () -> T
 ) = try {
     block()
 } catch (t: Throwable) {
-    onError(t)
+    Timber.e(t)
     Crashlytics.logException(t)
+    onError(t)
     null
 }
 
@@ -288,8 +289,8 @@ fun Context.setCrashlytics() {
 }
 
 inline fun <reified T> Moshi.fromJsonOrNull(
-    json: String?, type: Type, onError: Throwable.() -> Unit = { Timber.e(this) }
-): T? = withCatching { this.adapter<T>(type).fromJson(json) }
+    json: String?, type: Type, onError: Throwable.() -> Unit = {}
+): T? = withCatching(onError) { this.adapter<T>(type).fromJson(json) }
 
 fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
 

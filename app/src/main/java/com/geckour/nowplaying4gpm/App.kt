@@ -58,7 +58,7 @@ class App : Application() {
                 this.description = getString(R.string.notification_channel_description_notify)
             }
 
-        getSystemService(NotificationManager::class.java).apply {
+        getSystemService(NotificationManager::class.java)?.apply {
             createNotificationChannel(channelDefault)
             createNotificationChannel(channelNotify)
         }
