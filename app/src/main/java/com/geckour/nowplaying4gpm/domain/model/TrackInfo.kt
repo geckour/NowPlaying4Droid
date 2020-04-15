@@ -37,12 +37,12 @@ data class TrackInfo(
 
         val spotifySearchQuery: String
             get() = listOfNotNull(
-                title?.let { "track:\"$it\"" },
-                if (artist?.all { it.toInt() in 0x20..0x7E } == true)
-                    "artist:\"$artist\""
-                else null,
-                album?.let { "album:\"$it\"" }
+                title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
+                artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
+                album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
             ).joinToString(" ")
+
+        val String.isAscii: Boolean get() = all { it.toInt() in 0x20..0x7E }
     }
 }
 

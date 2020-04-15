@@ -41,6 +41,7 @@ object OkHttpProvider {
                     it.request()
                         .newBuilder()
                         .header("Authorization", "Bearer $token")
+                        .addHeader("Accept-Language", "ja")
                         .build()
                 )
             }
