@@ -249,7 +249,7 @@ fun getNotification(
         else Notification.Builder(context)
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-    return notificationBuilder.setSmallIcon(R.drawable.ic_notification_notify)
+    return notificationBuilder.setSmallIcon(R.drawable.ic_notification)
         .setStyle(Notification.BigTextStyle())
         .setContentTitle(spotifySearchResult.query)
         .setContentText(
@@ -257,7 +257,11 @@ fun getNotification(
                 is SpotifySearchResult.Success -> "🆗 ${spotifySearchResult.url}"
                 is SpotifySearchResult.Failure -> spotifySearchResult.cause.let { t ->
                     StringWriter().use {
-                        "🆖 expiredIn: ${sharedPreferences.getSpotifyUserInfo()?.token?.expiresIn}\n${it.apply { t.printStackTrace(PrintWriter(this)) }}"
+                        "🆖 expiredIn: ${sharedPreferences.getSpotifyUserInfo()?.token?.expiresIn}\n${it.apply {
+                            t.printStackTrace(
+                                PrintWriter(this)
+                            )
+                        }}"
                     }
                 }
             }
