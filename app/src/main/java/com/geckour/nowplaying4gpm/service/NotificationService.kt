@@ -280,7 +280,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
 
-    private val Notification.isPlaying: Boolean get() = mediaController?.isPlaying == true
+    private val Notification.isPlaying: Boolean get() = mediaController?.isPlaying != false
 
     private val MediaController.isPlaying: Boolean
         get() = playbackState?.state == PlaybackState.STATE_PLAYING
