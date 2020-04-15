@@ -15,7 +15,7 @@ data class SpotifyToken(
     val expiresIn: Long,
 
     @Json(name = "refresh_token")
-    val codeForRefreshToken: String,
+    val refreshToken: String?,
 
     @Json(name = "scope")
     val scope: String = ""

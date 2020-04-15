@@ -155,5 +155,6 @@
     <string name="widget_desc">NowPlayingを共有…</string>
 
 
-    <string name="debug_spotify_search">Spotify Search APIの結果を表示する</string>
+    <string name="debug_spotify_show_search_result">Spotify Search APIの結果を表示する</string>
+    <string name="debug_spotify_refresh_token">Spotifyのトークンを強制更新する</string>
 </resources>

@@ -33,7 +33,8 @@ class DebugMenuListAdapter(private val onItemClick: (debugMenu: DebugMenu, summa
     )
 
     enum class DebugMenu(@StringRes val titleRes: Int) {
-        TOGGLE_SPOTIFY_SEARCH_DEBUG(R.string.debug_spotify_search)
+        TOGGLE_SPOTIFY_SEARCH_DEBUG(R.string.debug_spotify_show_search_result),
+        REFRESH_SPOTIFY_TOKEN(R.string.debug_spotify_refresh_token)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
@@ -56,7 +57,7 @@ class DebugMenuListAdapter(private val onItemClick: (debugMenu: DebugMenu, summa
         fun bind(item: DebugMenuItem, initialSummary: String? = null) {
             binding.item = item.debugMenu
             if (binding.summary.text.isNullOrEmpty()) {
-                binding.summary.text = initialSummary
+                binding.initialSummary = initialSummary
             }
             binding.executePendingBindings()
             binding.root.setOnClickListener { onItemClick(item.debugMenu, binding.summary) }

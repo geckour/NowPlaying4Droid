@@ -53,18 +53,22 @@ class SpotifyApiClient(context: Context) {
         }
     }
 
-    private suspend fun refreshTokenIfNeeded() {
-        val token = sharedPreferences.getSpotifyUserInfo()?.token ?: return
-        if (System.currentTimeMillis() / 1000 > token.expiresIn) {
-            storeSpotifyUserInfo(token.codeForRefreshToken)
-        }
+    suspend fun refreshToken() {
+        val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return
+        val currentRefreshToken = currentUserInfo.token.refreshToken ?: return
+        val newToken = authService.refreshToken(currentRefreshToken)
+        sharedPreferences.storeSpotifyUserInfoImmediately(
+            currentUserInfo.copy(
+                token = newToken.copy(refreshToken = newToken.refreshToken ?: currentRefreshToken)
+            )
+        )
     }
 
     private suspend fun getUser(token: String): SpotifyUser = getService(token).getUser()
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
         val query = trackCoreElement.spotifySearchQuery
-        withCatching({ return SpotifySearchResult.Failure(query, it) }) { refreshTokenIfNeeded() }
+        withCatching({ return SpotifySearchResult.Failure(query, it) }) { refreshToken() }
         return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
             val token =
                 sharedPreferences.getSpotifyUserInfo()?.token

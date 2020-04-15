@@ -4,8 +4,8 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
-import androidx.preference.PreferenceManager
 import androidx.annotation.RequiresApi
+import androidx.preference.PreferenceManager
 import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
@@ -45,14 +45,18 @@ class App : Application() {
                 NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name,
                 getString(R.string.notification_channel_name_share),
                 NotificationManager.IMPORTANCE_LOW
-            ).apply { this.description = getString(R.string.notification_channel_description_share) }
+            ).apply {
+                this.description = getString(R.string.notification_channel_description_share)
+            }
 
         val channelNotify =
             NotificationChannel(
                 NotificationService.Channel.NOTIFICATION_CHANNEL_NOTIFY.name,
                 getString(R.string.notification_channel_name_notify),
                 NotificationManager.IMPORTANCE_LOW
-            ).apply { this.description = getString(R.string.notification_channel_description_notify) }
+            ).apply {
+                this.description = getString(R.string.notification_channel_description_notify)
+            }
 
         getSystemService(NotificationManager::class.java).apply {
             createNotificationChannel(channelDefault)

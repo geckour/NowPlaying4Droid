@@ -21,6 +21,8 @@ import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.sys1yagi.mastodon4j.api.entity.Status
+import java.io.PrintWriter
+import java.io.StringWriter
 
 val moshi: Moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
@@ -245,15 +247,20 @@ fun getNotification(
                 NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
             )
         else Notification.Builder(context)
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     return notificationBuilder.setSmallIcon(R.drawable.ic_notification_notify)
         .setStyle(Notification.BigTextStyle())
-        .setContentTitle(
+        .setContentTitle(spotifySearchResult.query)
+        .setContentText(
             when (spotifySearchResult) {
-                is SpotifySearchResult.Success -> spotifySearchResult.url
-                is SpotifySearchResult.Failure -> spotifySearchResult.cause.message
+                is SpotifySearchResult.Success -> "🆗 ${spotifySearchResult.url}"
+                is SpotifySearchResult.Failure -> spotifySearchResult.cause.let { t ->
+                    StringWriter().use {
+                        "🆖 expiredIn: ${sharedPreferences.getSpotifyUserInfo()?.token?.expiresIn}\n${it.apply { t.printStackTrace(PrintWriter(this)) }}"
+                    }
+                }
             }
         )
-        .setContentText(spotifySearchResult.query)
         .build()
 }

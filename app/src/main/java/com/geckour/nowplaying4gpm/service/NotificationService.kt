@@ -16,7 +16,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
-import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
@@ -169,9 +168,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val notificationManager: NotificationManager by lazy {
         getSystemService(NotificationManager::class.java)
     }
-    private val mediaSessionManager: MediaSessionManager by lazy {
-        getSystemService(MediaSessionManager::class.java)
-    }
     private val keyguardManager: KeyguardManager? by lazy {
         withCatching { getSystemService(KeyguardManager::class.java) }
     }
@@ -274,9 +270,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private fun requestRebind() {
         requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
-
-    private val Notification.existMediaSessionToken: Boolean
-        get() = extras.containsKey(Notification.EXTRA_MEDIA_SESSION)
 
     private val Notification.mediaController: MediaController?
         get() = extras.getParcelable<MediaSession.Token>(

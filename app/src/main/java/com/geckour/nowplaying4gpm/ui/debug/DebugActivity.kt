@@ -7,10 +7,13 @@ import android.os.Bundle
 import androidx.databinding.DataBindingUtil
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.databinding.ActivityDebugBinding
 import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.toggleDebugSpotifySearchFlag
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class DebugActivity : WithCrashlyticsActivity() {
 
@@ -36,18 +39,21 @@ class DebugActivity : WithCrashlyticsActivity() {
                     val flag = sharedPreferences.toggleDebugSpotifySearchFlag()
                     summaryView.text = flag.toString()
                 }
+                DebugMenuListAdapter.DebugMenu.REFRESH_SPOTIFY_TOKEN -> {
+                    GlobalScope.launch { SpotifyApiClient(this@DebugActivity).refreshToken() }
+                }
             }
         }.apply {
             submitList(
                 DebugMenuListAdapter.DebugMenu.values()
                     .map {
                         DebugMenuListAdapter.DebugMenuItem(
-                            it,
-                            when (it) {
+                            debugMenu = it,
+                            initialSummary = when (it) {
                                 DebugMenuListAdapter.DebugMenu.TOGGLE_SPOTIFY_SEARCH_DEBUG -> {
                                     sharedPreferences.getDebugSpotifySearchFlag().toString()
                                 }
-                                else -> null
+                                DebugMenuListAdapter.DebugMenu.REFRESH_SPOTIFY_TOKEN -> null
                             }
                         )
                     }

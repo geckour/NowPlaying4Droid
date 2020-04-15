@@ -5,9 +5,15 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
             name="item"
             type="com.geckour.nowplaying4gpm.ui.debug.DebugMenuListAdapter.DebugMenu" />
+
+        <variable
+            name="initialSummary"
+            type="String" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -32,8 +38,10 @@
             android:id="@+id/summary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:text="@{initialSummary}"
             android:textColor="@color/colorTextWeak"
             android:textSize="12sp"
+            android:visibility="@{initialSummary == null ? View.GONE : View.VISIBLE}"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/title"
             tools:text="Summary" />
