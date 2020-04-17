@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.*
@@ -47,13 +46,17 @@ class SpotifyApiClient(context: Context) {
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     private var refreshTokenJob: Job? = null
+    private var storeSpotifyUserInfoJob: Job? = null
 
-    suspend fun getSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
-        val token = withCatching { authService.getToken(code) }
-            ?: return@withContext null
-        val userName = withCatching { getUser(token.accessToken).displayName }
-            ?: return@withContext null
-        return@withContext SpotifyUserInfo(token, userName)
+    suspend fun storeSpotifyUserInfo(code: String) = coroutineScope {
+        storeSpotifyUserInfoJob?.join()
+        storeSpotifyUserInfoJob = launch(Dispatchers.IO) {
+            val token = withCatching { authService.getToken(code) }
+                ?: return@launch
+            val userName = withCatching { getUser(token.accessToken).displayName }
+                ?: return@launch
+            sharedPreferences.storeSpotifyUserInfoImmediately(SpotifyUserInfo(token, userName))
+        }
     }
 
     suspend fun refreshToken() = coroutineScope {

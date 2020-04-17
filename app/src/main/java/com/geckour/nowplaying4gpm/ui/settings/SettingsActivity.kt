@@ -90,7 +90,6 @@ import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
-import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.material.snackbar.Snackbar
@@ -1103,14 +1102,14 @@ class SettingsActivity : WithCrashlyticsActivity() {
             return
         }
 
-        viewModel.viewModelScope.launch(Dispatchers.IO) {
-            val userInfo = spotifyApiClient.getSpotifyUserInfo(verifier)
+        viewModel.viewModelScope.launch {
+            spotifyApiClient.storeSpotifyUserInfo(verifier)
+
+            val userInfo = sharedPreferences.getSpotifyUserInfo()
             if (userInfo == null) {
                 onAuthSpotifyError()
                 return@launch
             }
-
-            sharedPreferences.storeSpotifyUserInfoImmediately(userInfo)
 
             authSpotifyBinding.summary = getString(
                 R.string.pref_item_summary_auth_spotify,
