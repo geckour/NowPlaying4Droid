@@ -12,6 +12,9 @@ import com.geckour.nowplaying4gpm.util.moshi
 import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.withCatching
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -43,6 +46,8 @@ class SpotifyApiClient(context: Context) {
 
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
+    private var refreshTokenJob: Job? = null
+
     suspend fun getSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
         val token = withCatching { authService.getToken(code) }
             ?: return@withContext null
@@ -51,15 +56,20 @@ class SpotifyApiClient(context: Context) {
         return@withContext SpotifyUserInfo(token, userName)
     }
 
-    suspend fun refreshToken() {
-        val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return
-        val currentRefreshToken = currentUserInfo.token.refreshToken ?: return
-        val newToken = authService.refreshToken(currentRefreshToken)
-        sharedPreferences.storeSpotifyUserInfoImmediately(
-            currentUserInfo.copy(
-                token = newToken.copy(refreshToken = newToken.refreshToken ?: currentRefreshToken)
+    suspend fun refreshToken() = coroutineScope {
+        refreshTokenJob?.join()
+        refreshTokenJob = launch {
+            val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return@launch
+            val currentRefreshToken = currentUserInfo.token.refreshToken ?: return@launch
+            val newToken = authService.refreshToken(currentRefreshToken)
+            sharedPreferences.storeSpotifyUserInfoImmediately(
+                currentUserInfo.copy(
+                    token = newToken.copy(
+                        refreshToken = newToken.refreshToken ?: currentRefreshToken
+                    )
+                )
             )
-        )
+        }
     }
 
     private suspend fun getUser(token: String): SpotifyUser = getService(token).getUser()
