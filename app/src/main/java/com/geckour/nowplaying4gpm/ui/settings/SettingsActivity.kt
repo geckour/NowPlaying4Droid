@@ -29,6 +29,7 @@ import androidx.activity.viewModels
 import androidx.annotation.StringRes
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.databinding.DataBindingUtil
+import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.android.vending.billing.IInAppBillingService
@@ -89,6 +90,7 @@ import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
+import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.material.snackbar.Snackbar
@@ -184,42 +186,33 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.scrollView.apply {
             setOnScrollChangeListener { _, _, y, _, oldY ->
-                if (y > oldY
-                    && getChildAt(0).measuredHeight <= measuredHeight + y
-                )
-                    binding.fab.hide()
-                if (y < oldY && binding.fab.isShown.not())
-                    binding.fab.show()
+                if (y > oldY && getChildAt(0).measuredHeight <= measuredHeight + y) binding.fab.hide()
+                if (y < oldY && binding.fab.isShown.not()) binding.fab.show()
             }
         }
 
-        binding.scrollView
-            .getChildAt(0)
-            .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                var visibleCount = 0
-                (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
-                    (0 until this.childCount).forEach {
-                        val itemBinding: ItemPrefItemBinding? = withCatching {
-                            DataBindingUtil.findBinding<ItemPrefItemBinding>(this.getChildAt(it))
+        binding.scrollView.getChildAt(0).addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val visible =
+                (binding.scrollView.getChildAt(0) as? LinearLayout)?.let { itemsContainer ->
+                    (0 until itemsContainer.childCount)
+                        .mapNotNull {
+                            DataBindingUtil.findBinding<ViewDataBinding>(
+                                itemsContainer.getChildAt(it)
+                            )
                         }
-
-                        if (itemBinding?.root?.visibility == View.VISIBLE
-                            && itemBinding.categoryId == binding.categoryOthers.root.id
-                        ) {
-                            visibleCount++
+                        .filterIsInstance<ItemPrefItemBinding>()
+                        .any {
+                            it.root.visibility == View.VISIBLE &&
+                                    it.categoryId == binding.categoryOthers.root.id
                         }
-                    }
-                }
+                } == true
 
-                binding.categoryOthers.root.visibility =
-                    if (visibleCount == 0) View.GONE
-                    else View.VISIBLE
-            }
+            binding.categoryOthers.root.visibility = if (visible) View.VISIBLE else View.GONE
+        }
 
         binding.itemSwitchUseApi.also { b ->
             b.maskInactiveDonate.visibility =
-                if (sharedPreferences.getDonateBillingState())
-                    View.GONE
+                if (sharedPreferences.getDonateBillingState()) View.GONE
                 else View.VISIBLE
 
             b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
@@ -236,8 +229,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemChangeArtworkResolveOrder.also { b ->
             b.maskInactiveDonate.visibility =
-                if (sharedPreferences.getDonateBillingState())
-                    View.GONE
+                if (sharedPreferences.getDonateBillingState()) View.GONE
                 else View.VISIBLE
 
             b.root.setOnClickListener {
@@ -310,11 +302,11 @@ class SettingsActivity : WithCrashlyticsActivity() {
         binding.itemAuthMastodon.also { b ->
             val userInfo = sharedPreferences.getMastodonUserInfo()
             if (userInfo != null) {
-                b.summary =
-                    getString(
-                        R.string.pref_item_summary_auth_mastodon,
-                        userInfo.userName, userInfo.instanceName
-                    )
+                b.summary = getString(
+                    R.string.pref_item_summary_auth_mastodon,
+                    userInfo.userName,
+                    userInfo.instanceName
+                )
             }
             b.root.setOnClickListener { onClickAuthMastodon(sharedPreferences) }
         }
@@ -347,8 +339,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 if (sharedPreferences.getSwitchState(
                         PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
                     )
-                )
-                    View.GONE
+                ) View.GONE
                 else View.VISIBLE
 
             b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
@@ -624,9 +615,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 else R.string.pref_item_summary_switch_off
             )
             setOnClickListener {
-                sharedPreferences.edit()
-                    .putBoolean(prefKey.name, isChecked)
-                    .apply()
+                sharedPreferences.edit().putBoolean(prefKey.name, isChecked).apply()
 
                 onCheckStateChanged(isChecked, getSummary())
             }
@@ -704,9 +693,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun destroyNotification() =
-        sendBroadcast(Intent().apply {
-            action = NotificationService.ACTION_DESTROY_NOTIFICATION
-        })
+        sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
 
     private fun updateWidget(sharedPreferences: SharedPreferences) {
         val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
@@ -794,10 +781,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         CustomTabsIntent.Builder().setShowTitle(true)
             .setToolbarColor(getColor(R.color.colorPrimary))
             .build()
-            .launchUrl(
-                this,
-                Uri.parse(SpotifyApiClient.OAUTH_URL)
-            )
+            .launchUrl(this, Uri.parse(SpotifyApiClient.OAUTH_URL))
     }
 
     private fun onClickAuthTwitter(rootView: View) {
@@ -837,8 +821,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         AlertDialog.Builder(this).generate(
-            instanceNameInputDialogBinding.root,
-            getString(R.string.dialog_title_mastodon_instance)
+            instanceNameInputDialogBinding.root, getString(R.string.dialog_title_mastodon_instance)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -885,8 +868,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickDelayMastodon(
-        sharedPreferences: SharedPreferences,
-        itemDelayMastodonBinding: ItemPrefItemBinding
+        sharedPreferences: SharedPreferences, itemDelayMastodonBinding: ItemPrefItemBinding
     ) {
         val delayTimeInputDialogBinding = DialogEditTextBinding.inflate(
             LayoutInflater.from(this), null, false
@@ -898,8 +880,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         AlertDialog.Builder(this).generate(
-            delayTimeInputDialogBinding.root,
-            getString(R.string.dialog_title_mastodon_delay)
+            delayTimeInputDialogBinding.root, getString(R.string.dialog_title_mastodon_delay)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -909,10 +890,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     if (duration != null && duration in (500..60000)) {
                         sharedPreferences.storeDelayDurationPostMastodon(duration)
                         itemDelayMastodonBinding.summary =
-                            getString(
-                                R.string.pref_item_summary_delay_mastodon,
-                                duration
-                            )
+                            getString(R.string.pref_item_summary_delay_mastodon, duration)
                     } else {
                         showErrorDialog(
                             R.string.dialog_title_alert_invalid_duration_value,
@@ -926,8 +904,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickVisibilityMastodon(
-        sharedPreferences: SharedPreferences,
-        visibilityMastodonBinding: ItemPrefItemBinding
+        sharedPreferences: SharedPreferences, visibilityMastodonBinding: ItemPrefItemBinding
     ) {
         val chooseVisibilityBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
             LayoutInflater.from(this), R.layout.dialog_spinner, null, false
@@ -968,9 +945,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                         .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
                         .apply()
                     visibilityMastodonBinding.summary =
-                        getString(
-                            Visibility.getFromIndex(visibilityIndex).getSummaryResId()
-                        )
+                        getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
                     onRequestUpdate()
                 }
             }
@@ -1069,8 +1044,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickItemChooseColor(
-        sharedPreferences: SharedPreferences,
-        chooseColorBinding: ItemPrefItemBinding
+        sharedPreferences: SharedPreferences, chooseColorBinding: ItemPrefItemBinding
     ) {
         val dialogBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
             LayoutInflater.from(this), R.layout.dialog_spinner, null, false
@@ -1080,7 +1054,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 android.R.layout.simple_spinner_item,
                 PaletteColor.values().map {
                     getString(it.getSummaryResId())
-                }) {
+                }
+            ) {
                 override fun getDropDownView(
                     position: Int, convertView: View?, parent: ViewGroup
                 ): View = super.getDropDownView(position, convertView, parent).apply {
@@ -1109,12 +1084,9 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     val paletteIndex = dialogBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
                         .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex).apply()
-                    chooseColorBinding.summary =
-                        getString(
-                            PaletteColor.getFromIndex(
-                                paletteIndex
-                            ).getSummaryResId()
-                        )
+                    chooseColorBinding.summary = getString(
+                        PaletteColor.getFromIndex(paletteIndex).getSummaryResId()
+                    )
                     onRequestUpdate()
                 }
             }
@@ -1123,35 +1095,32 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onAuthSpotifyCallback(
-        intent: Intent,
-        rootView: View,
-        authSpotifyBinding: ItemPrefItemBinding
+        intent: Intent, rootView: View, authSpotifyBinding: ItemPrefItemBinding
     ) {
-        val verifier = intent.data?.let {
-            val queryName = "code"
-
-            if (it.queryParameterNames.contains(queryName)) it.getQueryParameter(queryName)
-            else null
+        val verifier = intent.data?.getQueryParameter("code")
+        if (verifier == null) {
+            onAuthSpotifyError()
+            return
         }
 
-        if (verifier == null) onAuthSpotifyError()
-        else {
-            viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val userInfo = spotifyApiClient.storeSpotifyUserInfo(verifier)
-
-                if (userInfo == null) onAuthSpotifyError()
-                else {
-                    authSpotifyBinding.summary =
-                        getString(
-                            R.string.pref_item_summary_auth_spotify,
-                            userInfo.userName
-                        )
-                    Snackbar.make(
-                        rootView, R.string.snackbar_text_success_auth_spotify, Snackbar.LENGTH_LONG
-                    ).show()
-                    onRequestUpdate()
-                }
+        viewModel.viewModelScope.launch(Dispatchers.IO) {
+            val userInfo = spotifyApiClient.getSpotifyUserInfo(verifier)
+            if (userInfo == null) {
+                onAuthSpotifyError()
+                return@launch
             }
+
+            sharedPreferences.storeSpotifyUserInfoImmediately(userInfo)
+
+            authSpotifyBinding.summary = getString(
+                R.string.pref_item_summary_auth_spotify,
+                userInfo.userName
+            )
+            Snackbar.make(
+                rootView,
+                R.string.snackbar_text_success_auth_spotify,
+                Snackbar.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -1163,28 +1132,28 @@ class SettingsActivity : WithCrashlyticsActivity() {
     ) {
         sharedPreferences.setAlertTwitterAuthFlag(false)
 
-        val verifier = intent.data?.let {
-            val queryName = "oauth_verifier"
-
-            if (it.queryParameterNames.contains(queryName)) it.getQueryParameter(queryName)
-            else null
+        val verifier = intent.data?.getQueryParameter("oauth_verifier")
+        if (verifier == null) {
+            onAuthTwitterError()
+            return
         }
 
-        if (verifier == null) onAuthTwitterError()
-        else {
-            viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val accessToken = twitterApiClient.getAccessToken(verifier)
+        viewModel.viewModelScope.launch(Dispatchers.IO) {
+            val accessToken = twitterApiClient.getAccessToken(verifier)
 
-                if (accessToken == null) onAuthTwitterError()
-                else {
-                    sharedPreferences.storeTwitterAccessToken(accessToken)
-
-                    authTwitterBinding.summary = accessToken.screenName
-                    Snackbar.make(
-                        rootView, R.string.snackbar_text_success_auth_twitter, Snackbar.LENGTH_LONG
-                    ).show()
-                }
+            if (accessToken == null) {
+                onAuthTwitterError()
+                return@launch
             }
+
+            sharedPreferences.storeTwitterAccessToken(accessToken)
+
+            authTwitterBinding.summary = accessToken.screenName
+            Snackbar.make(
+                rootView,
+                R.string.snackbar_text_success_auth_twitter,
+                Snackbar.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -1195,59 +1164,57 @@ class SettingsActivity : WithCrashlyticsActivity() {
         authMastodonBinding: ItemPrefItemBinding
     ) {
         mastodonRegistrationInfo?.apply {
-            val token = intent.data?.let {
-                val queryName = "code"
-
-                if (it.queryParameterNames.contains(queryName)) it.getQueryParameter(queryName)
-                else null
+            val token = intent.data?.getQueryParameter("code")
+            if (token == null) {
+                onAuthMastodonError()
+                return
             }
 
-            if (token == null) onAuthMastodonError()
-            else {
-                val mastodonApiClientBuilder = MastodonClient.Builder(
-                    this@apply.instanceName, OkHttpClient.Builder().apply {
-                        if (BuildConfig.DEBUG) {
-                            addNetworkInterceptor(
-                                HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-                            )
-                            addNetworkInterceptor(StethoInterceptor())
-                        }
-                    }, Gson()
-                )
-                viewModel.viewModelScope.launch(Dispatchers.IO) {
-                    val accessToken = withCatching {
-                        Apps(mastodonApiClientBuilder.build()).getAccessToken(
-                            this@apply.clientId,
-                            this@apply.clientSecret,
-                            App.MASTODON_CALLBACK,
-                            token
-                        ).executeCatching()
-                    }
-
-                    if (accessToken == null) onAuthMastodonError()
-                    else {
-                        val userName = Accounts(
-                            mastodonApiClientBuilder.accessToken(accessToken.accessToken).build()
-                        ).getVerifyCredentials().executeCatching()?.userName ?: run {
-                            onAuthMastodonError()
-                            return@launch
-                        }
-                        val userInfo =
-                            MastodonUserInfo(accessToken, this@apply.instanceName, userName)
-                        sharedPreferences.storeMastodonUserInfo(userInfo)
-
-                        authMastodonBinding.summary = getString(
-                            R.string.pref_item_summary_auth_mastodon,
-                            userInfo.userName,
-                            userInfo.instanceName
+            val mastodonApiClientBuilder = MastodonClient.Builder(
+                this@apply.instanceName, OkHttpClient.Builder().apply {
+                    if (BuildConfig.DEBUG) {
+                        addNetworkInterceptor(
+                            HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
                         )
-                        Snackbar.make(
-                            rootView,
-                            R.string.snackbar_text_success_auth_mastodon,
-                            Snackbar.LENGTH_LONG
-                        ).show()
+                        addNetworkInterceptor(StethoInterceptor())
                     }
+                }, Gson()
+            )
+            viewModel.viewModelScope.launch(Dispatchers.IO) {
+                val accessToken = withCatching {
+                    Apps(mastodonApiClientBuilder.build()).getAccessToken(
+                        this@apply.clientId,
+                        this@apply.clientSecret,
+                        App.MASTODON_CALLBACK,
+                        token
+                    ).executeCatching()
                 }
+
+                if (accessToken == null) {
+                    onAuthMastodonError()
+                    return@launch
+                }
+
+                val userName = Accounts(
+                    mastodonApiClientBuilder.accessToken(accessToken.accessToken).build()
+                ).getVerifyCredentials()
+                    .executeCatching()
+                    ?.userName
+                    ?: run {
+                        onAuthMastodonError()
+                        return@launch
+                    }
+                val userInfo = MastodonUserInfo(accessToken, this@apply.instanceName, userName)
+                sharedPreferences.storeMastodonUserInfo(userInfo)
+
+                authMastodonBinding.summary = getString(
+                    R.string.pref_item_summary_auth_mastodon,
+                    userInfo.userName,
+                    userInfo.instanceName
+                )
+                Snackbar.make(
+                    rootView, R.string.snackbar_text_success_auth_mastodon, Snackbar.LENGTH_LONG
+                ).show()
             }
         }
     }

@@ -43,14 +43,12 @@ class SpotifyApiClient(context: Context) {
 
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-    suspend fun storeSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
+    suspend fun getSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
         val token = withCatching { authService.getToken(code) }
             ?: return@withContext null
         val userName = withCatching { getUser(token.accessToken).displayName }
             ?: return@withContext null
-        return@withContext SpotifyUserInfo(token, userName).apply {
-            sharedPreferences.storeSpotifyUserInfoImmediately(this)
-        }
+        return@withContext SpotifyUserInfo(token, userName)
     }
 
     suspend fun refreshToken() {

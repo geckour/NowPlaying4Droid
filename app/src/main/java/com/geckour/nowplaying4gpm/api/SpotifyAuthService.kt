@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.api.model.SpotifyToken
+import com.geckour.nowplaying4gpm.api.model.SpotifyTokenOnRefresh
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.POST
@@ -27,5 +28,5 @@ interface SpotifyAuthService {
 
         @Field("grant_type")
         grantType: String = "refresh_token"
-    ): SpotifyToken
+    ): SpotifyTokenOnRefresh
 }
