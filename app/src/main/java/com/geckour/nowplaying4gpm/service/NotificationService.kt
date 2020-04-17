@@ -16,6 +16,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
+import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
@@ -258,7 +259,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sbn ?: return
 
         if (sbn.packageName != packageName && sbn.notification.isPlaying) {
-            sbn.notification.mediaMetadata?.let {
+            (sbn.notification.mediaMetadata ?: digMetadata(sbn.packageName))?.let {
                 currentSbn = sbn
                 sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
                 onMetadataChanged(it, sbn.packageName, sbn.notification)
@@ -278,11 +279,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private val Notification.mediaController: MediaController?
-        get() = extras.getParcelable<MediaSession.Token>(
-            Notification.EXTRA_MEDIA_SESSION
-        )?.let {
-            MediaController(this@NotificationService, it)
-        }
+        get() = extras.getParcelable<MediaSession.Token>(Notification.EXTRA_MEDIA_SESSION)
+            ?.let { MediaController(this@NotificationService, it) }
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
 
@@ -290,6 +288,17 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val MediaController.isPlaying: Boolean
         get() = playbackState?.state == PlaybackState.STATE_PLAYING
+
+    private fun digMetadata(playerPackageName: String): MediaMetadata? {
+        val componentName = ComponentName(
+            this@NotificationService, NotificationService::class.java
+        )
+
+        return getSystemService(MediaSessionManager::class.java)
+            ?.getActiveSessions(componentName)
+            ?.firstOrNull { it.packageName == playerPackageName }
+            ?.metadata
+    }
 
     private fun onMetadataCleared() {
         currentSbn = null
