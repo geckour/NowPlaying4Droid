@@ -960,7 +960,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
                         withCatching {
                             it.getApplicationLabel(
                                 it.getApplicationInfo(
-                                    packageState.packageName, PackageManager.GET_META_DATA
+                                    packageState.packageName,
+                                    PackageManager.GET_META_DATA
                                 )
                             )
                         }
@@ -1180,14 +1181,12 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 }, Gson()
             )
             viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val accessToken = withCatching {
-                    Apps(mastodonApiClientBuilder.build()).getAccessToken(
-                        this@apply.clientId,
-                        this@apply.clientSecret,
-                        App.MASTODON_CALLBACK,
-                        token
-                    ).executeCatching()
-                }
+                val accessToken = Apps(mastodonApiClientBuilder.build()).getAccessToken(
+                    this@apply.clientId,
+                    this@apply.clientSecret,
+                    App.MASTODON_CALLBACK,
+                    token
+                ).executeCatching()
 
                 if (accessToken == null) {
                     onAuthMastodonError()

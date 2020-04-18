@@ -24,9 +24,9 @@ class SpotifyApiClient(context: Context) {
     companion object {
 
         const val SPOTIFY_CALLBACK = "np4gpm://spotify.callback"
-        private const val SPOTIFY_ENCODED_CALLBACK = "np4gpm%3A%2F%2Fspotify.callback"
+        private const val SPOTIFY_CALLBACK_ENCODED = "np4gpm%3A%2F%2Fspotify.callback"
         const val OAUTH_URL =
-            "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_ENCODED_CALLBACK&scope=user-read-private"
+            "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_CALLBACK_ENCODED&scope=user-read-private"
     }
 
     private val authService = Retrofit.Builder()
@@ -53,7 +53,7 @@ class SpotifyApiClient(context: Context) {
         storeSpotifyUserInfoJob = launch(Dispatchers.IO) {
             val token = withCatching { authService.getToken(code) }
                 ?: return@launch
-            val userName = withCatching { getUser(token.accessToken).displayName }
+            val userName = getUser(token.accessToken)?.displayName
                 ?: return@launch
             sharedPreferences.storeSpotifyUserInfoImmediately(SpotifyUserInfo(token, userName))
         }
@@ -64,7 +64,8 @@ class SpotifyApiClient(context: Context) {
         refreshTokenJob = launch {
             val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return@launch
             val currentRefreshToken = currentUserInfo.token.refreshToken ?: return@launch
-            val newToken = authService.refreshToken(currentRefreshToken)
+            val newToken =
+                withCatching { authService.refreshToken(currentRefreshToken) } ?: return@launch
             sharedPreferences.storeSpotifyUserInfoImmediately(
                 currentUserInfo.copy(
                     token = newToken.copy(
@@ -75,11 +76,13 @@ class SpotifyApiClient(context: Context) {
         }
     }
 
-    private suspend fun getUser(token: String): SpotifyUser = getService(token).getUser()
+    private suspend fun getUser(token: String): SpotifyUser? =
+        withCatching { getService(token).getUser() }
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
+        refreshToken()
+        refreshTokenJob?.join()
         val query = trackCoreElement.spotifySearchQuery
-        withCatching({ return SpotifySearchResult.Failure(query, it) }) { refreshToken() }
         return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
             val token =
                 sharedPreferences.getSpotifyUserInfo()?.token
