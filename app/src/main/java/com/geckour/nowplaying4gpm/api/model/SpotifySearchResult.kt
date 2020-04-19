@@ -1,24 +1,24 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class SpotifySearchResult(
     val tracks: SpotifyTracks?
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class SpotifyTracks(
-        @Json(name = "href")
+        @SerialName("href")
         val queryUrl: String,
 
         val items: List<SpotifyTrack>
     ) {
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class SpotifyTrack(
             val id: String,
 
-            @Json(name = "external_urls")
+            @SerialName("external_urls")
             val urls: Map<String, String>
         )
     }

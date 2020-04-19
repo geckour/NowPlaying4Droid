@@ -1,17 +1,18 @@
 package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.api.model.MastodonInstance
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.json
 import com.geckour.nowplaying4gpm.util.withCatching
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import okhttp3.MediaType
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MastodonInstancesApiClient {
 
     private val service = Retrofit.Builder()
         .client(OkHttpProvider.mastodonInstancesClient)
         .baseUrl("https://instances.social/")
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
         .build()
         .create(MastodonInstancesApiService::class.java)
 

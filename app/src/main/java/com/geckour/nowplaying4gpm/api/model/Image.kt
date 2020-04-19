@@ -1,11 +1,11 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class Image(
-    @Json(name = "#text")
+    @SerialName("#text")
     val url: String,
 
     val size: String

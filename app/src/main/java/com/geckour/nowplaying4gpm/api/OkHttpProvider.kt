@@ -9,9 +9,10 @@ import java.util.concurrent.TimeUnit
 
 object OkHttpProvider {
 
-    val clientBuilder: OkHttpClient.Builder = OkHttpClient.Builder()
-        .connectTimeout(3, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.SECONDS)
+    val clientBuilder: OkHttpClient.Builder
+        get() = OkHttpClient.Builder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
 
     val client: OkHttpClient = clientBuilder
         .applyDebugger()

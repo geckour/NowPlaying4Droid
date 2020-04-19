@@ -5,8 +5,8 @@ import android.content.Context
 import android.os.Bundle
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.api.model.SkuDetail
-import com.geckour.nowplaying4gpm.util.fromJsonOrNull
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.parseOrNull
+import com.geckour.nowplaying4gpm.util.json
 import com.geckour.nowplaying4gpm.util.withCatching
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,7 +56,7 @@ class BillingApiClient(private val service: IInAppBillingService) {
                 ).let {
                     if (it.getInt(BUNDLE_KEY_RESPONSE_CODE) == ResponseCode.RESPONSE_OK.code) {
                         it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST).orEmpty().mapNotNull {
-                            moshi.fromJsonOrNull<SkuDetail>(it, SkuDetail::class.java)
+                            json.parseOrNull<SkuDetail>(it)
                         }
                     } else emptyList()
                 }

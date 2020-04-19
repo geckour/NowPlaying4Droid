@@ -4,6 +4,7 @@ import com.geckour.nowplaying4gpm.util.FormatPattern
 import com.geckour.nowplaying4gpm.util.containedPatterns
 import java.io.Serializable
 
+@kotlinx.serialization.Serializable
 data class TrackInfo(
     val coreElement: TrackCoreElement,
     val artworkUriString: String?,
@@ -25,6 +26,7 @@ data class TrackInfo(
             }
         }
 
+    @kotlinx.serialization.Serializable
     data class TrackCoreElement(
         val title: String?,
         val artist: String?,
@@ -46,6 +48,7 @@ data class TrackInfo(
     }
 }
 
+@kotlinx.serialization.Serializable
 data class ArtworkInfo(
     val artworkUriString: String?
 )

@@ -18,13 +18,13 @@ import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.sys1yagi.mastodon4j.api.entity.Status
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import java.io.PrintWriter
 import java.io.StringWriter
 
-val moshi: Moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+val json: Json = Json(JsonConfiguration.Stable.copy(ignoreUnknownKeys = true, isLenient = true))
 
 const val contentQuerySelection: String =
     "${MediaStore.Audio.Media.TITLE}=? and ${MediaStore.Audio.Media.ARTIST}=? and ${MediaStore.Audio.Media.ALBUM}=?"

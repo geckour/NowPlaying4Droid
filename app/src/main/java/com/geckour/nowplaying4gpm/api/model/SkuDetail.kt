@@ -1,9 +1,9 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class SkuDetail(
     val productId: String,
 
@@ -11,10 +11,10 @@ data class SkuDetail(
 
     val price: String,
 
-    @Json(name = "price_amount_micros")
+    @SerialName("price_amount_micros")
     val priceInMicros: String,
 
-    @Json(name = "price_currency_code")
+    @SerialName("price_currency_code")
     val priceCode: String,
 
     val title: String,

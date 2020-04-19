@@ -33,73 +33,16 @@
 -dontwarn sun.misc.**
 
 
-#Moshi
-# JSR 305 annotations are for embedding nullability information.
--dontwarn javax.annotation.**
-
--keepclasseswithmembers class * {
-    @com.squareup.moshi.* <methods>;
+#kotlinx.serialization
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.SerializationKt
+-keep,includedescriptorclasses class com.geckour.nowplaying4gpm.**$$serializer { *; }
+-keepclassmembers class com.geckour.nowplaying4gpm.** {
+    *** Companion;
 }
-
--keep @com.squareup.moshi.JsonQualifier interface *
-
--keepclassmembers class kotlin.Metadata {
-    public <methods>;
+-keepclasseswithmembers class com.geckour.nowplaying4gpm.** {
+    kotlinx.serialization.KSerializer serializer(...);
 }
-
--keepattributes InnerClasses,Signature,*Annotation*,EnclosingMethod
-
-# Enum field names are used by the integrated EnumJsonAdapter.
-# Annotate enums with @JsonClass(generateAdapter = false) to use them with Moshi.
--keepclassmembers @com.squareup.moshi.JsonClass class * extends java.lang.Enum {
-    <fields>;
-}
-
-# The name of @JsonClass types is used to look up the generated adapter.
--keepnames @com.squareup.moshi.JsonClass class *
-
-# Retain generated JsonAdapters if annotated type is retained.
--if @com.squareup.moshi.JsonClass class *
--keep class <1>JsonAdapter {
-    <init>(...);
-    <fields>;
-}
--if @com.squareup.moshi.JsonClass class **$*
--keep class <1>_<2>JsonAdapter {
-    <init>(...);
-    <fields>;
-}
--if @com.squareup.moshi.JsonClass class **$*$*
--keep class <1>_<2>_<3>JsonAdapter {
-    <init>(...);
-    <fields>;
-}
--if @com.squareup.moshi.JsonClass class **$*$*$*
--keep class <1>_<2>_<3>_<4>JsonAdapter {
-    <init>(...);
-    <fields>;
-}
--if @com.squareup.moshi.JsonClass class **$*$*$*$*
--keep class <1>_<2>_<3>_<4>_<5>JsonAdapter {
-    <init>(...);
-    <fields>;
-}
--if @com.squareup.moshi.JsonClass class **$*$*$*$*$*
--keep class <1>_<2>_<3>_<4>_<5>_<6>JsonAdapter {
-    <init>(...);
-    <fields>;
-}
-
--keep class kotlin.reflect.jvm.internal.impl.builtins.BuiltInsLoaderImpl
-
--keepclassmembers class kotlin.Metadata {
-    public <methods>;
-}
-
-
--keepnames enum com.geckour.nowplaying4gpm.util.** { *; }
--keepnames enum com.geckour.nowplaying4gpm.service.** { *; }
--keepnames class com.geckour.nowplaying4gpm.api.model.** { *; }
 
 
 #CardView

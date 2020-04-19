@@ -28,16 +28,18 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
-import com.squareup.moshi.Moshi
 import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ImplicitReflectionSerializer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.parse
+import kotlinx.serialization.parseList
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.lang.reflect.Type
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -121,8 +123,8 @@ enum class FormatPattern(val value: String) {
     NEW_LINE("\\n");
 
     companion object {
-        val replaceablePatterns: List<FormatPattern> = values().toMutableList().apply {
-            removeAll(listOf(S_QUOTE, S_QUOTE_DOUBLE, NEW_LINE))
+        val replaceablePatterns: List<FormatPattern> = values().filter {
+            it !in listOf(S_QUOTE, S_QUOTE_DOUBLE, NEW_LINE)
         }
     }
 }
@@ -288,9 +290,15 @@ fun Context.setCrashlytics() {
     if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
 }
 
-inline fun <reified T> Moshi.fromJsonOrNull(
-    json: String?, type: Type, onError: Throwable.() -> Unit = {}
-): T? = withCatching(onError) { this.adapter<T>(type).fromJson(json) }
+@OptIn(ImplicitReflectionSerializer::class)
+inline fun <reified T : Any> Json.parseOrNull(
+    json: String?, onError: Throwable.() -> Unit = {}
+): T? = withCatching(onError) { this.parse<T>(json!!) }
+
+@OptIn(ImplicitReflectionSerializer::class)
+inline fun <reified T : Any> Json.parseListOrNull(
+    json: String?, onError: Throwable.() -> Unit = {}
+): List<T>? = withCatching(onError) { this.parseList<T>(json!!) }
 
 fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
 

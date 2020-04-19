@@ -1,16 +1,17 @@
 package com.geckour.nowplaying4gpm.api
 
 import com.geckour.nowplaying4gpm.api.model.Album
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.json
 import com.geckour.nowplaying4gpm.util.withCatching
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import okhttp3.MediaType
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 
 class LastFmApiClient {
     private val service = Retrofit.Builder()
         .client(OkHttpProvider.client)
         .baseUrl("http://ws.audioscrobbler.com/")
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
         .build()
         .create(LastFmApiService::class.java)
 

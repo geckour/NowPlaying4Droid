@@ -66,7 +66,7 @@ import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.Visibility
 import com.geckour.nowplaying4gpm.util.cleaerSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
-import com.geckour.nowplaying4gpm.util.fromJsonOrNull
+import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.generate
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
@@ -84,7 +84,7 @@ import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.json
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.setArtworkResolveOrder
@@ -545,9 +545,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 when (resultCode) {
                     Activity.RESULT_OK -> {
                         val purchaseResult: PurchaseResult? =
-                            moshi.fromJsonOrNull(
-                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA),
-                                PurchaseResult::class.java
+                            json.parseOrNull(
+                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
                             )
 
                         if (purchaseResult?.purchaseState == 0) {

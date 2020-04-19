@@ -1,8 +1,8 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class MastodonInstance(
     val name: String?
 )

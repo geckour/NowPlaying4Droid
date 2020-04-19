@@ -10,15 +10,17 @@ import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.json
 import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.withCatching
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
+import timber.log.Timber
 import java.util.*
 
 class SpotifyApiClient(context: Context) {
@@ -34,20 +36,19 @@ class SpotifyApiClient(context: Context) {
     private val authService = Retrofit.Builder()
         .client(OkHttpProvider.spotifyAuthClient)
         .baseUrl("https://accounts.spotify.com/")
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
         .build()
         .create(SpotifyAuthService::class.java)
 
     private fun getService(token: String): SpotifyApiService = Retrofit.Builder()
         .client(OkHttpProvider.getSpotifyApiClient(token))
         .baseUrl("https://api.spotify.com/")
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
         .build()
         .create(SpotifyApiService::class.java)
 
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-    private var refreshTokenJob: Job? = null
     private var storeSpotifyUserInfoJob: Job? = null
 
     private val _refreshedUserInfo = MutableLiveData<SpotifyUserInfo>()
@@ -70,39 +71,38 @@ class SpotifyApiClient(context: Context) {
         }
     }
 
-    suspend fun refreshTokenIfNeeded() = coroutineScope {
-        val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return@coroutineScope
+    suspend fun refreshTokenIfNeeded(): SpotifyUserInfo? {
+        val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return null
         if (currentUserInfo.refreshTokenExpiredAt == null ||
-            currentUserInfo.refreshTokenExpiredAt >= System.currentTimeMillis()
+            currentUserInfo.refreshTokenExpiredAt <= System.currentTimeMillis()
         ) {
-            refreshTokenJob?.join()
-            refreshTokenJob = launch {
-                val currentRefreshToken = currentUserInfo.token.refreshToken ?: return@launch
-                val newToken =
-                    withCatching { authService.refreshToken(currentRefreshToken) } ?: return@launch
-                val newUserInfo = currentUserInfo.copy(
-                    token = newToken.copy(
-                        refreshToken = newToken.refreshToken ?: currentRefreshToken
-                    ),
-                    refreshTokenExpiredAt = newToken.getExpiredAt()
-                        ?: currentUserInfo.refreshTokenExpiredAt
-                )
-                sharedPreferences.storeSpotifyUserInfoImmediately(newUserInfo)
-                _refreshedUserInfo.postValue(newUserInfo)
-            }
+            val currentRefreshToken = currentUserInfo.token.refreshToken ?: return null
+            val newToken =
+                withCatching { authService.refreshToken(currentRefreshToken) } ?: return null
+            val newUserInfo = currentUserInfo.copy(
+                token = newToken.copy(
+                    refreshToken = newToken.refreshToken ?: currentRefreshToken
+                ),
+                refreshTokenExpiredAt = newToken.getExpiredAt()
+                    ?: currentUserInfo.refreshTokenExpiredAt
+            )
+            sharedPreferences.storeSpotifyUserInfoImmediately(newUserInfo)
+            _refreshedUserInfo.postValue(newUserInfo)
+
+            return newUserInfo
         }
+
+        return null
     }
 
     private suspend fun getUser(token: String): SpotifyUser? =
-        withCatching { getService(token).getUser() }
+        withCatching { getService(token.apply { Timber.d("np4d spotify token: $this") }).getUser() }
 
     suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
-        refreshTokenIfNeeded()
-        refreshTokenJob?.join()
         val query = trackCoreElement.spotifySearchQuery
         return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
             val token =
-                sharedPreferences.getSpotifyUserInfo()?.token
+                (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
                     ?: throw IllegalStateException("Init token first.")
             val countryCode =
                 if (token.scope == "user-read-private") "from_token"

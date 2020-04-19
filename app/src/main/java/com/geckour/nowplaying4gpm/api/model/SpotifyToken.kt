@@ -1,23 +1,23 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class SpotifyToken(
-    @Json(name = "access_token")
+    @SerialName("access_token")
     val accessToken: String,
 
-    @Json(name = "token_type")
+    @SerialName("token_type")
     val tokenType: String,
 
-    @Json(name = "expires_in")
+    @SerialName("expires_in")
     val expiresIn: Long,
 
-    @Json(name = "refresh_token")
-    val refreshToken: String?,
+    @SerialName("refresh_token")
+    val refreshToken: String? = null,
 
-    @Json(name = "scope")
+    @SerialName("scope")
     val scope: String = ""
 ) {
 
