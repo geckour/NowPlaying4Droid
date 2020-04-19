@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.ui.debug
 
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -10,6 +11,7 @@ import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.databinding.ActivityDebugBinding
 import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
+import com.geckour.nowplaying4gpm.ui.observe
 import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.toggleDebugSpotifySearchFlag
 import kotlinx.coroutines.GlobalScope
@@ -27,8 +29,12 @@ class DebugActivity : WithCrashlyticsActivity() {
         PreferenceManager.getDefaultSharedPreferences(application)
     }
 
+    private lateinit var spotifyApiClient: SpotifyApiClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        spotifyApiClient = SpotifyApiClient(this@DebugActivity)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_debug)
         binding.toolbarTitle =
@@ -40,7 +46,7 @@ class DebugActivity : WithCrashlyticsActivity() {
                     summaryView.text = flag.toString()
                 }
                 DebugMenuListAdapter.DebugMenu.REFRESH_SPOTIFY_TOKEN -> {
-                    GlobalScope.launch { SpotifyApiClient(this@DebugActivity).refreshToken() }
+                    GlobalScope.launch { spotifyApiClient.refreshTokenIfNeeded() }
                 }
             }
         }.apply {
@@ -58,6 +64,10 @@ class DebugActivity : WithCrashlyticsActivity() {
                         )
                     }
             )
+        }
+
+        spotifyApiClient.refreshedUserInfo.observe(this) {
+            AlertDialog.Builder(this).setMessage("$it").show()
         }
     }
 }

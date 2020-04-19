@@ -243,6 +243,10 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
         PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
     )
 
+fun SharedPreferences.cleaerSpotifyUserInfoImmediately() {
+    edit().remove(PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name).commit()
+}
+
 fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
     edit().remove(PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name)
         .putString(

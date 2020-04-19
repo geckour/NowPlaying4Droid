@@ -19,4 +19,8 @@ data class SpotifyToken(
 
     @Json(name = "scope")
     val scope: String = ""
-)
+) {
+
+    fun getExpiredAt(currentTime: Long = System.currentTimeMillis()): Long? =
+        refreshToken?.let { currentTime + expiresIn * 1000 }
+}

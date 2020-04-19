@@ -64,6 +64,7 @@ import com.geckour.nowplaying4gpm.util.PaletteColor
 import com.geckour.nowplaying4gpm.util.PlayerPackageState
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.Visibility
+import com.geckour.nowplaying4gpm.util.cleaerSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
 import com.geckour.nowplaying4gpm.util.fromJsonOrNull
 import com.geckour.nowplaying4gpm.util.generate
@@ -71,6 +72,7 @@ import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
+import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 import com.geckour.nowplaying4gpm.util.getFormatPattern
@@ -147,8 +149,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        observeEvents()
 
         spotifyApiClient = SpotifyApiClient(this)
 
@@ -461,6 +461,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
             serviceConnection,
             Context.BIND_AUTO_CREATE
         )
+
+        observeEvents()
     }
 
     override fun onResume() {
@@ -576,6 +578,12 @@ class SettingsActivity : WithCrashlyticsActivity() {
         viewModel.reflectDonation.observe(this) {
             it ?: return@observe
             onReflectDonation(it)
+        }
+
+        spotifyApiClient.refreshedUserInfo.observe(this) {
+            if (sharedPreferences.getDebugSpotifySearchFlag()) {
+                AlertDialog.Builder(this).setMessage("$it").show()
+            }
         }
     }
 
@@ -777,6 +785,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickAuthSpotify() {
+        sharedPreferences.cleaerSpotifyUserInfoImmediately()
         CustomTabsIntent.Builder().setShowTitle(true)
             .setToolbarColor(getColor(R.color.colorPrimary))
             .build()
