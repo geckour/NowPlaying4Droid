@@ -135,6 +135,8 @@
     <string name="dialog_message_alert_must_auth_twitter">共有するためにTwitterアカウントを認証してください</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
     <string name="dialog_hint_mastodon_instance">インスタンス名を入力…</string>
+    <string name="dialog_title_ignore_battery_optimization">バッテリー最適化から除外する</string>
+    <string name="dialog_message_ignore_battery_optimization">アプリの正しい動作を助けるためにバッテリーの最適化から除外してください</string>
     <string name="dialog_list_item_content_resolver">ContentResolver (端末内)</string>
     <string name="dialog_list_item_media_metadata_uri">MediaMetadata URI (プレイヤー提供)</string>
     <string name="dialog_list_item_media_metadata_bitmap">MediaMetadata Bitmap (プレイヤー提供)</string>

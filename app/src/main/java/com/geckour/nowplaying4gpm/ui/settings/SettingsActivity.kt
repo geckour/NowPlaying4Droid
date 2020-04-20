@@ -15,6 +15,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
+import android.provider.Settings
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -66,7 +68,6 @@ import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.Visibility
 import com.geckour.nowplaying4gpm.util.cleaerSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
-import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.generate
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
@@ -85,6 +86,7 @@ import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
 import com.geckour.nowplaying4gpm.util.json
+import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.setArtworkResolveOrder
@@ -463,6 +465,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
         )
 
         observeEvents()
+
+        showIgnoreBatteryOptimizationDialog()
     }
 
     override fun onResume() {
@@ -606,6 +610,38 @@ class SettingsActivity : WithCrashlyticsActivity() {
     )
     internal fun onNeverAskPermissionAgain() {
         binding.maskInactiveApp.visibility = View.VISIBLE
+    }
+
+    private fun showIgnoreBatteryOptimizationDialog() {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION)
+                .not() &&
+            getSystemService(PowerManager::class.java)
+                ?.isIgnoringBatteryOptimizations(packageName) == false
+        ) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_title_ignore_battery_optimization)
+                .setMessage(R.string.dialog_message_ignore_battery_optimization)
+                .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                    val intent =
+                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                    startActivity(intent)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.dialog_button_ng) { dialog, _ ->
+                    sharedPreferences.edit()
+                        .putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
+                        .apply()
+                    dialog.dismiss()
+                }
+                .setOnCancelListener {
+                    sharedPreferences.edit()
+                        .putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
+                        .apply()
+                }
+                .show()
+        }
     }
 
     private fun onClickItemWithSwitch(extra: FrameLayout?) =
