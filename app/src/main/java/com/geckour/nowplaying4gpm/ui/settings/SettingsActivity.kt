@@ -626,7 +626,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                         Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                             data = Uri.parse("package:$packageName")
                         }
-                    startActivity(intent)
+                    withCatching { startActivity(intent) }
                     dialog.dismiss()
                 }
                 .setNegativeButton(R.string.dialog_button_ng) { dialog, _ ->

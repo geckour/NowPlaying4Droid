@@ -413,11 +413,8 @@ fun Serializable.asString(): String =
 
 @OptIn(ImplicitReflectionSerializer::class)
 inline fun <reified T : Serializable> String.toSerializableObject(): T? =
-    try {
+    withCatching {
         json.parseOrNull<ByteArray>(this).let { byteArray ->
             ByteArrayInputStream(byteArray).use { ObjectInputStream(it).readObject() as T }
         }
-    } catch (t: Throwable) {
-        Timber.e(t)
-        null
     }
