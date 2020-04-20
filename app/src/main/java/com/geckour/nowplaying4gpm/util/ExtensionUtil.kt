@@ -32,14 +32,20 @@ import io.fabric.sdk.android.Fabric
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.parse
 import kotlinx.serialization.parseList
+import kotlinx.serialization.stringify
 import timber.log.Timber
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -292,8 +298,12 @@ fun Context.setCrashlytics() {
 
 @OptIn(ImplicitReflectionSerializer::class)
 inline fun <reified T : Any> Json.parseOrNull(
-    json: String?, onError: Throwable.() -> Unit = {}
-): T? = withCatching(onError) { this.parse<T>(json!!) }
+    json: String?,
+    deserializationStrategy: DeserializationStrategy<T>? = null,
+    onError: Throwable.() -> Unit = {}
+): T? = withCatching(onError) {
+    deserializationStrategy?.let { this.parse(it, json!!) } ?: this.parse(json!!)
+}
 
 @OptIn(ImplicitReflectionSerializer::class)
 inline fun <reified T : Any> Json.parseListOrNull(
@@ -393,3 +403,21 @@ fun Bitmap.refreshArtworkUri(context: Context): Uri? {
 fun Bitmap.toByteArray(): ByteArray? = ByteArrayOutputStream().apply {
     compress(Bitmap.CompressFormat.PNG, 100, this)
 }.toByteArray()
+
+@OptIn(ImplicitReflectionSerializer::class)
+fun Serializable.asString(): String =
+    ByteArrayOutputStream().use { byteArrayStream ->
+        ObjectOutputStream(byteArrayStream).writeObject(this)
+        json.stringify(byteArrayStream.toByteArray())
+    }
+
+@OptIn(ImplicitReflectionSerializer::class)
+inline fun <reified T : Serializable> String.toSerializableObject(): T? =
+    try {
+        json.parseOrNull<ByteArray>(this).let { byteArray ->
+            ByteArrayInputStream(byteArray).use { ObjectInputStream(it).readObject() as T }
+        }
+    } catch (t: Throwable) {
+        Timber.e(t)
+        null
+    }

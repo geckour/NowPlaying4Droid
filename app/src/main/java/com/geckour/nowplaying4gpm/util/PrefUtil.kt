@@ -11,7 +11,6 @@ import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.list
 import kotlinx.serialization.stringify
 import twitter4j.auth.AccessToken
@@ -261,18 +260,16 @@ fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
 fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
     edit().putString(
         PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-        json.stringify(accessToken)
+        accessToken.asString()
     ).apply()
 }
 
 fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
-        json.parseOrNull(
-            getString(
-                PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-                PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
-            )
-        )
+        getString(
+            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
+            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
+        )?.let { it.toSerializableObject<AccessToken>() }
     else null
 }
 
