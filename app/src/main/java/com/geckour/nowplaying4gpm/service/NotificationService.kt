@@ -258,7 +258,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationPosted(sbn)
         sbn ?: return
 
-        if (sbn.packageName != packageName && sbn.notification.isPlaying) {
+        if (sbn.packageName != packageName) {
             (sbn.notification.mediaMetadata ?: digMetadata(sbn.packageName))?.let {
                 currentSbn = sbn
                 sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
@@ -284,15 +284,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
 
-    private val Notification.isPlaying: Boolean get() = mediaController?.isPlaying != false
-
-    private val MediaController.isPlaying: Boolean
-        get() = playbackState?.state == PlaybackState.STATE_PLAYING
-
     private fun digMetadata(playerPackageName: String): MediaMetadata? {
-        val componentName = ComponentName(
-            this@NotificationService, NotificationService::class.java
-        )
+        val componentName =
+            ComponentName(this@NotificationService, NotificationService::class.java)
 
         return getSystemService(MediaSessionManager::class.java)
             ?.getActiveSessions(componentName)
