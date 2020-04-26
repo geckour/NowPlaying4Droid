@@ -108,6 +108,15 @@
                     app:title="@{@string/pref_item_title_pattern_modifiers}" />
 
                 <include
+                    android:id="@+id/item_switch_simplify_share"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_simplify_share}"
+                    app:title="@{@string/pref_item_title_simplify_share}" />
+
+                <include
                     android:id="@+id/item_auth_spotify"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"

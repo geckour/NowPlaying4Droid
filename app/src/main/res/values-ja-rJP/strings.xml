@@ -28,6 +28,8 @@
     <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="pref_item_title_pattern_modifiers">フォーマット指定子の修飾辞を指定</string>
     <string name="pref_item_desc_pattern_modifiers">各指定子の接頭辞 / 接尾辞を指定する</string>
+    <string name="pref_item_title_simplify_share">共有フローの単純化</string>
+    <string name="pref_item_desc_simplify_share">単純な共有フローを使う</string>
     <string name="pref_item_title_auth_spotify">Spotify認証</string>
     <string name="pref_item_desc_auth_spotify">共有リンクの取得のためにSpotifyアカウントを認証する</string>
     <string name="pref_item_title_strict_match_pattern">全てのフォーマットパターンの解決</string>

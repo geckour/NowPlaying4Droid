@@ -35,6 +35,8 @@
     <string name="pref_item_desc_pattern">Track name: TI, Artist name: AR, Album name: AL</string>
     <string name="pref_item_title_pattern_modifiers">Specify modifier of formatting patterns</string>
     <string name="pref_item_desc_pattern_modifiers">Specify prefix / suffix for each patterns</string>
+    <string name="pref_item_title_simplify_share">Simplify sharing flow</string>
+    <string name="pref_item_desc_simplify_share">Use simple sharing flow</string>
     <string name="pref_item_title_auth_spotify">Spotify Authentication</string>
     <string name="pref_item_desc_auth_spotify">Authenticate Spotify account for get share link</string>
     <string name="pref_item_summary_auth_spotify" translatable="false">%s</string>

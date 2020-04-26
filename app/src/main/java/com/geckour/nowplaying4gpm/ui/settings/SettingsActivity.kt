@@ -179,6 +179,154 @@ class SettingsActivity : WithCrashlyticsActivity() {
             }
         }
 
+        setupItems()
+
+        serviceConnection = object : ServiceConnection {
+            override fun onServiceDisconnected(name: ComponentName?) {
+                billingService = null
+            }
+
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                IInAppBillingService.Stub.asInterface(service).apply {
+                    billingService = IInAppBillingService.Stub.asInterface(service)
+                }
+            }
+        }
+        bindService(
+            Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
+                `package` = "com.android.vending"
+            },
+            serviceConnection,
+            Context.BIND_AUTO_CREATE
+        )
+
+        observeEvents()
+
+        showIgnoreBatteryOptimizationDialog()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        onReflectDonation()
+
+        viewModel.requestNotificationListenerPermission(this) {
+            onRequestUpdate()
+        }
+
+        if (sharedPreferences.getAlertTwitterAuthFlag()) {
+            showErrorDialog(
+                R.string.dialog_title_alert_must_auth_twitter,
+                R.string.dialog_message_alert_must_auth_twitter
+            ) {
+                sharedPreferences.setAlertTwitterAuthFlag(false)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        onRequestPermissionsResult(requestCode, grantResults)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        billingService?.apply { unbindService(serviceConnection) }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+
+        val uriString = intent?.data?.toString()
+        Timber.d("intent data: $uriString")
+        when {
+            uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
+                onAuthSpotifyCallback(
+                    intent,
+                    binding.root,
+                    binding.itemAuthSpotify
+                )
+            }
+            uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
+                onAuthTwitterCallback(
+                    intent,
+                    sharedPreferences,
+                    binding.root,
+                    binding.itemAuthTwitter
+                )
+            }
+            uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
+                onAuthMastodonCallback(
+                    intent,
+                    sharedPreferences,
+                    binding.root,
+                    binding.itemAuthMastodon
+                )
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
+                viewModel.requestNotificationListenerPermission(this) {
+                    onRequestUpdate()
+                }
+            }
+
+            RequestCode.BILLING.ordinal -> {
+                when (resultCode) {
+                    Activity.RESULT_OK -> {
+                        val purchaseResult: PurchaseResult? =
+                            json.parseOrNull(
+                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
+                            )
+
+                        if (purchaseResult?.purchaseState == 0) {
+                            onReflectDonation(true)
+                        } else {
+                            showErrorDialog(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_failure_purchase
+                            )
+                        }
+                    }
+
+                    Activity.RESULT_CANCELED -> {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_on_cancel_purchase
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeEvents() {
+        viewModel.requestUpdate.observe(this) {
+            onRequestUpdate()
+        }
+        viewModel.reflectDonation.observe(this) {
+            it ?: return@observe
+            onReflectDonation(it)
+        }
+
+        spotifyApiClient.refreshedUserInfo.observe(this) {
+            if (sharedPreferences.getDebugSpotifySearchFlag()) {
+                AlertDialog.Builder(this).setMessage("$it").show()
+            }
+        }
+    }
+
+    private fun setupItems() {
         binding.itemPatternFormat.summary = sharedPreferences.getFormatPattern(this)
         binding.itemChooseColor.summary =
             getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
@@ -244,6 +392,16 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemFormatPatternModifiers.root.setOnClickListener {
             onClickFormatPatternModifiers(sharedPreferences)
+        }
+
+        binding.itemSwitchSimplifyShare.also { b ->
+            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
+            b.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_SIMPLE_SHARE) { _, summary ->
+                    b.summary = summary
+                })
+            }
         }
 
         binding.itemAuthSpotify.also { b ->
@@ -442,150 +600,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
             if (sharedPreferences.getDonateBillingState()) b.root.visibility = View.GONE
             else b.root.setOnClickListener {
                 startBillingTransaction(this, billingService)
-            }
-        }
-
-        serviceConnection = object : ServiceConnection {
-            override fun onServiceDisconnected(name: ComponentName?) {
-                billingService = null
-            }
-
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                IInAppBillingService.Stub.asInterface(service).apply {
-                    billingService = IInAppBillingService.Stub.asInterface(service)
-                }
-            }
-        }
-        bindService(
-            Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
-                `package` = "com.android.vending"
-            },
-            serviceConnection,
-            Context.BIND_AUTO_CREATE
-        )
-
-        observeEvents()
-
-        showIgnoreBatteryOptimizationDialog()
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        onReflectDonation()
-
-        viewModel.requestNotificationListenerPermission(this) {
-            onRequestUpdate()
-        }
-
-        if (sharedPreferences.getAlertTwitterAuthFlag()) {
-            showErrorDialog(
-                R.string.dialog_title_alert_must_auth_twitter,
-                R.string.dialog_message_alert_must_auth_twitter
-            ) {
-                sharedPreferences.setAlertTwitterAuthFlag(false)
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        onRequestPermissionsResult(requestCode, grantResults)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        billingService?.apply { unbindService(serviceConnection) }
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-
-        val uriString = intent?.data?.toString()
-        Timber.d("intent data: $uriString")
-        when {
-            uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
-                onAuthSpotifyCallback(
-                    intent,
-                    binding.root,
-                    binding.itemAuthSpotify
-                )
-            }
-            uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
-                onAuthTwitterCallback(
-                    intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthTwitter
-                )
-            }
-            uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
-                onAuthMastodonCallback(
-                    intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthMastodon
-                )
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        when (requestCode) {
-            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
-                viewModel.requestNotificationListenerPermission(this) {
-                    onRequestUpdate()
-                }
-            }
-
-            RequestCode.BILLING.ordinal -> {
-                when (resultCode) {
-                    Activity.RESULT_OK -> {
-                        val purchaseResult: PurchaseResult? =
-                            json.parseOrNull(
-                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
-                            )
-
-                        if (purchaseResult?.purchaseState == 0) {
-                            onReflectDonation(true)
-                        } else {
-                            showErrorDialog(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_failure_purchase
-                            )
-                        }
-                    }
-
-                    Activity.RESULT_CANCELED -> {
-                        showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_cancel_purchase
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun observeEvents() {
-        viewModel.requestUpdate.observe(this) {
-            onRequestUpdate()
-        }
-        viewModel.reflectDonation.observe(this) {
-            it ?: return@observe
-            onReflectDonation(it)
-        }
-
-        spotifyApiClient.refreshedUserInfo.observe(this) {
-            if (sharedPreferences.getDebugSpotifySearchFlag()) {
-                AlertDialog.Builder(this).setMessage("$it").show()
             }
         }
     }
