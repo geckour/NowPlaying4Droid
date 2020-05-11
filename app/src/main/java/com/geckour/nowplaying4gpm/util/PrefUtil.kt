@@ -16,7 +16,6 @@ import kotlinx.serialization.stringify
 import twitter4j.auth.AccessToken
 
 enum class PrefKey(val defaultValue: Any? = null) {
-    PREF_KEY_WHETHER_USE_API(false),
     PREF_KEY_ARTWORK_RESOLVE_ORDER,
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT("#NowPlaying TI - AR (AL)"),
     PREF_KEY_FORMAT_PATTERN_MODIFIERS,

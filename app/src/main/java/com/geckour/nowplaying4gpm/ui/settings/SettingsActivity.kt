@@ -359,23 +359,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
             binding.categoryOthers.root.visibility = if (visible) View.VISIBLE else View.GONE
         }
 
-        binding.itemSwitchUseApi.also { b ->
-            b.maskInactiveDonate.visibility =
-                if (sharedPreferences.getDonateBillingState()) View.GONE
-                else View.VISIBLE
-
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
-                    b.summary = summary
-
-                    onRequestUpdate()
-                })
-            }
-        }
-
         binding.itemChangeArtworkResolveOrder.also { b ->
             b.maskInactiveDonate.visibility =
                 if (sharedPreferences.getDonateBillingState()) View.GONE

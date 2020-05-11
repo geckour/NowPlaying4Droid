@@ -17,7 +17,6 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
-import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -638,18 +637,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         ?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
-                    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                        refreshArtworkUriFromLastFmApi(
-                            this@NotificationService, lastFmApiClient, coreElement
-                        )?.let { return it }
-                    }
+                    refreshArtworkUriFromLastFmApi(
+                        this@NotificationService, lastFmApiClient, coreElement
+                    )?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
-                    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                        refreshArtworkUriFromSpotify(
-                            this@NotificationService, spotifyApiClient, coreElement
-                        )?.let { return it }
-                    }
+                    refreshArtworkUriFromSpotify(
+                        this@NotificationService, spotifyApiClient, coreElement
+                    )?.let { return it }
                 }
             }
         }

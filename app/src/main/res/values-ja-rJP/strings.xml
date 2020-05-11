@@ -18,8 +18,6 @@
 
 
     <string name="pref_category_general">全般</string>
-    <string name="pref_item_title_switch_use_api">アートワーク取得時の通信</string>
-    <string name="pref_item_desc_switch_use_api">アートワーク取得の補助手段として外部サービスと通信する</string>
     <string name="pref_item_title_change_artwork_resolve_order">アートワークの解決順序を変更</string>
     <string name="pref_item_desc_change_artwork_resolve_order">アートワーク解決手段の実行順序を変更する</string>
 

@@ -25,8 +25,6 @@
 
 
     <string name="pref_category_general">General</string>
-    <string name="pref_item_title_switch_use_api">Access to network when fetch the artwork</string>
-    <string name="pref_item_desc_switch_use_api">Access to external service for auxiliary mean of fetching the artwork </string>
     <string name="pref_item_title_change_artwork_resolve_order">Change resolving artwork order</string>
     <string name="pref_item_desc_change_artwork_resolve_order">Change the order of resolving artwork</string>
 
