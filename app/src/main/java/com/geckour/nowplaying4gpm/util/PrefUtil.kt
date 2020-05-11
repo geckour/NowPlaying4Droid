@@ -94,14 +94,10 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
         json.parseListOrNull<ArtworkResolveMethod>(it)
     }.orEmpty().let { stored ->
-        ArtworkResolveMethod.ArtworkResolveMethodKey
+        val origin = ArtworkResolveMethod.ArtworkResolveMethodKey
             .values()
-            .map { key ->
-                ArtworkResolveMethod(
-                    key,
-                    stored.firstOrNull { it.key == key }?.enabled ?: true
-                )
-            }
+            .toList()
+        stored + (origin - stored.map { it.key }).map { ArtworkResolveMethod(it, true) }
     }
 
 @OptIn(ImplicitReflectionSerializer::class)
