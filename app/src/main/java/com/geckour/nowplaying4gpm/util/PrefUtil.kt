@@ -58,7 +58,8 @@ data class ArtworkResolveMethod(
         MEDIA_METADATA_URI(R.string.dialog_list_item_media_metadata_uri),
         MEDIA_METADATA_BITMAP(R.string.dialog_list_item_media_metadata_bitmap),
         NOTIFICATION_BITMAP(R.string.dialog_list_item_notification_bitmap),
-        LAST_FM(R.string.dialog_list_item_last_fm)
+        LAST_FM(R.string.dialog_list_item_last_fm),
+        SPOTIFY(R.string.dialog_list_item_spotify)
     }
 }
 
@@ -93,9 +94,16 @@ fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
         json.parseListOrNull<ArtworkResolveMethod>(it)
-    } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
-        .values()
-        .map { ArtworkResolveMethod(it, true) }
+    }.orEmpty().let { stored ->
+        ArtworkResolveMethod.ArtworkResolveMethodKey
+            .values()
+            .map { key ->
+                ArtworkResolveMethod(
+                    key,
+                    stored.firstOrNull { it.key == key }?.enabled ?: true
+                )
+            }
+    }
 
 @OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =

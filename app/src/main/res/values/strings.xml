@@ -155,6 +155,7 @@
     <string name="dialog_list_item_media_metadata_bitmap">MediaMetadata Bitmap (provided by player)</string>
     <string name="dialog_list_item_notification_bitmap">Notification Bitmap (provided by notification)</string>
     <string name="dialog_list_item_last_fm">Last.fm (over network service)</string>
+    <string name="dialog_list_item_spotify">Spotify (over network service)</string>
 
 
     <string name="snackbar_text_success_auth_spotify">Succeeded to authenticate the Spotify account.</string>

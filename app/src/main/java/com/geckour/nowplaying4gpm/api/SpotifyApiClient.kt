@@ -98,7 +98,7 @@ class SpotifyApiClient(context: Context) {
     private suspend fun getUser(token: String): SpotifyUser? =
         withCatching { getService(token.apply { Timber.d("np4d spotify token: $this") }).getUser() }
 
-    suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
+    suspend fun getSpotifyData(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
         val query = trackCoreElement.spotifySearchQuery
         return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
             val token =
@@ -111,10 +111,14 @@ class SpotifyApiClient(context: Context) {
                 .tracks
                 ?.items
                 ?.firstOrNull()
-                ?.urls
-                ?.get("spotify")
                 ?.let {
-                    SpotifySearchResult.Success(query, it)
+                    SpotifySearchResult.Success(
+                        query,
+                        SpotifySearchResult.Data(
+                            it.urls["spotify"] ?: return@let null,
+                            it.album.images.firstOrNull()?.url
+                        )
+                    )
                 } ?: SpotifySearchResult.Failure(query, IllegalStateException("No search result"))
         } ?: SpotifySearchResult.Failure(null, IllegalStateException("Unknown error"))
     }

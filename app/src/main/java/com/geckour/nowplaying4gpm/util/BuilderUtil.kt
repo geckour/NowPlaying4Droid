@@ -258,7 +258,7 @@ fun getNotification(
         .setContentTitle(spotifySearchResult.query)
         .setContentText(
             when (spotifySearchResult) {
-                is SpotifySearchResult.Success -> spotifySearchResult.url
+                is SpotifySearchResult.Success -> spotifySearchResult.data.sharingUrl
                 is SpotifySearchResult.Failure -> spotifySearchResult.cause.let { t ->
                     StringWriter().use {
                         "expiredAt: ${sharedPreferences.getSpotifyUserInfo()?.refreshTokenExpiredAt}\n${it.apply {

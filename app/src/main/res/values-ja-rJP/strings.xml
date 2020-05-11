@@ -144,6 +144,7 @@
     <string name="dialog_list_item_media_metadata_bitmap">MediaMetadata Bitmap (プレイヤー提供)</string>
     <string name="dialog_list_item_notification_bitmap">Notification Bitmap (通知提供)</string>
     <string name="dialog_list_item_last_fm">Last.fm (外部サービス提供)</string>
+    <string name="dialog_list_item_spotify">Spotify (外部サービス提供)</string>
 
 
     <string name="snackbar_text_success_auth_spotify">Spotifyアカウントの認証に 成功 しました</string>

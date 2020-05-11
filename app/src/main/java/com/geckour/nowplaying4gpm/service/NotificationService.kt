@@ -64,6 +64,7 @@ import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.refreshArtworkUri
 import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromLastFmApi
+import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromSpotify
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.refreshTempArtwork
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
@@ -352,9 +353,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     else "Generated share sentence without Spotify specifier"
                 )
             })
-        val spotifyUrl =
+        val spotifyData =
             if (containsSpotifyPattern) {
-                spotifyApiClient.getSpotifyUrl(coreElement).also {
+                spotifyApiClient.getSpotifyData(coreElement).also {
                     notificationManager.showDebugSpotifySearchNotificationIfNeeded(it)
                 }
             } else null
@@ -368,7 +369,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             artworkUri?.toString(),
             playerPackageName,
             playerPackageName.getAppName(this),
-            (spotifyUrl as? SpotifySearchResult.Success)?.url
+            (spotifyData as? SpotifySearchResult.Success)?.data?.sharingUrl
         )
 
         reflectTrackInfo(trackInfo)
@@ -640,6 +641,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
                         refreshArtworkUriFromLastFmApi(
                             this@NotificationService, lastFmApiClient, coreElement
+                        )?.let { return it }
+                    }
+                }
+                ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
+                    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
+                        refreshArtworkUriFromSpotify(
+                            this@NotificationService, spotifyApiClient, coreElement
                         )?.let { return it }
                     }
                 }

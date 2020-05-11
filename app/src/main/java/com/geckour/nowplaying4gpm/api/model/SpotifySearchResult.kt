@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class SpotifySearchResult(
     val tracks: SpotifyTracks?
 ) {
+
     @Serializable
     data class SpotifyTracks(
         @SerialName("href")
@@ -14,12 +15,28 @@ data class SpotifySearchResult(
 
         val items: List<SpotifyTrack>
     ) {
+
         @Serializable
         data class SpotifyTrack(
             val id: String,
 
             @SerialName("external_urls")
-            val urls: Map<String, String>
+            val urls: Map<String, String>,
+
+            val album: SpotifyAlbum
+        )
+    }
+
+    @Serializable
+    data class SpotifyAlbum(
+        val images: List<SpotifyImage>
+    ) {
+
+        @Serializable
+        data class SpotifyImage(
+            val url: String,
+            val height: Int,
+            val width: Int
         )
     }
 }

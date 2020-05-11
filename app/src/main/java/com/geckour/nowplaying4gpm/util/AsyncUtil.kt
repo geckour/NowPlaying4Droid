@@ -13,7 +13,9 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestOptions
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
@@ -40,6 +42,16 @@ suspend fun refreshArtworkUriFromLastFmApi(
     context: Context, client: LastFmApiClient, trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
+
+    return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
+}
+
+suspend fun refreshArtworkUriFromSpotify(
+    context: Context, client: SpotifyApiClient, trackCoreElement: TrackInfo.TrackCoreElement
+): Uri? {
+    val url =
+        (client.getSpotifyData(trackCoreElement) as? SpotifySearchResult.Success)?.data?.artworkUrl
+            ?: return null
 
     return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
 }
