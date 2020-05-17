@@ -36,7 +36,7 @@
     <string name="pref_item_title_simplify_share">Simplify sharing flow</string>
     <string name="pref_item_desc_simplify_share">Use simple sharing flow</string>
     <string name="pref_item_title_auth_spotify">Spotify Authentication</string>
-    <string name="pref_item_desc_auth_spotify">Authenticate Spotify account for get share link</string>
+    <string name="pref_item_desc_auth_spotify">Authenticate Spotify account for using Spotify API</string>
     <string name="pref_item_summary_auth_spotify" translatable="false">%s</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
     <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are satisfied</string>

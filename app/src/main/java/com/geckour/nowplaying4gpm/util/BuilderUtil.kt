@@ -54,9 +54,8 @@ suspend fun getShareWidgetViews(
     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
         && blockCount > 1
     ) {
-        val artwork = info?.artworkUriString?.let {
-            context.getBitmapFromUriString(it, maxHeight = 500)
-        }
+        val artwork = info?.artworkUriString
+            ?.let { context.getBitmapFromUriString(it, maxHeight = 500) }
         if (summary != null && artwork != null) {
             setImageViewBitmap(R.id.artwork, artwork)
         } else {

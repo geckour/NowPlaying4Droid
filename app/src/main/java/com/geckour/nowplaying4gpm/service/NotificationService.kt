@@ -88,6 +88,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -348,8 +349,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
                 putString(
                     FirebaseAnalytics.Param.ITEM_NAME,
-                    if (containsSpotifyPattern) "Generated share sentence contains Spotify specifier"
-                    else "Generated share sentence without Spotify specifier"
+                    if (containsSpotifyPattern) "ON: Spotify URL trying"
+                    else "OFF: Spotify URL trying"
                 )
             })
         val spotifyData =
@@ -436,14 +437,16 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
 
             ids.forEach { id ->
-                val widgetOptions = this.getAppWidgetOptions(id)
-                updateAppWidget(
-                    id, getShareWidgetViews(
-                        this@NotificationService,
-                        ShareWidgetProvider.blockCount(widgetOptions),
-                        trackInfo
+                val widgetOptions = getAppWidgetOptions(id)
+                withContext(Dispatchers.Main) {
+                    updateAppWidget(
+                        id, getShareWidgetViews(
+                            this@NotificationService,
+                            ShareWidgetProvider.blockCount(widgetOptions),
+                            trackInfo
+                        )
                     )
-                )
+                }
             }
         }
     }
