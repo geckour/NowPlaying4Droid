@@ -1,10 +1,12 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class SpotifyUser(
-    @Json(name = "display_name")
+    @SerialName("display_name")
     val displayName: String,
-    @Json(name = "id")
+    @SerialName("id")
     val id: String
 )

@@ -15,6 +15,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
+import android.provider.Settings
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -29,6 +31,7 @@ import androidx.activity.viewModels
 import androidx.annotation.StringRes
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.databinding.DataBindingUtil
+import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.android.vending.billing.IInAppBillingService
@@ -50,7 +53,6 @@ import com.geckour.nowplaying4gpm.databinding.DialogRecyclerViewBinding
 import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.databinding.ItemPrefItemBinding
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
-import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
@@ -64,13 +66,14 @@ import com.geckour.nowplaying4gpm.util.PaletteColor
 import com.geckour.nowplaying4gpm.util.PlayerPackageState
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.Visibility
+import com.geckour.nowplaying4gpm.util.cleaerSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
-import com.geckour.nowplaying4gpm.util.fromJsonOrNull
 import com.geckour.nowplaying4gpm.util.generate
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
+import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 import com.geckour.nowplaying4gpm.util.getFormatPattern
@@ -82,7 +85,8 @@ import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.json
+import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.setArtworkResolveOrder
@@ -90,18 +94,18 @@ import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
-import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
+import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.sys1yagi.mastodon4j.MastodonClient
 import com.sys1yagi.mastodon4j.api.Scope
 import com.sys1yagi.mastodon4j.api.entity.auth.AppRegistration
-import com.sys1yagi.mastodon4j.api.exception.Mastodon4jRequestException
 import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import permissions.dispatcher.NeedsPermission
@@ -148,8 +152,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        observeEvents()
-
         spotifyApiClient = SpotifyApiClient(this)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
@@ -158,7 +160,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
             "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
         setSupportActionBar(binding.toolbar)
 
-        binding.toolbarCover.apply {
+        binding.toolbar.apply {
             tag = EasterEggTag(0, -1L)
 
             setOnClickListener {
@@ -177,6 +179,154 @@ class SettingsActivity : WithCrashlyticsActivity() {
             }
         }
 
+        setupItems()
+
+        serviceConnection = object : ServiceConnection {
+            override fun onServiceDisconnected(name: ComponentName?) {
+                billingService = null
+            }
+
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                IInAppBillingService.Stub.asInterface(service).apply {
+                    billingService = IInAppBillingService.Stub.asInterface(service)
+                }
+            }
+        }
+        bindService(
+            Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
+                `package` = "com.android.vending"
+            },
+            serviceConnection,
+            Context.BIND_AUTO_CREATE
+        )
+
+        observeEvents()
+
+        showIgnoreBatteryOptimizationDialog()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        onReflectDonation()
+
+        viewModel.requestNotificationListenerPermission(this) {
+            onRequestUpdate()
+        }
+
+        if (sharedPreferences.getAlertTwitterAuthFlag()) {
+            showErrorDialog(
+                R.string.dialog_title_alert_must_auth_twitter,
+                R.string.dialog_message_alert_must_auth_twitter
+            ) {
+                sharedPreferences.setAlertTwitterAuthFlag(false)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        onRequestPermissionsResult(requestCode, grantResults)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        billingService?.apply { unbindService(serviceConnection) }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+
+        val uriString = intent?.data?.toString()
+        Timber.d("intent data: $uriString")
+        when {
+            uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
+                onAuthSpotifyCallback(
+                    intent,
+                    binding.root,
+                    binding.itemAuthSpotify
+                )
+            }
+            uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
+                onAuthTwitterCallback(
+                    intent,
+                    sharedPreferences,
+                    binding.root,
+                    binding.itemAuthTwitter
+                )
+            }
+            uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
+                onAuthMastodonCallback(
+                    intent,
+                    sharedPreferences,
+                    binding.root,
+                    binding.itemAuthMastodon
+                )
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
+                viewModel.requestNotificationListenerPermission(this) {
+                    onRequestUpdate()
+                }
+            }
+
+            RequestCode.BILLING.ordinal -> {
+                when (resultCode) {
+                    Activity.RESULT_OK -> {
+                        val purchaseResult: PurchaseResult? =
+                            json.parseOrNull(
+                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
+                            )
+
+                        if (purchaseResult?.purchaseState == 0) {
+                            onReflectDonation(true)
+                        } else {
+                            showErrorDialog(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_failure_purchase
+                            )
+                        }
+                    }
+
+                    Activity.RESULT_CANCELED -> {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_on_cancel_purchase
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeEvents() {
+        viewModel.requestUpdate.observe(this) {
+            onRequestUpdate()
+        }
+        viewModel.reflectDonation.observe(this) {
+            it ?: return@observe
+            onReflectDonation(it)
+        }
+
+        spotifyApiClient.refreshedUserInfo.observe(this) {
+            if (sharedPreferences.getDebugSpotifySearchFlag()) {
+                AlertDialog.Builder(this).setMessage("$it").show()
+            }
+        }
+    }
+
+    private fun setupItems() {
         binding.itemPatternFormat.summary = sharedPreferences.getFormatPattern(this)
         binding.itemChooseColor.summary =
             getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
@@ -185,62 +335,33 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.scrollView.apply {
             setOnScrollChangeListener { _, _, y, _, oldY ->
-                if (y > oldY
-                    && getChildAt(0).measuredHeight <= measuredHeight + y
-                )
-                    binding.fab.hide()
-                if (y < oldY && binding.fab.isShown.not())
-                    binding.fab.show()
+                if (y > oldY && getChildAt(0).measuredHeight <= measuredHeight + y) binding.fab.hide()
+                if (y < oldY && binding.fab.isShown.not()) binding.fab.show()
             }
         }
 
-        binding.scrollView
-            .getChildAt(0)
-            .addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                var visibleCount = 0
-                (binding.scrollView.getChildAt(0) as? LinearLayout)?.apply {
-                    (0 until this.childCount).forEach {
-                        val itemBinding: ItemPrefItemBinding? = try {
-                            DataBindingUtil.findBinding(this.getChildAt(it))
-                        } catch (e: ClassCastException) {
-                            return@forEach
+        binding.scrollView.getChildAt(0).addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val visible =
+                (binding.scrollView.getChildAt(0) as? LinearLayout)?.let { itemsContainer ->
+                    (0 until itemsContainer.childCount)
+                        .mapNotNull {
+                            DataBindingUtil.findBinding<ViewDataBinding>(
+                                itemsContainer.getChildAt(it)
+                            )
                         }
-
-                        if (itemBinding?.root?.visibility == View.VISIBLE
-                            && itemBinding.categoryId == binding.categoryOthers.root.id
-                        ) {
-                            visibleCount++
+                        .filterIsInstance<ItemPrefItemBinding>()
+                        .any {
+                            it.root.visibility == View.VISIBLE &&
+                                    it.categoryId == binding.categoryOthers.root.id
                         }
-                    }
-                }
+                } == true
 
-                binding.categoryOthers.root.visibility =
-                    if (visibleCount == 0) View.GONE
-                    else View.VISIBLE
-            }
-
-        binding.itemSwitchUseApi.also { b ->
-            b.maskInactiveDonate.visibility =
-                if (sharedPreferences.getDonateBillingState())
-                    View.GONE
-                else View.VISIBLE
-
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_API) { _, summary ->
-                    b.summary = summary
-
-                    onRequestUpdate()
-                })
-            }
+            binding.categoryOthers.root.visibility = if (visible) View.VISIBLE else View.GONE
         }
 
         binding.itemChangeArtworkResolveOrder.also { b ->
             b.maskInactiveDonate.visibility =
-                if (sharedPreferences.getDonateBillingState())
-                    View.GONE
+                if (sharedPreferences.getDonateBillingState()) View.GONE
                 else View.VISIBLE
 
             b.root.setOnClickListener {
@@ -254,6 +375,16 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         binding.itemFormatPatternModifiers.root.setOnClickListener {
             onClickFormatPatternModifiers(sharedPreferences)
+        }
+
+        binding.itemSwitchSimplifyShare.also { b ->
+            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
+            b.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_SIMPLE_SHARE) { _, summary ->
+                    b.summary = summary
+                })
+            }
         }
 
         binding.itemAuthSpotify.also { b ->
@@ -313,11 +444,11 @@ class SettingsActivity : WithCrashlyticsActivity() {
         binding.itemAuthMastodon.also { b ->
             val userInfo = sharedPreferences.getMastodonUserInfo()
             if (userInfo != null) {
-                b.summary =
-                    getString(
-                        R.string.pref_item_summary_auth_mastodon,
-                        userInfo.userName, userInfo.instanceName
-                    )
+                b.summary = getString(
+                    R.string.pref_item_summary_auth_mastodon,
+                    userInfo.userName,
+                    userInfo.instanceName
+                )
             }
             b.root.setOnClickListener { onClickAuthMastodon(sharedPreferences) }
         }
@@ -350,8 +481,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 if (sharedPreferences.getSwitchState(
                         PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
                     )
-                )
-                    View.GONE
+                ) View.GONE
                 else View.VISIBLE
 
             b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
@@ -455,142 +585,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 startBillingTransaction(this, billingService)
             }
         }
-
-        serviceConnection = object : ServiceConnection {
-            override fun onServiceDisconnected(name: ComponentName?) {
-                billingService = null
-            }
-
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                IInAppBillingService.Stub.asInterface(service).apply {
-                    billingService = IInAppBillingService.Stub.asInterface(service)
-                }
-            }
-        }
-        bindService(
-            Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
-                `package` = "com.android.vending"
-            },
-            serviceConnection,
-            Context.BIND_AUTO_CREATE
-        )
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        onReflectDonation()
-
-        viewModel.requestNotificationListenerPermission(this) {
-            onRequestUpdate()
-        }
-
-        if (sharedPreferences.getAlertTwitterAuthFlag()) {
-            showErrorDialog(
-                R.string.dialog_title_alert_must_auth_twitter,
-                R.string.dialog_message_alert_must_auth_twitter
-            ) {
-                sharedPreferences.setAlertTwitterAuthFlag(false)
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        onRequestPermissionsResult(requestCode, grantResults)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        billingService?.apply { unbindService(serviceConnection) }
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-
-        val uriString = intent?.data?.toString()
-        Timber.d("intent data: $uriString")
-        when {
-            uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
-                onAuthSpotifyCallback(
-                    intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthSpotify
-                )
-            }
-            uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
-                onAuthTwitterCallback(
-                    intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthTwitter
-                )
-            }
-            uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
-                onAuthMastodonCallback(
-                    intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthMastodon
-                )
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        when (requestCode) {
-            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
-                viewModel.requestNotificationListenerPermission(this) {
-                    onRequestUpdate()
-                }
-            }
-
-            RequestCode.BILLING.ordinal -> {
-                when (resultCode) {
-                    Activity.RESULT_OK -> {
-                        val purchaseResult: PurchaseResult? =
-                            moshi.fromJsonOrNull(
-                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA),
-                                PurchaseResult::class.java
-                            )
-
-                        if (purchaseResult?.purchaseState == 0) {
-                            onReflectDonation(true)
-                        } else {
-                            showErrorDialog(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_failure_purchase
-                            )
-                        }
-                    }
-
-                    Activity.RESULT_CANCELED -> {
-                        showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_cancel_purchase
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun observeEvents() {
-        viewModel.requestUpdate.observe(this) {
-            onRequestUpdate()
-        }
-        viewModel.reflectDonation.observe(this) {
-            it ?: return@observe
-            onReflectDonation(it)
-        }
     }
 
     private fun onRequestUpdate() {
@@ -615,6 +609,38 @@ class SettingsActivity : WithCrashlyticsActivity() {
         binding.maskInactiveApp.visibility = View.VISIBLE
     }
 
+    private fun showIgnoreBatteryOptimizationDialog() {
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION)
+                .not() &&
+            getSystemService(PowerManager::class.java)
+                ?.isIgnoringBatteryOptimizations(packageName) == false
+        ) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_title_ignore_battery_optimization)
+                .setMessage(R.string.dialog_message_ignore_battery_optimization)
+                .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                    val intent =
+                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                    withCatching { startActivity(intent) }
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.dialog_button_ng) { dialog, _ ->
+                    sharedPreferences.edit()
+                        .putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
+                        .apply()
+                    dialog.dismiss()
+                }
+                .setOnCancelListener {
+                    sharedPreferences.edit()
+                        .putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
+                        .apply()
+                }
+                .show()
+        }
+    }
+
     private fun onClickItemWithSwitch(extra: FrameLayout?) =
         (extra?.getChildAt(0) as? Switch)?.performClick()
 
@@ -628,9 +654,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 else R.string.pref_item_summary_switch_off
             )
             setOnClickListener {
-                sharedPreferences.edit()
-                    .putBoolean(prefKey.name, isChecked)
-                    .apply()
+                sharedPreferences.edit().putBoolean(prefKey.name, isChecked).apply()
 
                 onCheckStateChanged(isChecked, getSummary())
             }
@@ -680,7 +704,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         @StringRes titleResId: Int,
         @StringRes messageResId: Int,
         onDismiss: () -> Unit = {}
-    ) {
+    ) = runOnUiThread {
         AlertDialog.Builder(this).setTitle(titleResId).setMessage(messageResId)
             .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
             .setOnDismissListener { onDismiss() }.show()
@@ -708,9 +732,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun destroyNotification() =
-        sendBroadcast(Intent().apply {
-            action = NotificationService.ACTION_DESTROY_NOTIFICATION
-        })
+        sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
 
     private fun updateWidget(sharedPreferences: SharedPreferences) {
         val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
@@ -795,13 +817,11 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickAuthSpotify() {
+        sharedPreferences.cleaerSpotifyUserInfoImmediately()
         CustomTabsIntent.Builder().setShowTitle(true)
             .setToolbarColor(getColor(R.color.colorPrimary))
             .build()
-            .launchUrl(
-                this,
-                Uri.parse(SpotifyApiClient.OAUTH_URL)
-            )
+            .launchUrl(this, Uri.parse(SpotifyApiClient.OAUTH_URL))
     }
 
     private fun onClickAuthTwitter(rootView: View) {
@@ -830,17 +850,18 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
             viewModel.viewModelScope.launch(Dispatchers.IO) {
                 val instances = MastodonInstancesApiClient().getList()
-                editText.setAdapter(
-                    ArrayAdapter(this@SettingsActivity,
-                        android.R.layout.simple_dropdown_item_1line,
-                        instances.mapNotNull { it.name })
-                )
+                withContext(Dispatchers.Main) {
+                    editText.setAdapter(
+                        ArrayAdapter(this@SettingsActivity,
+                            android.R.layout.simple_dropdown_item_1line,
+                            instances.mapNotNull { it.name })
+                    )
+                }
             }
         }
 
         AlertDialog.Builder(this).generate(
-            instanceNameInputDialogBinding.root,
-            getString(R.string.dialog_title_mastodon_instance)
+            instanceNameInputDialogBinding.root, getString(R.string.dialog_title_mastodon_instance)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
@@ -887,8 +908,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickDelayMastodon(
-        sharedPreferences: SharedPreferences,
-        itemDelayMastodonBinding: ItemPrefItemBinding
+        sharedPreferences: SharedPreferences, itemDelayMastodonBinding: ItemPrefItemBinding
     ) {
         val delayTimeInputDialogBinding = DialogEditTextBinding.inflate(
             LayoutInflater.from(this), null, false
@@ -900,24 +920,17 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
 
         AlertDialog.Builder(this).generate(
-            delayTimeInputDialogBinding.root,
-            getString(R.string.dialog_title_mastodon_delay)
+            delayTimeInputDialogBinding.root, getString(R.string.dialog_title_mastodon_delay)
         ) { dialog, which ->
             when (which) {
                 DialogInterface.BUTTON_POSITIVE -> {
-                    val duration = try {
+                    val duration = withCatching {
                         delayTimeInputDialogBinding.editText.text.toString().toLong()
-                    } catch (t: Throwable) {
-                        Timber.e(t)
-                        null
                     }
                     if (duration != null && duration in (500..60000)) {
                         sharedPreferences.storeDelayDurationPostMastodon(duration)
                         itemDelayMastodonBinding.summary =
-                            getString(
-                                R.string.pref_item_summary_delay_mastodon,
-                                duration
-                            )
+                            getString(R.string.pref_item_summary_delay_mastodon, duration)
                     } else {
                         showErrorDialog(
                             R.string.dialog_title_alert_invalid_duration_value,
@@ -931,8 +944,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickVisibilityMastodon(
-        sharedPreferences: SharedPreferences,
-        visibilityMastodonBinding: ItemPrefItemBinding
+        sharedPreferences: SharedPreferences, visibilityMastodonBinding: ItemPrefItemBinding
     ) {
         val chooseVisibilityBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
             LayoutInflater.from(this), R.layout.dialog_spinner, null, false
@@ -973,9 +985,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                         .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
                         .apply()
                     visibilityMastodonBinding.summary =
-                        getString(
-                            Visibility.getFromIndex(visibilityIndex).getSummaryResId()
-                        )
+                        getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
                     onRequestUpdate()
                 }
             }
@@ -985,26 +995,25 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     private fun onClickPlayerPackageMastodon(sharedPreferences: SharedPreferences) {
         val adapter =
-            PlayerPackageListAdapter(sharedPreferences.getPackageStateListPostMastodon().mapNotNull { packageState ->
-                val appName = packageManager?.let {
-                    try {
-                        it.getApplicationLabel(
-                            it.getApplicationInfo(
-                                packageState.packageName, PackageManager.GET_META_DATA
+            PlayerPackageListAdapter(
+                sharedPreferences.getPackageStateListPostMastodon().mapNotNull { packageState ->
+                    val appName = packageManager?.let {
+                        withCatching {
+                            it.getApplicationLabel(
+                                it.getApplicationInfo(
+                                    packageState.packageName,
+                                    PackageManager.GET_META_DATA
+                                )
                             )
+                        }
+                    }?.toString()
+                    if (appName == null) {
+                        sharedPreferences.storePackageStatePostMastodon(
+                            packageState.packageName, false
                         )
-                    } catch (t: Throwable) {
-                        Timber.e(t)
                         null
-                    }
-                }?.toString()
-                if (appName == null) {
-                    sharedPreferences.storePackageStatePostMastodon(
-                        packageState.packageName, false
-                    )
-                    null
-                } else PlayerPackageState(packageState.packageName, appName, packageState.state)
-            })
+                    } else PlayerPackageState(packageState.packageName, appName, packageState.state)
+                })
         val dialogRecyclerViewBinding = DialogRecyclerViewBinding.inflate(
             LayoutInflater.from(this), null, false
         ).apply {
@@ -1076,8 +1085,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onClickItemChooseColor(
-        sharedPreferences: SharedPreferences,
-        chooseColorBinding: ItemPrefItemBinding
+        sharedPreferences: SharedPreferences, chooseColorBinding: ItemPrefItemBinding
     ) {
         val dialogBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
             LayoutInflater.from(this), R.layout.dialog_spinner, null, false
@@ -1087,7 +1095,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 android.R.layout.simple_spinner_item,
                 PaletteColor.values().map {
                     getString(it.getSummaryResId())
-                }) {
+                }
+            ) {
                 override fun getDropDownView(
                     position: Int, convertView: View?, parent: ViewGroup
                 ): View = super.getDropDownView(position, convertView, parent).apply {
@@ -1116,12 +1125,9 @@ class SettingsActivity : WithCrashlyticsActivity() {
                     val paletteIndex = dialogBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
                         .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex).apply()
-                    chooseColorBinding.summary =
-                        getString(
-                            PaletteColor.getFromIndex(
-                                paletteIndex
-                            ).getSummaryResId()
-                        )
+                    chooseColorBinding.summary = getString(
+                        PaletteColor.getFromIndex(paletteIndex).getSummaryResId()
+                    )
                     onRequestUpdate()
                 }
             }
@@ -1130,41 +1136,32 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onAuthSpotifyCallback(
-        intent: Intent,
-        sharedPreferences: SharedPreferences,
-        rootView: View,
-        authSpotifyBinding: ItemPrefItemBinding
+        intent: Intent, rootView: View, authSpotifyBinding: ItemPrefItemBinding
     ) {
-        val verifier = intent.data?.let {
-            val queryName = "code"
-
-            if (it.queryParameterNames.contains(queryName)) it.getQueryParameter(queryName)
-            else null
+        val verifier = intent.data?.getQueryParameter("code")
+        if (verifier == null) {
+            onAuthSpotifyError()
+            return
         }
 
-        Timber.d("np4d Spotify verifier: $verifier")
+        viewModel.viewModelScope.launch {
+            spotifyApiClient.storeSpotifyUserInfo(verifier)
 
-        if (verifier == null) onAuthSpotifyError()
-        else {
-            viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val token = spotifyApiClient.getToken(verifier)
-
-                if (token == null) onAuthSpotifyError()
-                else {
-                    val userName = spotifyApiClient.getUser().displayName
-                    sharedPreferences.storeSpotifyUserInfo(SpotifyUserInfo(token, userName))
-
-                    authSpotifyBinding.summary =
-                        getString(
-                            R.string.pref_item_summary_auth_spotify,
-                            userName
-                        )
-                    Snackbar.make(
-                        rootView, R.string.snackbar_text_success_auth_spotify, Snackbar.LENGTH_LONG
-                    ).show()
-                    onRequestUpdate()
-                }
+            val userInfo = sharedPreferences.getSpotifyUserInfo()
+            if (userInfo == null) {
+                onAuthSpotifyError()
+                return@launch
             }
+
+            authSpotifyBinding.summary = getString(
+                R.string.pref_item_summary_auth_spotify,
+                userInfo.userName
+            )
+            Snackbar.make(
+                rootView,
+                R.string.snackbar_text_success_auth_spotify,
+                Snackbar.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -1176,28 +1173,28 @@ class SettingsActivity : WithCrashlyticsActivity() {
     ) {
         sharedPreferences.setAlertTwitterAuthFlag(false)
 
-        val verifier = intent.data?.let {
-            val queryName = "oauth_verifier"
-
-            if (it.queryParameterNames.contains(queryName)) it.getQueryParameter(queryName)
-            else null
+        val verifier = intent.data?.getQueryParameter("oauth_verifier")
+        if (verifier == null) {
+            onAuthTwitterError()
+            return
         }
 
-        if (verifier == null) onAuthTwitterError()
-        else {
-            viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val accessToken = twitterApiClient.getAccessToken(verifier)
+        viewModel.viewModelScope.launch(Dispatchers.IO) {
+            val accessToken = twitterApiClient.getAccessToken(verifier)
 
-                if (accessToken == null) onAuthTwitterError()
-                else {
-                    sharedPreferences.storeTwitterAccessToken(accessToken)
-
-                    authTwitterBinding.summary = accessToken.screenName
-                    Snackbar.make(
-                        rootView, R.string.snackbar_text_success_auth_twitter, Snackbar.LENGTH_LONG
-                    ).show()
-                }
+            if (accessToken == null) {
+                onAuthTwitterError()
+                return@launch
             }
+
+            sharedPreferences.storeTwitterAccessToken(accessToken)
+
+            authTwitterBinding.summary = accessToken.screenName
+            Snackbar.make(
+                rootView,
+                R.string.snackbar_text_success_auth_twitter,
+                Snackbar.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -1208,63 +1205,55 @@ class SettingsActivity : WithCrashlyticsActivity() {
         authMastodonBinding: ItemPrefItemBinding
     ) {
         mastodonRegistrationInfo?.apply {
-            val token = intent.data?.let {
-                val queryName = "code"
-
-                if (it.queryParameterNames.contains(queryName)) it.getQueryParameter(queryName)
-                else null
+            val token = intent.data?.getQueryParameter("code")
+            if (token == null) {
+                onAuthMastodonError()
+                return
             }
 
-            if (token == null) onAuthMastodonError()
-            else {
-                val mastodonApiClientBuilder = MastodonClient.Builder(
-                    this@apply.instanceName, OkHttpClient.Builder().apply {
-                        if (BuildConfig.DEBUG) {
-                            addNetworkInterceptor(
-                                HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-                            )
-                            addNetworkInterceptor(StethoInterceptor())
-                        }
-                    }, Gson()
-                )
-                viewModel.viewModelScope.launch(Dispatchers.IO) {
-                    val accessToken = try {
-                        Apps(mastodonApiClientBuilder.build()).getAccessToken(
-                            this@apply.clientId,
-                            this@apply.clientSecret,
-                            App.MASTODON_CALLBACK,
-                            token
-                        ).executeCatching()
-                    } catch (e: Mastodon4jRequestException) {
-                        Timber.e(e)
-                        Crashlytics.logException(e)
-                        null
-                    }
-
-                    if (accessToken == null) onAuthMastodonError()
-                    else {
-                        val userName = Accounts(
-                            mastodonApiClientBuilder.accessToken(accessToken.accessToken).build()
-                        ).getVerifyCredentials().executeCatching()?.userName ?: run {
-                            onAuthMastodonError()
-                            return@launch
-                        }
-                        val userInfo =
-                            MastodonUserInfo(accessToken, this@apply.instanceName, userName)
-                        sharedPreferences.storeMastodonUserInfo(userInfo)
-
-                        authMastodonBinding.summary = getString(
-                            R.string.pref_item_summary_auth_mastodon,
-                            userInfo.userName,
-                            userInfo.instanceName
+            val mastodonApiClientBuilder = MastodonClient.Builder(
+                this@apply.instanceName, OkHttpClient.Builder().apply {
+                    if (BuildConfig.DEBUG) {
+                        addNetworkInterceptor(
+                            HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
                         )
-                        Snackbar.make(
-                            rootView,
-                            R.string.snackbar_text_success_auth_mastodon,
-                            Snackbar.LENGTH_LONG
-                        ).show()
+                        addNetworkInterceptor(StethoInterceptor())
                     }
+                }, Gson()
+            )
+            viewModel.viewModelScope.launch(Dispatchers.IO) {
+                val accessToken = Apps(mastodonApiClientBuilder.build()).getAccessToken(
+                    this@apply.clientId,
+                    this@apply.clientSecret,
+                    App.MASTODON_CALLBACK,
+                    token
+                ).executeCatching()
+
+                if (accessToken == null) {
+                    onAuthMastodonError()
+                    return@launch
                 }
+
+                val userName = Accounts(
+                    mastodonApiClientBuilder.accessToken(accessToken.accessToken).build()
+                ).getVerifyCredentials()
+                    .executeCatching()
+                    ?.userName
+                    ?: run {
+                        onAuthMastodonError()
+                        return@launch
+                    }
+                val userInfo = MastodonUserInfo(accessToken, this@apply.instanceName, userName)
+                sharedPreferences.storeMastodonUserInfo(userInfo)
+
+                authMastodonBinding.summary = getString(
+                    R.string.pref_item_summary_auth_mastodon,
+                    userInfo.userName,
+                    userInfo.instanceName
+                )
+                Snackbar.make(
+                    rootView, R.string.snackbar_text_success_auth_mastodon, Snackbar.LENGTH_LONG
+                ).show()
             }
         }
     }

@@ -5,9 +5,11 @@ import android.content.Context
 import android.os.Bundle
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.api.model.SkuDetail
-import com.geckour.nowplaying4gpm.util.asyncOrNull
-import com.geckour.nowplaying4gpm.util.fromJsonOrNull
-import com.geckour.nowplaying4gpm.util.moshi
+import com.geckour.nowplaying4gpm.util.parseOrNull
+import com.geckour.nowplaying4gpm.util.json
+import com.geckour.nowplaying4gpm.util.withCatching
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class BillingApiClient(private val service: IInAppBillingService) {
 
@@ -27,34 +29,39 @@ class BillingApiClient(private val service: IInAppBillingService) {
         const val QUERY_KEY_SKU_DETAILS = "ITEM_ID_LIST"
     }
 
-    suspend fun getPurchasedItems(context: Context): List<String> = asyncOrNull {
-        service.getPurchases(
-            API_VERSION,
-            context.packageName,
-            BILLING_TYPE,
-            null
-        ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
-    }.await() ?: emptyList()
+    suspend fun getPurchasedItems(context: Context): List<String> = withContext(Dispatchers.IO) {
+        withCatching {
+            service.getPurchases(
+                API_VERSION,
+                context.packageName,
+                BILLING_TYPE,
+                null
+            ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
+        } ?: emptyList<String>()
+    }
 
-    suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> = asyncOrNull {
-        service.getSkuDetails(
-            API_VERSION,
-            context.packageName,
-            BILLING_TYPE,
-            Bundle().apply {
-                putStringArrayList(
-                    QUERY_KEY_SKU_DETAILS,
-                    ArrayList(skus.toList())
-                )
-            }
-        ).let {
-            if (it.getInt(BUNDLE_KEY_RESPONSE_CODE) == ResponseCode.RESPONSE_OK.code) {
-                it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST).orEmpty().mapNotNull {
-                    moshi.fromJsonOrNull<SkuDetail>(it, SkuDetail::class.java)
+    suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> =
+        withContext(Dispatchers.IO) {
+            withCatching {
+                service.getSkuDetails(
+                    API_VERSION,
+                    context.packageName,
+                    BILLING_TYPE,
+                    Bundle().apply {
+                        putStringArrayList(
+                            QUERY_KEY_SKU_DETAILS,
+                            ArrayList(skus.toList())
+                        )
+                    }
+                ).let {
+                    if (it.getInt(BUNDLE_KEY_RESPONSE_CODE) == ResponseCode.RESPONSE_OK.code) {
+                        it.getStringArrayList(BUNDLE_KEY_SKU_DETAIL_LIST).orEmpty().mapNotNull {
+                            json.parseOrNull<SkuDetail>(it)
+                        }
+                    } else emptyList()
                 }
-            } else emptyList()
+            } ?: emptyList()
         }
-    }.await() ?: emptyList()
 
     fun getBuyIntent(context: Context, sku: String): PendingIntent? =
         service.getBuyIntent(API_VERSION, context.packageName, sku, BILLING_TYPE, null)?.let {

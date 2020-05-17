@@ -12,16 +12,19 @@ import android.widget.RemoteViews
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.sys1yagi.mastodon4j.api.entity.Status
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
+import java.io.PrintWriter
+import java.io.StringWriter
 
-val moshi: Moshi get() = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+val json: Json = Json(JsonConfiguration.Stable.copy(ignoreUnknownKeys = true, isLenient = true))
 
 const val contentQuerySelection: String =
     "${MediaStore.Audio.Media.TITLE}=? and ${MediaStore.Audio.Media.ARTIST}=? and ${MediaStore.Audio.Media.ALBUM}=?"
@@ -51,9 +54,8 @@ suspend fun getShareWidgetViews(
     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
         && blockCount > 1
     ) {
-        val artwork = info?.artworkUriString?.let {
-            context.getBitmapFromUriString(it, maxHeight = 500)
-        }
+        val artwork = info?.artworkUriString
+            ?.let { context.getBitmapFromUriString(it, maxHeight = 500) }
         if (summary != null && artwork != null) {
             setImageViewBitmap(R.id.artwork, artwork)
         } else {
@@ -231,4 +233,41 @@ suspend fun getNotification(context: Context, status: Status): Notification? {
             setColor(color)
         }
     }.build()
+}
+
+fun getNotification(
+    context: Context,
+    spotifySearchResult: SpotifySearchResult
+): Notification {
+    val notificationBuilder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
+        else Notification.Builder(context)
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+    return notificationBuilder
+        .setSmallIcon(
+            if (spotifySearchResult is SpotifySearchResult.Failure) R.drawable.ic_clear
+            else R.drawable.ic_debug
+        )
+        .setStyle(Notification.BigTextStyle())
+        .setContentTitle(spotifySearchResult.query)
+        .setContentText(
+            when (spotifySearchResult) {
+                is SpotifySearchResult.Success -> spotifySearchResult.data.sharingUrl
+                is SpotifySearchResult.Failure -> spotifySearchResult.cause.let { t ->
+                    StringWriter().use {
+                        "expiredAt: ${sharedPreferences.getSpotifyUserInfo()?.refreshTokenExpiredAt}\n${it.apply {
+                            t.printStackTrace(
+                                PrintWriter(this)
+                            )
+                        }}"
+                    }
+                }
+            }
+        )
+        .build()
 }

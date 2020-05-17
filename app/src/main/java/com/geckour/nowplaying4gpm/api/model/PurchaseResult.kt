@@ -1,5 +1,8 @@
 package com.geckour.nowplaying4gpm.api.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class PurchaseResult(
     val autoRenewing: Boolean,
     val orderId: String,

@@ -9,12 +9,13 @@ import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.squareup.moshi.Types
-import timber.log.Timber
+import kotlinx.serialization.ImplicitReflectionSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.list
+import kotlinx.serialization.stringify
 import twitter4j.auth.AccessToken
 
 enum class PrefKey(val defaultValue: Any? = null) {
-    PREF_KEY_WHETHER_USE_API(false),
     PREF_KEY_ARTWORK_RESOLVE_ORDER,
     PREF_KEY_PATTERN_FORMAT_SHARE_TEXT("#NowPlaying TI - AR (AL)"),
     PREF_KEY_FORMAT_PATTERN_MODIFIERS,
@@ -36,13 +37,17 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_CURRENT_TRACK_INFO,
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE(false),
-    PREF_KEY_SPOTIFY_ACCESS_TOKEN,
+    PREF_KEY_SPOTIFY_USER_INFO,
     PREF_KEY_TWITTER_ACCESS_TOKEN,
     PREF_KEY_MASTODON_USER_INFO,
     PREF_KEY_FLAG_ALERT_AUTH_TWITTER(false),
-    PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE
+    PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE,
+    PREF_KEY_DEBUG_SPOTIFY_SEARCH(false),
+    PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION(false),
+    PREF_KEY_WHETHER_USE_SIMPLE_SHARE(false)
 }
 
+@Serializable
 data class ArtworkResolveMethod(
     val key: ArtworkResolveMethodKey,
     val enabled: Boolean
@@ -52,67 +57,62 @@ data class ArtworkResolveMethod(
         MEDIA_METADATA_URI(R.string.dialog_list_item_media_metadata_uri),
         MEDIA_METADATA_BITMAP(R.string.dialog_list_item_media_metadata_bitmap),
         NOTIFICATION_BITMAP(R.string.dialog_list_item_notification_bitmap),
-        LAST_FM(R.string.dialog_list_item_last_fm)
+        LAST_FM(R.string.dialog_list_item_last_fm),
+        SPOTIFY(R.string.dialog_list_item_spotify)
     }
 }
 
+@Serializable
 data class FormatPatternModifier(
     val key: FormatPattern,
     val prefix: String? = null,
     val suffix: String? = null
 )
 
+@Serializable
 data class PlayerPackageState(
     val packageName: String,
     val appName: String,
     val state: Boolean
 )
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) =
     edit().putString(
         PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-        trackInfo?.let { moshi.adapter(TrackInfo::class.java).toJson(it) }
+        trackInfo?.let { json.stringify(it) }
     ).apply()
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
     edit().putString(
         PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
-        moshi.adapter<List<ArtworkResolveMethod>>(
-            Types.newParameterizedType(
-                List::class.java,
-                ArtworkResolveMethod::class.java
-            )
-        ).toJson(order)
+        json.stringify(order)
     ).apply()
 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
-        moshi.fromJsonOrNull<List<ArtworkResolveMethod>>(
-            it,
-            Types.newParameterizedType(List::class.java, ArtworkResolveMethod::class.java)
-        )
-    } ?: ArtworkResolveMethod.ArtworkResolveMethodKey
-        .values()
-        .map { ArtworkResolveMethod(it, true) }
+        json.parseListOrNull<ArtworkResolveMethod>(it)
+    }.orEmpty().let { stored ->
+        val origin = ArtworkResolveMethod.ArtworkResolveMethodKey
+            .values()
+            .toList()
+        stored + (origin - stored.map { it.key }).map { ArtworkResolveMethod(it, true) }
+    }
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
     edit().putString(
         PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
-        moshi.adapter<List<FormatPatternModifier>>(
-            Types.newParameterizedType(
-                List::class.java,
-                FormatPatternModifier::class.java
-            )
-        ).toJson(modifiers)
+        json.stringify(FormatPatternModifier.serializer().list, modifiers)
     ).apply()
 
 fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
-    getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { json ->
-        val stored = moshi.fromJsonOrNull<List<FormatPatternModifier>>(
-            json,
-            Types.newParameterizedType(List::class.java, FormatPatternModifier::class.java)
+    getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { jsonString ->
+        val stored = json.parseListOrNull<FormatPatternModifier>(
+            jsonString
         ) ?: return@let null
-        FormatPattern.replaceablePatterns
+        return@let FormatPattern.replaceablePatterns
             .map { pattern ->
                 val modifier = stored.firstOrNull { it.key == pattern }
                 FormatPatternModifier(pattern, modifier?.prefix, modifier?.suffix)
@@ -124,18 +124,18 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
         ?: context.getString(R.string.default_sharing_text_pattern)
 
+@OptIn(ImplicitReflectionSerializer::class)
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit().putString(
         PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
-        moshi.adapter(ArtworkInfo::class.java).toJson(ArtworkInfo(artworkUri?.toString()))
+        json.stringify(ArtworkInfo(artworkUri?.toString()))
     ).apply()
 }
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
     return if (contains(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name)) {
-        moshi.fromJsonOrNull(
-            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null),
-            ArtworkInfo::class.java
+        json.parseOrNull(
+            getString(PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name, null)
         )
     } else null
 }
@@ -143,12 +143,9 @@ fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
 fun SharedPreferences.getTempArtworkUri(context: Context): Uri? {
     val uri = getTempArtworkInfo()?.artworkUriString?.getUri() ?: return null
 
-    return try {
+    return withCatching {
         context.contentResolver.openInputStream(uri)?.close() ?: return null
         uri
-    } catch (e: Throwable) {
-        Timber.e(e)
-        null
     }
 }
 
@@ -168,11 +165,11 @@ fun SharedPreferences.getSharingText(
     else null
 
 fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
-    val json =
+    val jsonString =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
             getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null)
         else null
-    moshi.fromJsonOrNull<TrackInfo>(json, TrackInfo::class.java)?.apply { return this }
+    json.parseOrNull<TrackInfo>(jsonString)?.apply { return this }
 
     refreshCurrentTrackInfo(null)
     return null
@@ -207,16 +204,15 @@ fun SharedPreferences.getVisibilityMastodon(): Visibility =
         )
     ) ?: Visibility.PUBLIC
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
     if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name))
-        getString(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name, null)?.let {
-            moshi.fromJsonOrNull<List<PackageState>>(
-                it,
-                Types.newParameterizedType(List::class.java, PackageState::class.java)
-            )
-        } ?: emptyList()
+        getString(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name, null)
+            ?.let { json.parseListOrNull<PackageState>(it) }
+            ?: emptyList()
     else emptyList()
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
     val toStore = getPackageStateListPostMastodon().let { stateList ->
         val index = stateList.indexOfFirst { it.packageName == packageName }
@@ -226,12 +222,7 @@ fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: 
     }
     edit().putString(
         PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
-        moshi.adapter<List<PackageState>>(
-            Types.newParameterizedType(
-                List::class.java,
-                PackageState::class.java
-            )
-        ).toJson(toStore)
+        json.stringify(toStore)
     ).apply()
 }
 
@@ -246,59 +237,62 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
         PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
     )
 
-fun SharedPreferences.storeSpotifyUserInfo(spotifyUserInfo: SpotifyUserInfo) {
-    edit().putString(
-        PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,
-        moshi.adapter(SpotifyUserInfo::class.java).toJson(spotifyUserInfo)
-    ).apply()
+fun SharedPreferences.cleaerSpotifyUserInfoImmediately() {
+    edit().remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name).commit()
+}
+
+@OptIn(ImplicitReflectionSerializer::class)
+fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
+    edit().remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name)
+        .putString(
+            PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name,
+            json.stringify(spotifyUserInfo)
+        ).commit()
 }
 
 fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
-    return if (contains(PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name))
-        moshi.fromJsonOrNull(
+    return if (contains(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name))
+        json.parseOrNull(
             getString(
-                PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.name,
-                PrefKey.PREF_KEY_SPOTIFY_ACCESS_TOKEN.defaultValue as? String
-            ),
-            SpotifyUserInfo::class.java
+                PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name,
+                PrefKey.PREF_KEY_SPOTIFY_USER_INFO.defaultValue as? String
+            )
         )
     else null
 }
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
     edit().putString(
         PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-        moshi.adapter(AccessToken::class.java).toJson(accessToken)
+        accessToken.asString()
     ).apply()
 }
 
 fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
-        moshi.fromJsonOrNull(
-            getString(
-                PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-                PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
-            ),
-            AccessToken::class.java
-        )
+        getString(
+            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
+            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
+        )?.let { it.toSerializableObject<AccessToken>() }
     else null
 }
 
+@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
     edit().putString(
         PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
-        moshi.adapter(MastodonUserInfo::class.java).toJson(userInfo)
+        json.stringify(userInfo)
     ).apply()
 }
 
 fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
     return if (contains(PrefKey.PREF_KEY_MASTODON_USER_INFO.name))
-        moshi.fromJsonOrNull(
+        json.parseOrNull(
             getString(
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
                 PrefKey.PREF_KEY_MASTODON_USER_INFO.defaultValue as? String
-            ),
-            MastodonUserInfo::class.java
+            )
         )
     else null
 }
@@ -326,6 +320,20 @@ fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
             PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.defaultValue as? String
         )
     else null
+
+fun SharedPreferences.getDebugSpotifySearchFlag(): Boolean =
+    PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH.let { key ->
+        getBoolean(key.name, key.defaultValue as Boolean)
+    }
+
+fun SharedPreferences.toggleDebugSpotifySearchFlag(): Boolean {
+    val key = PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH
+
+    val setTo = getDebugSpotifySearchFlag().not()
+    edit().putBoolean(key.name, setTo).apply()
+
+    return setTo
+}
 
 fun SharedPreferences.readyForShare(
     context: Context,

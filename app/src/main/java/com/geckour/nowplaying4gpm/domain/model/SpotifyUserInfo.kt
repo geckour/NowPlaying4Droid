@@ -1,10 +1,17 @@
 package com.geckour.nowplaying4gpm.domain.model
 
 import com.geckour.nowplaying4gpm.api.model.SpotifyToken
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 data class SpotifyUserInfo(
+    @SerialName("token")
     val token: SpotifyToken,
-    val userName: String
+
+    @SerialName("user_name")
+    val userName: String,
+
+    @SerialName("refresh_token_expired_at")
+    val refreshTokenExpiredAt: Long? = null
 )

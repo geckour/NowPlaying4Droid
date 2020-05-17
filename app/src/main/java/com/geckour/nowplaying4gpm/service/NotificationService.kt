@@ -17,7 +17,6 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
-import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -29,6 +28,7 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
@@ -45,6 +45,7 @@ import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getArtworkUriFromDevice
 import com.geckour.nowplaying4gpm.util.getBitmapFromUriString
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
+import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
@@ -62,6 +63,7 @@ import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.refreshArtworkUri
 import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromLastFmApi
+import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromSpotify
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.refreshTempArtwork
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
@@ -69,6 +71,7 @@ import com.geckour.nowplaying4gpm.util.setCrashlytics
 import com.geckour.nowplaying4gpm.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.toByteArray
+import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -85,6 +88,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -93,8 +97,14 @@ import kotlin.coroutines.CoroutineContext
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
 
-    enum class Channel(val id: Int) {
-        NOTIFICATION_CHANNEL_SHARE(180), NOTIFICATION_CHANNEL_NOTIFY(190)
+    enum class Channel {
+        NOTIFICATION_CHANNEL_SHARE, NOTIFICATION_CHANNEL_NOTIFY
+    }
+
+    enum class NotificationType(val id: Int, val channel: Channel) {
+        SHARE(180, Channel.NOTIFICATION_CHANNEL_SHARE),
+        NOTIFY_SUCCESS_MASTODON(190, Channel.NOTIFICATION_CHANNEL_NOTIFY),
+        DEBUG_SPOTIFY_SEARCH_RESULT(191, Channel.NOTIFICATION_CHANNEL_NOTIFY)
     }
 
     companion object {
@@ -166,16 +176,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val notificationManager: NotificationManager by lazy {
         getSystemService(NotificationManager::class.java)
     }
-    private val mediaSessionManager: MediaSessionManager by lazy {
-        getSystemService(MediaSessionManager::class.java)
-    }
     private val keyguardManager: KeyguardManager? by lazy {
-        try {
-            getSystemService(KeyguardManager::class.java)
-        } catch (t: Throwable) {
-            Timber.e(t)
-            null
-        }
+        withCatching { getSystemService(KeyguardManager::class.java) }
     }
     private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
     private val spotifyApiClient: SpotifyApiClient by lazy { SpotifyApiClient(this) }
@@ -225,11 +227,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onDestroy() {
         super.onDestroy()
 
-        try {
-            unregisterReceiver(receiver)
-        } catch (e: IllegalArgumentException) {
-            Timber.e(e)
-        }
+        withCatching { unregisterReceiver(receiver) }
 
         notificationManager.destroyNotification()
         job.cancel()
@@ -239,12 +237,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onListenerConnected()
 
         if (currentSbn == null) {
-            try {
+            withCatching {
                 activeNotifications.sortedByDescending { it.postTime }
                     .firstOrNull { it.notification.mediaMetadata != null }
                     .apply { onNotificationPosted(this) }
-            } catch (t: Throwable) {
-                Timber.e(t)
             }
         }
 
@@ -263,8 +259,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationPosted(sbn)
         sbn ?: return
 
-        if (sbn.packageName != packageName && sbn.notification.isPlaying) {
-            sbn.notification.mediaMetadata?.let {
+        if (sbn.packageName != packageName) {
+            (sbn.notification.mediaMetadata ?: digMetadata(sbn.packageName))?.let {
                 currentSbn = sbn
                 sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
                 onMetadataChanged(it, sbn.packageName, sbn.notification)
@@ -283,22 +279,21 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         requestRebind(ComponentName(applicationContext, NotificationService::class.java))
     }
 
-    private val Notification.existMediaSessionToken: Boolean
-        get() = extras.containsKey(Notification.EXTRA_MEDIA_SESSION)
-
     private val Notification.mediaController: MediaController?
-        get() = extras.getParcelable<MediaSession.Token>(
-            Notification.EXTRA_MEDIA_SESSION
-        )?.let {
-            MediaController(this@NotificationService, it)
-        }
+        get() = extras.getParcelable<MediaSession.Token>(Notification.EXTRA_MEDIA_SESSION)
+            ?.let { MediaController(this@NotificationService, it) }
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
 
-    private val Notification.isPlaying: Boolean get() = mediaController?.isPlaying == true
+    private fun digMetadata(playerPackageName: String): MediaMetadata? {
+        val componentName =
+            ComponentName(this@NotificationService, NotificationService::class.java)
 
-    private val MediaController.isPlaying: Boolean
-        get() = playbackState?.state == PlaybackState.STATE_PLAYING
+        return getSystemService(MediaSessionManager::class.java)
+            ?.getActiveSessions(componentName)
+            ?.firstOrNull { it.packageName == playerPackageName }
+            ?.metadata
+    }
 
     private fun onMetadataCleared() {
         currentSbn = null
@@ -354,12 +349,16 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
                 putString(
                     FirebaseAnalytics.Param.ITEM_NAME,
-                    if (containsSpotifyPattern) "Generated share sentence contains Spotify specifier"
-                    else "Generated share sentence without Spotify specifier"
+                    if (containsSpotifyPattern) "ON: Spotify URL trying"
+                    else "OFF: Spotify URL trying"
                 )
             })
-        val spotifyUrl = if (containsSpotifyPattern) spotifyApiClient.getSpotifyUrl(coreElement)
-        else null
+        val spotifyData =
+            if (containsSpotifyPattern) {
+                spotifyApiClient.getSpotifyData(coreElement).also {
+                    notificationManager.showDebugSpotifySearchNotificationIfNeeded(it)
+                }
+            } else null
 
         val artworkUri = metadata.storeArtworkUri(
             coreElement, notification?.getArtworkBitmap()
@@ -370,7 +369,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             artworkUri?.toString(),
             playerPackageName,
             playerPackageName.getAppName(this),
-            spotifyUrl
+            (spotifyData as? SpotifySearchResult.Success)?.data?.sharingUrl
         )
 
         reflectTrackInfo(trackInfo)
@@ -438,14 +437,16 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
 
             ids.forEach { id ->
-                val widgetOptions = this.getAppWidgetOptions(id)
-                updateAppWidget(
-                    id, getShareWidgetViews(
-                        this@NotificationService,
-                        ShareWidgetProvider.blockCount(widgetOptions),
-                        trackInfo
+                val widgetOptions = getAppWidgetOptions(id)
+                withContext(Dispatchers.Main) {
+                    updateAppWidget(
+                        id, getShareWidgetViews(
+                            this@NotificationService,
+                            ShareWidgetProvider.blockCount(widgetOptions),
+                            trackInfo
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -486,12 +487,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 )
             ) {
                 trackInfo.artworkUriString?.let {
-                    return@let try {
-                        getBitmapFromUriString(it)?.toByteArray()
-                    } catch (t: Throwable) {
-                        Timber.e(t)
-                        null
-                    }
+                    return@let withCatching { getBitmapFromUriString(it)?.toByteArray() }
                 }
             } else null
 
@@ -530,7 +526,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             notificationManager.apply {
                 showNotification(status)
                 delay(2500)
-                cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
+                cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
             }
         }
     }
@@ -565,9 +561,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             sharedPreferences.setReceivedDelegateShareNodeId(sourceNodeId)
         }
 
-        if (invokeOnReleasedLock.not()) Wearable.getMessageClient(this@NotificationService).sendMessage(
-            sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null
-        )
+        if (invokeOnReleasedLock.not()) Wearable.getMessageClient(this@NotificationService)
+            .sendMessage(
+                sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null
+            )
     }
 
     private suspend fun onRequestPostToTwitterFromWear(sourceNodeId: String) {
@@ -643,11 +640,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         ?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
-                    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_API)) {
-                        refreshArtworkUriFromLastFmApi(
-                            this@NotificationService, lastFmApiClient, coreElement
-                        )?.let { return it }
-                    }
+                    refreshArtworkUriFromLastFmApi(
+                        this@NotificationService, lastFmApiClient, coreElement
+                    )?.let { return it }
+                }
+                ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
+                    refreshArtworkUriFromSpotify(
+                        this@NotificationService, spotifyApiClient, coreElement
+                    )?.let { return it }
                 }
             }
         }
@@ -657,12 +657,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private fun Notification.getArtworkBitmap(): Bitmap? =
         (getLargeIcon()?.loadDrawable(this@NotificationService) as? BitmapDrawable)?.bitmap?.let {
-            try {
-                it.copy(it.config, false)
-            } catch (t: Throwable) {
-                Timber.e(t)
-                null
-            }
+            withCatching { it.copy(it.config, false) }
         }
 
     private suspend fun NotificationManager.showNotification(trackInfo: TrackInfo?) {
@@ -671,13 +666,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
         ) {
             checkStoragePermissionAsync {
-                getNotification(this@NotificationService, trackInfo)?.apply {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForeground(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
-                    } else {
-                        notify(Channel.NOTIFICATION_CHANNEL_SHARE.id, this)
+                getNotification(this@NotificationService, trackInfo)
+                    ?.apply {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForeground(NotificationType.SHARE.id, this)
+                        } else {
+                            notify(NotificationType.SHARE.id, this)
+                        }
                     }
-                }
             }
         } else this.destroyNotification()
     }
@@ -686,7 +682,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
             checkStoragePermissionAsync {
                 getNotification(this@NotificationService, status)?.apply {
-                    notify(Channel.NOTIFICATION_CHANNEL_NOTIFY.id, this)
+                    notify(NotificationType.NOTIFY_SUCCESS_MASTODON.id, this)
                 }
             }
         }
@@ -696,8 +692,19 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             stopForeground(true)
         } else {
-            this.cancel(Channel.NOTIFICATION_CHANNEL_SHARE.id)
+            this.cancel(NotificationType.SHARE.id)
         }
-        this.cancel(Channel.NOTIFICATION_CHANNEL_NOTIFY.id)
+        this.cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
+        this.cancel(NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id)
+    }
+
+    private fun NotificationManager.showDebugSpotifySearchNotificationIfNeeded(
+        spotifySearchResult: SpotifySearchResult
+    ) {
+        if (sharedPreferences.getDebugSpotifySearchFlag()) {
+            val notification =
+                getNotification(this@NotificationService, spotifySearchResult)
+            notify(NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id, notification)
+        }
     }
 }

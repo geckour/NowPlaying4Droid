@@ -1,9 +1,11 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Album(
 
-    @Json(name = "image")
+    @SerialName("image")
     val artworks: List<Image>
 )

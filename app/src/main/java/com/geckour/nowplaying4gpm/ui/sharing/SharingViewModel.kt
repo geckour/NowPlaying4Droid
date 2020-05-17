@@ -1,13 +1,13 @@
 package com.geckour.nowplaying4gpm.ui.sharing
 
-import android.app.Activity
 import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import androidx.core.app.ShareCompat
 import androidx.lifecycle.ViewModel
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
@@ -16,62 +16,67 @@ import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTempArtworkUri
 import com.geckour.nowplaying4gpm.util.readyForShare
+import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.firebase.analytics.FirebaseAnalytics
 import timber.log.Timber
 
 class SharingViewModel : ViewModel() {
     fun startShare(
-        activity: Activity,
+        context: Context,
         sharedPreferences: SharedPreferences,
         requireUnlock: Boolean,
         trackInfo: TrackInfo?
     ) {
 
-        if (sharedPreferences.readyForShare(activity, trackInfo).not()) return
+        if (sharedPreferences.readyForShare(context, trackInfo).not()) return
 
-        FirebaseAnalytics.getInstance(activity.applicationContext)
-            .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
-                putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
-            })
+        FirebaseAnalytics.getInstance(context.applicationContext)
+            .logEvent(
+                FirebaseAnalytics.Event.SELECT_CONTENT,
+                Bundle().apply {
+                    putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked share action")
+                }
+            )
 
-        val keyguardManager = try {
-            activity.getSystemService(KeyguardManager::class.java)
-        } catch (t: Throwable) {
-            Timber.e(t)
-            null
+        val keyguardManager = withCatching {
+            context.getSystemService(KeyguardManager::class.java)
         }
 
         if (requireUnlock.not() || keyguardManager?.isDeviceLocked != true) {
             val sharingText: String =
-                sharedPreferences.getSharingText(activity, trackInfo) ?: return
+                sharedPreferences.getSharingText(context, trackInfo) ?: return
             val artworkUri =
-                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) sharedPreferences.getTempArtworkUri(
-                    activity
-                )
+                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
+                    sharedPreferences.getTempArtworkUri(context)
                 else null
             Timber.d("sharingText: $sharingText, artworkUri: $artworkUri")
 
-            ShareCompat.IntentBuilder.from(activity).setChooserTitle(R.string.share_title)
-                .setText(sharingText).also {
-                    artworkUri?.apply { it.setStream(this).setType("image/png") }
-                        ?: it.setType("text/plain")
-                }.createChooserIntent().apply {
-                    val copyIntoClipboard = sharedPreferences.getSwitchState(
-                        PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD
+            val copyIntoClipboard = sharedPreferences
+                .getSwitchState(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD)
+            if (copyIntoClipboard) {
+                context.getSystemService(ClipboardManager::class.java)
+                    ?.setPrimaryClip(
+                        ClipData.newPlainText(context.packageName, sharingText)
                     )
-                    if (copyIntoClipboard) {
-                        activity.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
-                            ClipData.newPlainText(activity.packageName, sharingText)
-                        )
-                    }
+            }
 
-                    PendingIntent.getActivity(
-                        activity,
-                        SharingActivity.IntentRequestCode.SHARE.ordinal,
-                        this,
-                        PendingIntent.FLAG_CANCEL_CURRENT
-                    ).send()
-                }
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                putExtra(Intent.EXTRA_TEXT, sharingText)
+                artworkUri?.let {
+                    putExtra(Intent.EXTRA_STREAM, it)
+                    setType("image/png")
+                } ?: run { setType("text/plain") }
+            }.let {
+                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SIMPLE_SHARE)) it
+                else Intent.createChooser(it, context.getString(R.string.share_title))
+            }
+
+            PendingIntent.getActivity(
+                context,
+                SharingActivity.IntentRequestCode.SHARE.ordinal,
+                intent,
+                PendingIntent.FLAG_CANCEL_CURRENT
+            ).send()
         }
     }
 }

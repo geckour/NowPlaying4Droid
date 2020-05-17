@@ -18,4 +18,14 @@ interface SpotifyAuthService {
         @Field("grant_type")
         grantType: String = "authorization_code"
     ): SpotifyToken
+
+    @FormUrlEncoded
+    @POST("/api/token")
+    suspend fun refreshToken(
+        @Field("refresh_token")
+        refreshToken: String,
+
+        @Field("grant_type")
+        grantType: String = "refresh_token"
+    ): SpotifyToken
 }

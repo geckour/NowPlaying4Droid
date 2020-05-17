@@ -1,87 +1,125 @@
 package com.geckour.nowplaying4gpm.api
 
 import android.content.Context
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.preference.PreferenceManager
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
-import com.geckour.nowplaying4gpm.api.model.SpotifyToken
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
+import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
-import com.geckour.nowplaying4gpm.util.moshi
-import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfo
+import com.geckour.nowplaying4gpm.util.json
+import com.geckour.nowplaying4gpm.util.storeSpotifyUserInfoImmediately
+import com.geckour.nowplaying4gpm.util.withCatching
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import okhttp3.MediaType
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import timber.log.Timber
+import java.util.*
 
-class SpotifyApiClient(private val context: Context) {
+class SpotifyApiClient(context: Context) {
 
     companion object {
 
         const val SPOTIFY_CALLBACK = "np4gpm://spotify.callback"
-        private const val SPOTIFY_ENCODED_CALLBACK = "np4gpm%3A%2F%2Fspotify.callback"
+        private const val SPOTIFY_CALLBACK_ENCODED = "np4gpm%3A%2F%2Fspotify.callback"
         const val OAUTH_URL =
-            "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_ENCODED_CALLBACK"
+            "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_CALLBACK_ENCODED&scope=user-read-private"
     }
 
     private val authService = Retrofit.Builder()
         .client(OkHttpProvider.spotifyAuthClient)
         .baseUrl("https://accounts.spotify.com/")
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
         .build()
         .create(SpotifyAuthService::class.java)
 
-    private val service: SpotifyApiService
-        get() = Retrofit.Builder()
-            .client(OkHttpProvider.getSpotifyApiClient(context))
-            .baseUrl("https://api.spotify.com/")
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(SpotifyApiService::class.java)
+    private fun getService(token: String): SpotifyApiService = Retrofit.Builder()
+        .client(OkHttpProvider.getSpotifyApiClient(token))
+        .baseUrl("https://api.spotify.com/")
+        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
+        .build()
+        .create(SpotifyApiService::class.java)
 
-    suspend fun getToken(code: String): SpotifyToken? {
-        val token = try {
-            authService.getToken(code)
-        } catch (t: Throwable) {
-            Timber.e(t)
-            Crashlytics.logException(t)
-            null
+    private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+    private var storeSpotifyUserInfoJob: Job? = null
+
+    private val _refreshedUserInfo = MutableLiveData<SpotifyUserInfo>()
+    val refreshedUserInfo: LiveData<SpotifyUserInfo> = _refreshedUserInfo
+
+    suspend fun storeSpotifyUserInfo(code: String) = coroutineScope {
+        storeSpotifyUserInfoJob?.join()
+        storeSpotifyUserInfoJob = launch(Dispatchers.IO) {
+            val token = withCatching { authService.getToken(code) }
+                ?: return@launch
+            val userName = getUser(token.accessToken)?.displayName
+                ?: return@launch
+            val userInfo = SpotifyUserInfo(
+                token,
+                userName,
+                token.getExpiredAt()
+            )
+            sharedPreferences.storeSpotifyUserInfoImmediately(userInfo)
+            _refreshedUserInfo.postValue(userInfo)
         }
-        token?.let {
-            PreferenceManager.getDefaultSharedPreferences(context).apply {
-                storeSpotifyUserInfo(
-                    getSpotifyUserInfo()?.copy(token = it) ?: SpotifyUserInfo(
-                        it,
-                        ""
+    }
+
+    suspend fun refreshTokenIfNeeded(): SpotifyUserInfo? {
+        val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return null
+        if (currentUserInfo.refreshTokenExpiredAt == null ||
+            currentUserInfo.refreshTokenExpiredAt <= System.currentTimeMillis()
+        ) {
+            val currentRefreshToken = currentUserInfo.token.refreshToken ?: return null
+            val newToken =
+                withCatching { authService.refreshToken(currentRefreshToken) } ?: return null
+            val newUserInfo = currentUserInfo.copy(
+                token = newToken.copy(
+                    refreshToken = newToken.refreshToken ?: currentRefreshToken
+                ),
+                refreshTokenExpiredAt = newToken.getExpiredAt()
+                    ?: currentUserInfo.refreshTokenExpiredAt
+            )
+            sharedPreferences.storeSpotifyUserInfoImmediately(newUserInfo)
+            _refreshedUserInfo.postValue(newUserInfo)
+
+            return newUserInfo
+        }
+
+        return null
+    }
+
+    private suspend fun getUser(token: String): SpotifyUser? =
+        withCatching { getService(token.apply { Timber.d("np4d spotify token: $this") }).getUser() }
+
+    suspend fun getSpotifyData(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
+        val query = trackCoreElement.spotifySearchQuery
+        return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
+            val token =
+                (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
+                    ?: throw IllegalStateException("Init token first.")
+            val countryCode =
+                if (token.scope == "user-read-private") "from_token"
+                else Locale.getDefault().country
+            getService(token.accessToken).searchSpotifyItem(query, marketCountryCode = countryCode)
+                .tracks
+                ?.items
+                ?.firstOrNull()
+                ?.let {
+                    SpotifySearchResult.Success(
+                        query,
+                        SpotifySearchResult.Data(
+                            it.urls["spotify"] ?: return@let null,
+                            it.album.images.firstOrNull()?.url
+                        )
                     )
-                )
-            }
-        }
-        return token
-    }
-
-    suspend fun refreshTokenIfNeeded() {
-        val token =
-            PreferenceManager.getDefaultSharedPreferences(context).getSpotifyUserInfo()?.token
-                ?: return
-        if (System.currentTimeMillis() > token.expiresIn) {
-            getToken(token.codeForRefreshToken)
-        }
-    }
-
-    suspend fun getUser(): SpotifyUser = service.getUser()
-
-    suspend fun getSpotifyUrl(trackCoreElement: TrackInfo.TrackCoreElement): String? {
-        return trackCoreElement.spotifySearchQuery?.let {
-            try {
-                refreshTokenIfNeeded()
-                service.searchSpotifyItem(it).tracks?.items?.firstOrNull()?.urls?.get("spotify")
-            } catch (t: Throwable) {
-                Timber.e(t)
-                Crashlytics.logException(t)
-                null
-            }
-        }
+                } ?: SpotifySearchResult.Failure(query, IllegalStateException("No search result"))
+        } ?: SpotifySearchResult.Failure(null, IllegalStateException("Unknown error"))
     }
 }

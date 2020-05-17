@@ -3,31 +3,40 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <data>
+
+        <import type="android.view.View" />
+
+        <variable
+            name="toolbarTitle"
+            type="String" />
+
+        <variable
+            name="donated"
+            type="Boolean" />
+
+        <variable
+            name="mastodonEnabled"
+            type="Boolean" />
+    </data>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <FrameLayout
-            android:id="@+id/mask_inactive_app"
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@color/colorMaskInactive"
-            android:clickable="true"
-            android:elevation="8dp"
-            android:focusable="true"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/colorPrimary"
+            android:elevation="5dp"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:title="@{toolbarTitle}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/pref_mask_inactive_app_desc"
-                android:textColor="@color/colorTextWeak" />
-        </FrameLayout>
+            app:layout_constraintTop_toTopOf="parent"
+            app:titleTextColor="@android:color/white"
+            tools:title="ツールバータイトル" />
 
         <ScrollView
             android:id="@+id/scrollView"
@@ -52,16 +61,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:title="@{@string/pref_category_general}" />
-
-                <include
-                    android:id="@+id/item_switch_use_api"
-                    layout="@layout/item_pref_item"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:categoryId="@{@id/category_general}"
-                    app:desc="@{@string/pref_item_desc_switch_use_api}"
-                    app:maskInactiveDonateVisible="@{!donated}"
-                    app:title="@{@string/pref_item_title_switch_use_api}" />
 
                 <include
                     android:id="@+id/item_change_artwork_resolve_order"
@@ -97,6 +96,15 @@
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_pattern_modifiers}"
                     app:title="@{@string/pref_item_title_pattern_modifiers}" />
+
+                <include
+                    android:id="@+id/item_switch_simplify_share"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_simplify_share}"
+                    app:title="@{@string/pref_item_title_simplify_share}" />
 
                 <include
                     android:id="@+id/item_auth_spotify"
@@ -306,30 +314,6 @@
             </LinearLayout>
         </ScrollView>
 
-        <View
-            android:id="@+id/toolbar_cover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:elevation="5dp"
-            app:layout_constraintBottom_toBottomOf="@id/toolbar"
-            app:layout_constraintEnd_toEndOf="@id/toolbar"
-            app:layout_constraintStart_toStartOf="@id/toolbar"
-            app:layout_constraintTop_toTopOf="@id/toolbar" />
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="0dp"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/colorPrimary"
-            android:elevation="5dp"
-            android:title="@{toolbarTitle}"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:titleTextColor="@android:color/white"
-            tools:title="ツールバータイトル" />
-
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab"
             android:layout_width="wrap_content"
@@ -345,22 +329,27 @@
             app:srcCompat="@drawable/ic_app_icon"
             app:tint="@android:color/white" />
 
+        <FrameLayout
+            android:id="@+id/mask_inactive_app"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/colorMaskInactive"
+            android:clickable="true"
+            android:elevation="8dp"
+            android:focusable="true"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/pref_mask_inactive_app_desc"
+                android:textColor="@color/colorTextWeak" />
+        </FrameLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <data>
-
-        <import type="android.view.View" />
-
-        <variable
-            name="toolbarTitle"
-            type="String" />
-
-        <variable
-            name="donated"
-            type="Boolean" />
-
-        <variable
-            name="mastodonEnabled"
-            type="Boolean" />
-    </data>
 </layout>

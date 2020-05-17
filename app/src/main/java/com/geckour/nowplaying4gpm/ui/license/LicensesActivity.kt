@@ -14,6 +14,7 @@ import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 class LicensesActivity : WithCrashlyticsActivity() {
 
     companion object {
+
         fun getIntent(context: Context): Intent =
             Intent(context, LicensesActivity::class.java)
     }
@@ -27,7 +28,8 @@ class LicensesActivity : WithCrashlyticsActivity() {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_licenses)
 
-        binding.toolbarTitle = "${getString(R.string.activity_title_licenses)} - ${getString(R.string.app_name)}"
+        binding.toolbarTitle =
+            "${getString(R.string.activity_title_licenses)} - ${getString(R.string.app_name)}"
         setSupportActionBar(binding.toolbar)
 
         binding.recyclerView.apply {

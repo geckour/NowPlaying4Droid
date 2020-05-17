@@ -1,20 +1,18 @@
 package com.geckour.nowplaying4gpm.api
 
-import android.content.Context
 import android.util.Base64
-import androidx.preference.PreferenceManager
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.BuildConfig
-import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
 object OkHttpProvider {
 
-    val clientBuilder: OkHttpClient.Builder = OkHttpClient.Builder()
-        .connectTimeout(3, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.SECONDS)
+    val clientBuilder: OkHttpClient.Builder
+        get() = OkHttpClient.Builder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
 
     val client: OkHttpClient = clientBuilder
         .applyDebugger()
@@ -37,24 +35,19 @@ object OkHttpProvider {
         .applyDebugger()
         .build()
 
-    fun getSpotifyApiClient(context: Context): OkHttpClient {
-        return PreferenceManager.getDefaultSharedPreferences(context)
-            .getSpotifyUserInfo()
-            ?.token
-            ?.accessToken
-            ?.let { token ->
-                clientBuilder
-                    .addInterceptor {
-                        return@addInterceptor it.proceed(
-                            it.request()
-                                .newBuilder()
-                                .header("Authorization", "Bearer $token")
-                                .build()
-                        )
-                    }
-                    .applyDebugger()
-                    .build()
-            } ?: throw IllegalStateException("Init token first.")
+    fun getSpotifyApiClient(token: String): OkHttpClient {
+        return clientBuilder
+            .addInterceptor {
+                return@addInterceptor it.proceed(
+                    it.request()
+                        .newBuilder()
+                        .header("Authorization", "Bearer $token")
+                        .addHeader("Accept-Language", "ja")
+                        .build()
+                )
+            }
+            .applyDebugger()
+            .build()
     }
 
     val mastodonInstancesClient: OkHttpClient = clientBuilder

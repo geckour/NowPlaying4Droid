@@ -4,7 +4,6 @@ import com.geckour.nowplaying4gpm.api.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
 import retrofit2.http.GET
 import retrofit2.http.Query
-import java.util.*
 
 interface SpotifyApiService {
 
@@ -20,7 +19,7 @@ interface SpotifyApiService {
         type: String = "track",
 
         @Query("market")
-        marketCountryCode: String = Locale.getDefault().country,
+        marketCountryCode: String = "from_token",
 
         @Query("limit")
         limit: Int = 1

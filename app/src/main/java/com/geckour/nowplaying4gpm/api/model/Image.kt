@@ -1,13 +1,16 @@
 package com.geckour.nowplaying4gpm.api.model
 
-import com.squareup.moshi.Json
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Image(
-    @Json(name = "#text")
+    @SerialName("#text")
     val url: String,
 
     val size: String
 ) {
+
     enum class Size(val rawStr: String) {
         SMALL("small"),
         MEDIUM("medium"),

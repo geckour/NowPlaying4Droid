@@ -4,6 +4,7 @@
 
     <string name="activity_title_settings">設定</string>
     <string name="activity_title_licenses">OSSライセンス</string>
+    <string name="activity_title_debug">デバッグメニュー</string>
 
 
     <string name="notification_title">NowPlayingを共有…</string>
@@ -17,8 +18,6 @@
 
 
     <string name="pref_category_general">全般</string>
-    <string name="pref_item_title_switch_use_api">アートワーク取得時の通信</string>
-    <string name="pref_item_desc_switch_use_api">アートワーク取得の補助手段として外部サービスと通信する</string>
     <string name="pref_item_title_change_artwork_resolve_order">アートワークの解決順序を変更</string>
     <string name="pref_item_desc_change_artwork_resolve_order">アートワーク解決手段の実行順序を変更する</string>
 
@@ -27,8 +26,10 @@
     <string name="pref_item_desc_pattern">曲名: TI, アーティスト名: AR, アルバム名: AL</string>
     <string name="pref_item_title_pattern_modifiers">フォーマット指定子の修飾辞を指定</string>
     <string name="pref_item_desc_pattern_modifiers">各指定子の接頭辞 / 接尾辞を指定する</string>
+    <string name="pref_item_title_simplify_share">共有フローの単純化</string>
+    <string name="pref_item_desc_simplify_share">単純な共有フローを使う</string>
     <string name="pref_item_title_auth_spotify">Spotify認証</string>
-    <string name="pref_item_desc_auth_spotify">共有リンクの取得のためにSpotifyアカウントを認証する</string>
+    <string name="pref_item_desc_auth_spotify">Spotify APIを使用するためにSpotifyアカウントを認証する</string>
     <string name="pref_item_title_strict_match_pattern">全てのフォーマットパターンの解決</string>
     <string name="pref_item_desc_strict_match_pattern">全てのフォーマットパターンが解決されたときのみ共有文を生成する </string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
@@ -134,11 +135,14 @@
     <string name="dialog_message_alert_must_auth_twitter">共有するためにTwitterアカウントを認証してください</string>
     <string name="dialog_hint_pattern_format">例: TI - AR (AL)</string>
     <string name="dialog_hint_mastodon_instance">インスタンス名を入力…</string>
+    <string name="dialog_title_ignore_battery_optimization">バッテリー最適化から除外する</string>
+    <string name="dialog_message_ignore_battery_optimization">アプリの正しい動作を助けるためにバッテリーの最適化から除外してください</string>
     <string name="dialog_list_item_content_resolver">ContentResolver (端末内)</string>
     <string name="dialog_list_item_media_metadata_uri">MediaMetadata URI (プレイヤー提供)</string>
     <string name="dialog_list_item_media_metadata_bitmap">MediaMetadata Bitmap (プレイヤー提供)</string>
     <string name="dialog_list_item_notification_bitmap">Notification Bitmap (通知提供)</string>
     <string name="dialog_list_item_last_fm">Last.fm (外部サービス提供)</string>
+    <string name="dialog_list_item_spotify">Spotify (外部サービス提供)</string>
 
 
     <string name="snackbar_text_success_auth_spotify">Spotifyアカウントの認証に 成功 しました</string>
@@ -152,4 +156,8 @@
     <string name="action_clear_notification">クリア</string>
 
     <string name="widget_desc">NowPlayingを共有…</string>
+
+
+    <string name="debug_spotify_show_search_result">Spotify Search APIの結果を表示する</string>
+    <string name="debug_spotify_refresh_token">Spotifyのトークンを強制更新する</string>
 </resources>

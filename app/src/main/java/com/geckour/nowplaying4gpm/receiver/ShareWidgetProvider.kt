@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
@@ -28,7 +29,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
     companion object {
         fun getPendingIntent(context: Context, action: Action): PendingIntent =
             PendingIntent.getBroadcast(
-                context,
+                context.applicationContext,
                 0,
                 Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) },
                 PendingIntent.FLAG_CANCEL_CURRENT
@@ -56,11 +57,15 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         job.cancel()
     }
 
-    override fun onUpdate(context: Context?, appWidgetManager: AppWidgetManager?, appWidgetIds: IntArray?) {
+    override fun onUpdate(
+        context: Context?,
+        appWidgetManager: AppWidgetManager?,
+        appWidgetIds: IntArray?
+    ) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
-        if (context == null || appWidgetIds == null) return
+        if (context == null || appWidgetIds == null || appWidgetManager == null) return
 
-        updateWidget(context, *appWidgetIds)
+        updateWidget(context, appWidgetManager, null, *appWidgetIds)
     }
 
     override fun onAppWidgetOptionsChanged(
@@ -70,9 +75,9 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         newOptions: Bundle?
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        if (context == null || newOptions == null) return
+        if (context == null || newOptions == null || appWidgetManager == null) return
 
-        updateWidget(context, appWidgetId)
+        updateWidget(context, appWidgetManager, newOptions, appWidgetId)
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -89,21 +94,22 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         }
     }
 
-    private fun updateWidget(context: Context, vararg ids: Int) =
-        launch {
-            if (ids.isNotEmpty()) {
-                val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
-                    .getCurrentTrackInfo()
+    private fun updateWidget(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        newOptions: Bundle? = null,
+        vararg ids: Int
+    ) = launch {
+        if (ids.isEmpty()) return@launch
 
-                AppWidgetManager.getInstance(context).apply {
-                    ids.forEach { id ->
-                        val widgetOptions = this.getAppWidgetOptions(id)
-                        updateAppWidget(
-                            id,
-                            getShareWidgetViews(context, blockCount(widgetOptions), trackInfo)
-                        )
-                    }
-                }
-            }
+        val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
+            .getCurrentTrackInfo()
+
+        ids.forEach { id ->
+            val widgetOptions = newOptions ?: appWidgetManager.getAppWidgetOptions(id)
+            val widget =
+                getShareWidgetViews(context, blockCount(widgetOptions), trackInfo)
+            withContext(Dispatchers.Main) { appWidgetManager.updateAppWidget(id, widget) }
         }
+    }
 }

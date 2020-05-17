@@ -4,6 +4,7 @@ import com.geckour.nowplaying4gpm.util.FormatPattern
 import com.geckour.nowplaying4gpm.util.containedPatterns
 import java.io.Serializable
 
+@kotlinx.serialization.Serializable
 data class TrackInfo(
     val coreElement: TrackCoreElement,
     val artworkUriString: String?,
@@ -25,6 +26,7 @@ data class TrackInfo(
             }
         }
 
+    @kotlinx.serialization.Serializable
     data class TrackCoreElement(
         val title: String?,
         val artist: String?,
@@ -35,18 +37,18 @@ data class TrackInfo(
         val isAllNonNull: Boolean
             get() = title != null && artist != null && album != null
 
-        val spotifySearchQuery: String?
-            get() =
-                listOfNotNull(
-                    title?.let { "track:\"$it\"" },
-                    if (artist?.all { it.toInt() in 0x20..0x7E } == true)
-                        "artist:\"$artist\""
-                    else null,
-                    album?.let { "album:\"$it\"" }
-                ).joinToString(" ")
+        val spotifySearchQuery: String
+            get() = listOfNotNull(
+                title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
+                artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
+                album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
+            ).joinToString(" ")
+
+        val String.isAscii: Boolean get() = all { it.toInt() in 0x20..0x7E }
     }
 }
 
+@kotlinx.serialization.Serializable
 data class ArtworkInfo(
     val artworkUriString: String?
 )
