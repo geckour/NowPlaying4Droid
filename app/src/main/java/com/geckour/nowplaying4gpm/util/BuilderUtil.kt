@@ -76,10 +76,7 @@ suspend fun getShareWidgetViews(
 
     setOnClickPendingIntent(
         R.id.widget_share_root,
-        ShareWidgetProvider.getPendingIntent(
-            context,
-            ShareWidgetProvider.Action.SHARE
-        )
+        ShareWidgetProvider.getShareIntent(context)
     )
 
     val packageName =
@@ -96,19 +93,13 @@ suspend fun getShareWidgetViews(
                 PendingIntent.FLAG_CANCEL_CURRENT
             )
         } else {
-            ShareWidgetProvider.getPendingIntent(
-                context,
-                ShareWidgetProvider.Action.SHARE
-            )
+            ShareWidgetProvider.getSettingsIntent(context)
         }
     )
 
     setOnClickPendingIntent(
         R.id.widget_button_setting,
-        ShareWidgetProvider.getPendingIntent(
-            context,
-            ShareWidgetProvider.Action.OPEN_SETTING
-        )
+        ShareWidgetProvider.getSettingsIntent(context)
     )
 
     setOnClickPendingIntent(

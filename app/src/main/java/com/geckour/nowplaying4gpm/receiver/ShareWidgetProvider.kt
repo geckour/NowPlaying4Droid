@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
@@ -21,19 +20,24 @@ import kotlin.coroutines.CoroutineContext
 
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
-    enum class Action {
-        SHARE,
-        OPEN_SETTING
-    }
-
     companion object {
-        fun getPendingIntent(context: Context, action: Action): PendingIntent =
-            PendingIntent.getBroadcast(
-                context.applicationContext,
+
+        fun getShareIntent(context: Context): PendingIntent =
+            PendingIntent.getActivity(
+                context,
                 0,
-                Intent(context, ShareWidgetProvider::class.java).apply { setAction(action.name) },
+                SharingActivity.getIntent(context),
                 PendingIntent.FLAG_CANCEL_CURRENT
             )
+
+        fun getSettingsIntent(context: Context): PendingIntent =
+            PendingIntent.getActivity(
+                context,
+                0,
+                SettingsActivity.getIntent(context),
+                PendingIntent.FLAG_CANCEL_CURRENT
+            )
+
 
         fun blockCount(widgetOptions: Bundle?): Int {
             if (widgetOptions == null) return 0
@@ -78,20 +82,6 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         if (context == null || newOptions == null || appWidgetManager == null) return
 
         updateWidget(context, appWidgetManager, newOptions, appWidgetId)
-    }
-
-    override fun onReceive(context: Context?, intent: Intent?) {
-        super.onReceive(context, intent)
-
-        if (context == null || intent == null) return
-
-        launch(Dispatchers.Main) {
-            when (intent.action) {
-                Action.SHARE.name -> context.startActivity(SharingActivity.getIntent(context))
-
-                Action.OPEN_SETTING.name -> context.startActivity(SettingsActivity.getIntent(context))
-            }
-        }
     }
 
     private fun updateWidget(
