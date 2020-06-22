@@ -135,7 +135,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
 
         fun getComponentName(context: Context) =
-            ComponentName(context, NotificationService::class.java)
+            ComponentName(context.applicationContext, NotificationService::class.java)
     }
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
