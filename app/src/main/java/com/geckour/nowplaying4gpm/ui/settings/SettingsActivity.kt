@@ -11,12 +11,14 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -277,6 +279,16 @@ class SettingsActivity : WithCrashlyticsActivity() {
         when (requestCode) {
             RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
                 viewModel.requestNotificationListenerPermission(this) {
+                    getSystemService(MediaSessionManager::class.java)?.addOnActiveSessionsChangedListener(
+                        { controllers ->
+                            controllers?.lastOrNull { it != null } ?: return@addOnActiveSessionsChangedListener
+
+                            NotificationListenerService.requestRebind(
+                                NotificationService.getComponentName(this)
+                            )
+                        },
+                        NotificationService.getComponentName(this)
+                    )
                     onRequestUpdate()
                 }
             }

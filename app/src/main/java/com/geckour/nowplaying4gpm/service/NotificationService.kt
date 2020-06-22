@@ -123,20 +123,19 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         private const val WEAR_KEY_ARTWORK = "key_artwork"
 
         fun sendRequestInvokeUpdate(context: Context) {
-            context.checkStoragePermission {
-                it.sendBroadcast(Intent().apply {
-                    action = ACTION_INVOKE_UPDATE
-                })
-            }
+            context.checkStoragePermission { it.sendBroadcast(Intent(ACTION_INVOKE_UPDATE)) }
         }
 
         fun getClearTrackInfoPendingIntent(context: Context): PendingIntent =
             PendingIntent.getBroadcast(
                 context,
                 1,
-                Intent().apply { action = ACTION_CLEAR_TRACK_INFO },
+                Intent(ACTION_CLEAR_TRACK_INFO),
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
+
+        fun getComponentName(context: Context) =
+            ComponentName(context, NotificationService::class.java)
     }
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -155,9 +154,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         if (context == null) return
 
                         val trackInfo = sharedPreferences.getCurrentTrackInfo()
-                        launch {
-                            reflectTrackInfo(trackInfo)
-                        }
+                        launch { reflectTrackInfo(trackInfo) }
                     }
 
                     Intent.ACTION_USER_PRESENT -> {
@@ -276,7 +273,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun requestRebind() {
-        requestRebind(ComponentName(applicationContext, NotificationService::class.java))
+        requestRebind(getComponentName(applicationContext))
     }
 
     private val Notification.mediaController: MediaController?
@@ -285,15 +282,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
 
-    private fun digMetadata(playerPackageName: String): MediaMetadata? {
-        val componentName =
-            ComponentName(this@NotificationService, NotificationService::class.java)
-
-        return getSystemService(MediaSessionManager::class.java)
-            ?.getActiveSessions(componentName)
+    private fun digMetadata(playerPackageName: String): MediaMetadata? =
+        getSystemService(MediaSessionManager::class.java)
+            ?.getActiveSessions(getComponentName(applicationContext))
             ?.firstOrNull { it.packageName == playerPackageName }
             ?.metadata
-    }
 
     private fun onMetadataCleared() {
         currentSbn = null
