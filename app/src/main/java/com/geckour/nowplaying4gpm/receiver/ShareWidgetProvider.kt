@@ -3,9 +3,12 @@ package com.geckour.nowplaying4gpm.receiver
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.preference.PreferenceManager
+import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
@@ -21,6 +24,9 @@ import kotlin.coroutines.CoroutineContext
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
     companion object {
+
+        private const val ACTION_UPDATE_WIDGET = "action_update_widget"
+        private const val KEY_TRACK_INFO = "key_track_info"
 
         fun getShareIntent(context: Context): PendingIntent =
             PendingIntent.getActivity(
@@ -38,6 +44,10 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
 
+        fun getUpdateIntent(context: Context, trackInfo: TrackInfo?): Intent =
+            Intent(context, ShareWidgetProvider::class.java)
+                .setAction(ACTION_UPDATE_WIDGET)
+                .putExtra(KEY_TRACK_INFO, trackInfo)
 
         fun blockCount(widgetOptions: Bundle?): Int {
             if (widgetOptions == null) return 0
@@ -72,6 +82,20 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         updateWidget(context, appWidgetManager, null, *appWidgetIds)
     }
 
+    override fun onReceive(context: Context?, intent: Intent?) {
+        super.onReceive(context, intent)
+        context ?: return
+
+        if (intent?.action == ACTION_UPDATE_WIDGET) {
+            val manager = AppWidgetManager.getInstance(context)
+            val trackInfo = intent.getSerializableExtra(KEY_TRACK_INFO) as TrackInfo?
+            val ids = manager.getAppWidgetIds(
+                ComponentName(context, ShareWidgetProvider::class.java)
+            )
+            updateWidget(context, manager, null, *ids, trackInfo = trackInfo)
+        }
+    }
+
     override fun onAppWidgetOptionsChanged(
         context: Context?,
         appWidgetManager: AppWidgetManager?,
@@ -88,12 +112,11 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         context: Context,
         appWidgetManager: AppWidgetManager,
         newOptions: Bundle? = null,
-        vararg ids: Int
+        vararg ids: Int,
+        trackInfo: TrackInfo? = PreferenceManager.getDefaultSharedPreferences(context)
+            .getCurrentTrackInfo()
     ) = launch {
         if (ids.isEmpty()) return@launch
-
-        val trackInfo = PreferenceManager.getDefaultSharedPreferences(context)
-            .getCurrentTrackInfo()
 
         ids.forEach { id ->
             val widgetOptions = newOptions ?: appWidgetManager.getAppWidgetOptions(id)

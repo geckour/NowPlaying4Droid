@@ -4,7 +4,6 @@ import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -53,7 +52,6 @@ import com.geckour.nowplaying4gpm.util.getMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.getNotification
 import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
 import com.geckour.nowplaying4gpm.util.getReceivedDelegateShareNodeId
-import com.geckour.nowplaying4gpm.util.getShareWidgetViews
 import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTempArtworkUri
@@ -88,7 +86,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -423,25 +420,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         notificationManager.showNotification(trackInfo)
     }
 
-    private suspend fun updateWidget(trackInfo: TrackInfo?) {
-        AppWidgetManager.getInstance(this).apply {
-            val ids = getAppWidgetIds(
-                ComponentName(this@NotificationService, ShareWidgetProvider::class.java)
-            )
-
-            ids.forEach { id ->
-                val widgetOptions = getAppWidgetOptions(id)
-                withContext(Dispatchers.Main) {
-                    updateAppWidget(
-                        id, getShareWidgetViews(
-                            this@NotificationService,
-                            ShareWidgetProvider.blockCount(widgetOptions),
-                            trackInfo
-                        )
-                    )
-                }
-            }
-        }
+    private fun updateWidget(trackInfo: TrackInfo?) {
+        sendBroadcast(ShareWidgetProvider.getUpdateIntent(this, trackInfo))
     }
 
     private fun updateWear(trackInfo: TrackInfo?) {
