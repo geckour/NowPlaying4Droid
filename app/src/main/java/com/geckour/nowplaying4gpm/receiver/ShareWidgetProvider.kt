@@ -7,12 +7,22 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
+import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
+import com.geckour.nowplaying4gpm.util.PrefKey
+import com.geckour.nowplaying4gpm.util.foldBreak
+import com.geckour.nowplaying4gpm.util.getBitmapFromUriString
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
-import com.geckour.nowplaying4gpm.util.getShareWidgetViews
+import com.geckour.nowplaying4gpm.util.getFormatPattern
+import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
+import com.geckour.nowplaying4gpm.util.getSharingText
+import com.geckour.nowplaying4gpm.util.getSwitchState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,22 +37,6 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         private const val ACTION_UPDATE_WIDGET = "action_update_widget"
         private const val KEY_TRACK_INFO = "key_track_info"
-
-        fun getShareIntent(context: Context): PendingIntent =
-            PendingIntent.getActivity(
-                context.applicationContext,
-                0,
-                SharingActivity.getIntent(context.applicationContext),
-                PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-        fun getSettingsIntent(context: Context): PendingIntent =
-            PendingIntent.getActivity(
-                context.applicationContext,
-                1,
-                SettingsActivity.getIntent(context.applicationContext),
-                PendingIntent.FLAG_UPDATE_CURRENT
-            )
 
         fun getUpdateIntent(context: Context, trackInfo: TrackInfo?): Intent =
             Intent(context, ShareWidgetProvider::class.java)
@@ -120,9 +114,101 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         ids.forEach { id ->
             val widgetOptions = newOptions ?: appWidgetManager.getAppWidgetOptions(id)
-            val widget =
-                getShareWidgetViews(context, blockCount(widgetOptions), trackInfo)
+            val widget = getShareWidgetViews(context, blockCount(widgetOptions), trackInfo)
             withContext(Dispatchers.Main) { appWidgetManager.updateAppWidget(id, widget) }
         }
     }
+
+    private suspend fun getShareWidgetViews(
+        context: Context,
+        blockCount: Int = 0,
+        trackInfo: TrackInfo? = null
+    ): RemoteViews = RemoteViews(context.packageName, R.layout.widget_share).apply {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+        val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
+        val summary =
+            sharedPreferences.getFormatPattern(context)
+                .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
+                ?.foldBreak()
+
+        setTextViewText(
+            R.id.widget_summary_share,
+            summary ?: context.getString(R.string.dialog_message_alert_no_metadata)
+        )
+
+        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
+            && blockCount > 1
+        ) {
+            val artwork = info?.artworkUriString
+                ?.let { context.getBitmapFromUriString(it, maxHeight = 500) }
+            if (summary != null && artwork != null) {
+                setImageViewBitmap(R.id.artwork, artwork)
+            } else {
+                setImageViewResource(R.id.artwork, R.drawable.ic_placeholder)
+            }
+            setViewVisibility(R.id.artwork, View.VISIBLE)
+        } else {
+            setViewVisibility(R.id.artwork, View.GONE)
+        }
+
+        setViewVisibility(
+            R.id.widget_button_clear,
+            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET)
+                && blockCount > 2
+            ) View.VISIBLE
+            else View.GONE
+        )
+
+        setOnClickPendingIntent(
+            R.id.widget_share_root,
+            getShareIntent(context)
+        )
+
+        val packageName =
+            if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK))
+                info?.playerPackageName
+            else null
+        val launchIntent =
+            packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
+        setOnClickPendingIntent(
+            R.id.artwork,
+            if (launchIntent != null) {
+                PendingIntent.getActivity(
+                    context.applicationContext,
+                    2,
+                    launchIntent,
+                    PendingIntent.FLAG_CANCEL_CURRENT
+                )
+            } else {
+                getSettingsIntent(context)
+            }
+        )
+
+        setOnClickPendingIntent(
+            R.id.widget_button_setting,
+            getSettingsIntent(context)
+        )
+
+        setOnClickPendingIntent(
+            R.id.widget_button_clear,
+            NotificationService.getClearTrackInfoPendingIntent(context)
+        )
+    }
+
+    private fun getShareIntent(context: Context): PendingIntent =
+        PendingIntent.getActivity(
+            context.applicationContext,
+            0,
+            SharingActivity.getIntent(context.applicationContext),
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+    private fun getSettingsIntent(context: Context): PendingIntent =
+        PendingIntent.getActivity(
+            context.applicationContext,
+            1,
+            SettingsActivity.getIntent(context.applicationContext),
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
 }

@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.ui.settings
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.DialogInterface
@@ -82,7 +81,6 @@ import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.getMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
-import com.geckour.nowplaying4gpm.util.getShareWidgetViews
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
@@ -749,27 +747,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     private fun updateWidget(sharedPreferences: SharedPreferences) {
         val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
 
-        AppWidgetManager.getInstance(this).apply {
-            val ids = getAppWidgetIds(
-                ComponentName(
-                    this@SettingsActivity, ShareWidgetProvider::class.java
-                )
-            )
-
-            ids.forEach { id ->
-                val widgetOptions = this@apply.getAppWidgetOptions(id)
-                viewModel.viewModelScope.launch(Dispatchers.IO) {
-                    updateAppWidget(
-                        id,
-                        getShareWidgetViews(
-                            this@SettingsActivity,
-                            ShareWidgetProvider.blockCount(widgetOptions),
-                            trackInfo
-                        )
-                    )
-                }
-            }
-        }
+        sendBroadcast(ShareWidgetProvider.getUpdateIntent(this@SettingsActivity, trackInfo))
     }
 
     private fun onClickChangeArtworkResolveOrder(sharedPreferences: SharedPreferences) {

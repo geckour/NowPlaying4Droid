@@ -12,6 +12,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Icon
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
@@ -21,8 +22,11 @@ import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.text.Html
+import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.BuildConfig
+import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
@@ -30,6 +34,7 @@ import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
+import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.ArtworkResolveMethod
 import com.geckour.nowplaying4gpm.util.FormatPattern
@@ -39,6 +44,7 @@ import com.geckour.nowplaying4gpm.util.checkStoragePermission
 import com.geckour.nowplaying4gpm.util.checkStoragePermissionAsync
 import com.geckour.nowplaying4gpm.util.containsPattern
 import com.geckour.nowplaying4gpm.util.executeCatching
+import com.geckour.nowplaying4gpm.util.foldBreak
 import com.geckour.nowplaying4gpm.util.getAppName
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getArtworkUriFromDevice
@@ -49,10 +55,11 @@ import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.getMastodonUserInfo
-import com.geckour.nowplaying4gpm.util.getNotification
+import com.geckour.nowplaying4gpm.util.getOptimizedColor
 import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
 import com.geckour.nowplaying4gpm.util.getReceivedDelegateShareNodeId
 import com.geckour.nowplaying4gpm.util.getSharingText
+import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTempArtworkUri
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
@@ -90,6 +97,8 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import timber.log.Timber
+import java.io.PrintWriter
+import java.io.StringWriter
 import kotlin.coroutines.CoroutineContext
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
@@ -679,5 +688,161 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 getNotification(this@NotificationService, spotifySearchResult)
             notify(NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id, notification)
         }
+    }
+
+    private suspend fun getNotification(context: Context, trackInfo: TrackInfo?): Notification? {
+        trackInfo ?: return null
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+        val notificationBuilder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                Notification.Builder(
+                    context,
+                    NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                )
+            else Notification.Builder(context)
+
+        return notificationBuilder.apply {
+            val actionOpenSetting =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    SettingsActivity.getIntent(context),
+                    PendingIntent.FLAG_CANCEL_CURRENT
+                ).let {
+                    Notification.Action.Builder(
+                        Icon.createWithResource(
+                            context,
+                            R.drawable.ic_settings
+                        ),
+                        context.getString(R.string.action_open_pref),
+                        it
+                    ).build()
+                }
+            val actionClear =
+                Notification.Action.Builder(
+                    Icon.createWithResource(
+                        context,
+                        R.drawable.ic_clear
+                    ),
+                    context.getString(R.string.action_clear_notification),
+                    NotificationService.getClearTrackInfoPendingIntent(context)
+                ).build()
+            val notificationText =
+                sharedPreferences.getFormatPattern(context)
+                    .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
+                    ?.foldBreak()
+
+            val thumb =
+                if (sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION
+                    )
+                ) {
+                    trackInfo.artworkUriString?.let { context.getBitmapFromUriString(it) }
+                } else null
+
+            setSmallIcon(R.drawable.ic_notification)
+            setLargeIcon(thumb)
+            setContentTitle(context.getString(R.string.notification_title))
+            setContentText(notificationText)
+            setContentIntent(
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    SharingActivity.getIntent(context),
+                    PendingIntent.FLAG_CANCEL_CURRENT
+                )
+            )
+            setOngoing(true)
+            if (Build.VERSION.SDK_INT >= 24) {
+                style = Notification.DecoratedMediaCustomViewStyle()
+                addAction(actionOpenSetting)
+                addAction(actionClear)
+            }
+            thumb?.apply {
+                if (Build.VERSION.SDK_INT >= 26
+                    && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG)
+                ) {
+                    setColorized(true)
+                }
+
+                val color = Palette.from(this)
+                    .maximumColorCount(12)
+                    .generate()
+                    .getOptimizedColor(context)
+                setColor(color)
+            }
+        }.build()
+    }
+
+    private suspend fun getNotification(context: Context, status: Status): Notification? {
+        val notificationBuilder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                Notification.Builder(
+                    context,
+                    NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                )
+            else Notification.Builder(context)
+
+        return notificationBuilder.apply {
+            val notificationText =
+                Html.fromHtml(status.content, Html.FROM_HTML_MODE_COMPACT).toString()
+
+            val thumb =
+                status.mediaAttachments.firstOrNull()?.url?.let { context.getBitmapFromUriString(it) }
+
+            setSmallIcon(R.drawable.ic_notification_notify)
+            setLargeIcon(thumb)
+            setContentTitle(context.getString(R.string.notification_title_notify_success_mastodon))
+            setContentText(notificationText)
+            if (Build.VERSION.SDK_INT >= 24) {
+                style = Notification.DecoratedMediaCustomViewStyle()
+            }
+            thumb?.apply {
+                val color = Palette.from(this)
+                    .maximumColorCount(24)
+                    .generate()
+                    .getOptimizedColor(context)
+                setColor(color)
+            }
+        }.build()
+    }
+
+    private fun getNotification(
+        context: Context,
+        spotifySearchResult: SpotifySearchResult
+    ): Notification {
+        val notificationBuilder =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                Notification.Builder(
+                    context,
+                    NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                )
+            else Notification.Builder(context)
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+        return notificationBuilder
+            .setSmallIcon(
+                if (spotifySearchResult is SpotifySearchResult.Failure) R.drawable.ic_clear
+                else R.drawable.ic_debug
+            )
+            .setStyle(Notification.BigTextStyle())
+            .setContentTitle(spotifySearchResult.query)
+            .setContentText(
+                when (spotifySearchResult) {
+                    is SpotifySearchResult.Success -> spotifySearchResult.data.sharingUrl
+                    is SpotifySearchResult.Failure -> spotifySearchResult.cause.let { t ->
+                        StringWriter().use {
+                            "expiredAt: ${sharedPreferences.getSpotifyUserInfo()?.refreshTokenExpiredAt}\n${it.apply {
+                                t.printStackTrace(
+                                    PrintWriter(this)
+                                )
+                            }}"
+                        }
+                    }
+                }
+            )
+            .build()
     }
 }
