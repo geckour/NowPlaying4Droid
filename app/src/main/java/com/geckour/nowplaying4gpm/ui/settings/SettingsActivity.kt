@@ -125,9 +125,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
-            Intent(context, SettingsActivity::class.java).apply {
-                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            Intent(context, SettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
     private data class EasterEggTag(
@@ -281,7 +280,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
                 viewModel.requestNotificationListenerPermission(this) {
                     getSystemService(MediaSessionManager::class.java)?.addOnActiveSessionsChangedListener(
                         { controllers ->
-                            controllers?.lastOrNull { it != null } ?: return@addOnActiveSessionsChangedListener
+                            controllers?.lastOrNull { it != null }
+                                ?: return@addOnActiveSessionsChangedListener
 
                             NotificationListenerService.requestRebind(
                                 NotificationService.getComponentName(this)

@@ -88,7 +88,8 @@ suspend fun getShareWidgetViews(
         R.id.artwork,
         if (launchIntent != null) {
             PendingIntent.getActivity(
-                context, 0,
+                context.applicationContext,
+                2,
                 launchIntent,
                 PendingIntent.FLAG_CANCEL_CURRENT
             )

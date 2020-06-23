@@ -24,18 +24,18 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         fun getShareIntent(context: Context): PendingIntent =
             PendingIntent.getActivity(
-                context,
+                context.applicationContext,
                 0,
-                SharingActivity.getIntent(context),
-                PendingIntent.FLAG_CANCEL_CURRENT
+                SharingActivity.getIntent(context.applicationContext),
+                PendingIntent.FLAG_UPDATE_CURRENT
             )
 
         fun getSettingsIntent(context: Context): PendingIntent =
             PendingIntent.getActivity(
-                context,
-                0,
-                SettingsActivity.getIntent(context),
-                PendingIntent.FLAG_CANCEL_CURRENT
+                context.applicationContext,
+                1,
+                SettingsActivity.getIntent(context.applicationContext),
+                PendingIntent.FLAG_UPDATE_CURRENT
             )
 
 
