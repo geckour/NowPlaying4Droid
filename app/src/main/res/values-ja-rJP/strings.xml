@@ -73,7 +73,7 @@
 
     <string name="pref_category_others">その他</string>
     <string name="pref_item_title_donate">寄付</string>
-    <string name="pref_item_desc_donate">寄付する (一部機能のロックが解除されます)</string>
+    <string name="pref_item_desc_donate">寄付する</string>
 
     <string name="pref_item_summary_switch_on">ON</string>
     <string name="pref_item_summary_switch_off">OFF</string>

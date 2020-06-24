@@ -16,13 +16,13 @@ class SharingActivity : WithCrashlyticsActivity() {
     }
 
     companion object {
+
         private const val ARGS_KEY_REQUIRE_UNLOCK = "args_key_require_unlock"
 
         fun getIntent(context: Context, requireUnlock: Boolean = true): Intent =
-            Intent(context, SharingActivity::class.java).apply {
-                putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
-                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            Intent(context, SharingActivity::class.java)
+                .putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
     private val viewModel: SharingViewModel by viewModels()

@@ -3,7 +3,6 @@ package com.geckour.nowplaying4gpm.ui.settings
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.DialogInterface
@@ -11,12 +10,14 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -80,7 +81,6 @@ import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.getMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
-import com.geckour.nowplaying4gpm.util.getShareWidgetViews
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
@@ -123,9 +123,8 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
-            Intent(context, SettingsActivity::class.java).apply {
-                flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            Intent(context, SettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
     private data class EasterEggTag(
@@ -277,6 +276,17 @@ class SettingsActivity : WithCrashlyticsActivity() {
         when (requestCode) {
             RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
                 viewModel.requestNotificationListenerPermission(this) {
+                    getSystemService(MediaSessionManager::class.java)?.addOnActiveSessionsChangedListener(
+                        { controllers ->
+                            controllers?.lastOrNull { it != null }
+                                ?: return@addOnActiveSessionsChangedListener
+
+                            NotificationListenerService.requestRebind(
+                                NotificationService.getComponentName(this)
+                            )
+                        },
+                        NotificationService.getComponentName(this)
+                    )
                     onRequestUpdate()
                 }
             }
@@ -737,27 +747,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     private fun updateWidget(sharedPreferences: SharedPreferences) {
         val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
 
-        AppWidgetManager.getInstance(this).apply {
-            val ids = getAppWidgetIds(
-                ComponentName(
-                    this@SettingsActivity, ShareWidgetProvider::class.java
-                )
-            )
-
-            ids.forEach { id ->
-                val widgetOptions = this@apply.getAppWidgetOptions(id)
-                viewModel.viewModelScope.launch(Dispatchers.IO) {
-                    updateAppWidget(
-                        id,
-                        getShareWidgetViews(
-                            this@SettingsActivity,
-                            ShareWidgetProvider.blockCount(widgetOptions),
-                            trackInfo
-                        )
-                    )
-                }
-            }
-        }
+        sendBroadcast(ShareWidgetProvider.getUpdateIntent(this@SettingsActivity, trackInfo))
     }
 
     private fun onClickChangeArtworkResolveOrder(sharedPreferences: SharedPreferences) {

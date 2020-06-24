@@ -56,8 +56,10 @@
         </activity>
         <activity
             android:name=".ui.sharing.SharingActivity"
+            android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:noHistory="true"
+            android:taskAffinity=""
             android:theme="@style/AppTheme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

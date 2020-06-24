@@ -32,12 +32,13 @@ class LicensesActivity : WithCrashlyticsActivity() {
             "${getString(R.string.activity_title_licenses)} - ${getString(R.string.app_name)}"
         setSupportActionBar(binding.toolbar)
 
+        adapter = LicenseListAdapter()
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@LicensesActivity, RecyclerView.VERTICAL, false)
-            this@LicensesActivity.adapter = LicenseListAdapter(viewModel)
             adapter = this@LicensesActivity.adapter
             this@LicensesActivity.adapter.notifyDataSetChanged()
             setHasFixedSize(true)
         }
+        adapter.submitList(viewModel.listItems)
     }
 }
