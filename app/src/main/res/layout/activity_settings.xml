@@ -69,7 +69,6 @@
                     android:layout_height="wrap_content"
                     app:categoryId="@{@id/category_general}"
                     app:desc="@{@string/pref_item_desc_change_artwork_resolve_order}"
-                    app:maskInactiveDonateVisible="@{!donated}"
                     app:title="@{@string/pref_item_title_change_artwork_resolve_order}" />
 
                 <include

@@ -83,7 +83,7 @@
 
     <string name="pref_category_others">Others</string>
     <string name="pref_item_title_donate">Donate</string>
-    <string name="pref_item_desc_donate">Unlock some feature(s)</string>
+    <string name="pref_item_desc_donate">Donate to the app author</string>
 
     <string name="pref_item_summary_switch_on">ON</string>
     <string name="pref_item_summary_switch_off">OFF</string>
