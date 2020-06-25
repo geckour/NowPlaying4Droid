@@ -131,8 +131,8 @@ dependencies {
 
     // KTX
     implementation "androidx.core:core-ktx:1.3.0"
-    implementation 'androidx.fragment:fragment-ktx:1.3.0-alpha06'
     implementation 'androidx.activity:activity-ktx:1.2.0-alpha06'
+    implementation 'androidx.fragment:fragment-ktx:1.3.0-alpha06'
 
     // JSON
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0"

@@ -157,8 +157,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
 
                     ACTION_INVOKE_UPDATE -> {
-                        if (context == null) return
-
                         val trackInfo = sharedPreferences.getCurrentTrackInfo()
                         launch { reflectTrackInfo(trackInfo) }
                     }
