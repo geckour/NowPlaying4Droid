@@ -198,6 +198,18 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private var currentSbn: StatusBarNotification? = null
     private var currentMetadata: MediaMetadata? = null
 
+    private val onActiveSessionChanged: MediaSessionManager.OnActiveSessionsChangedListener by lazy {
+        object : MediaSessionManager.OnActiveSessionsChangedListener {
+            val componentName = getComponentName(applicationContext)
+
+            override fun onActiveSessionsChanged(controllers: MutableList<MediaController>?) {
+                if (controllers.isNullOrEmpty()) return
+
+                requestRebind(componentName)
+            }
+        }
+    }
+
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
             WEAR_PATH_TRACK_INFO_GET -> onPulledFromWear()
@@ -248,12 +260,19 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         Wearable.getMessageClient(this).addListener(onMessageReceived)
+        getSystemService(MediaSessionManager::class.java)
+            ?.removeOnActiveSessionsChangedListener(onActiveSessionChanged)
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
 
         Wearable.getMessageClient(this).removeListener(onMessageReceived)
+        getSystemService(MediaSessionManager::class.java)
+            ?.addOnActiveSessionsChangedListener(
+                onActiveSessionChanged,
+                getComponentName(this)
+            )
 
         requestRebind()
     }
