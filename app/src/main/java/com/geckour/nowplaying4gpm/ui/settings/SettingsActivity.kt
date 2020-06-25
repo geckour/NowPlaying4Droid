@@ -10,14 +10,12 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
-import android.service.notification.NotificationListenerService
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -28,9 +26,12 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.app.NotificationManagerCompat
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.viewModelScope
@@ -74,7 +75,6 @@ import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
-import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getDonateBillingState
 import com.geckour.nowplaying4gpm.util.getFormatPattern
@@ -116,11 +116,6 @@ import timber.log.Timber
 @RuntimePermissions
 class SettingsActivity : WithCrashlyticsActivity() {
 
-    enum class RequestCode {
-        GRANT_NOTIFICATION_LISTENER,
-        BILLING
-    }
-
     companion object {
         fun getIntent(context: Context): Intent =
             Intent(context, SettingsActivity::class.java)
@@ -140,8 +135,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
     private lateinit var serviceConnection: ServiceConnection
     private var billingService: IInAppBillingService? = null
 
-    private lateinit var spotifyApiClient: SpotifyApiClient
-
     private val twitterApiClient =
         TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
 
@@ -150,8 +143,6 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        spotifyApiClient = SpotifyApiClient(this)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
 
@@ -209,7 +200,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
 
         onReflectDonation()
 
-        viewModel.requestNotificationListenerPermission(this) {
+        requestNotificationListenerPermission {
             onRequestUpdate()
         }
 
@@ -245,11 +236,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         Timber.d("intent data: $uriString")
         when {
             uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
-                onAuthSpotifyCallback(
-                    intent,
-                    binding.root,
-                    binding.itemAuthSpotify
-                )
+                onAuthSpotifyCallback(intent)
             }
             uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
                 onAuthTwitterCallback(
@@ -270,70 +257,51 @@ class SettingsActivity : WithCrashlyticsActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        when (requestCode) {
-            RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal -> {
-                viewModel.requestNotificationListenerPermission(this) {
-                    getSystemService(MediaSessionManager::class.java)?.addOnActiveSessionsChangedListener(
-                        { controllers ->
-                            controllers?.lastOrNull { it != null }
-                                ?: return@addOnActiveSessionsChangedListener
-
-                            NotificationListenerService.requestRebind(
-                                NotificationService.getComponentName(this)
-                            )
-                        },
-                        NotificationService.getComponentName(this)
-                    )
-                    onRequestUpdate()
-                }
-            }
-
-            RequestCode.BILLING.ordinal -> {
-                when (resultCode) {
-                    Activity.RESULT_OK -> {
-                        val purchaseResult: PurchaseResult? =
-                            json.parseOrNull(
-                                data?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
-                            )
-
-                        if (purchaseResult?.purchaseState == 0) {
-                            onReflectDonation(true)
-                        } else {
-                            showErrorDialog(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_failure_purchase
-                            )
-                        }
-                    }
-
-                    Activity.RESULT_CANCELED -> {
-                        showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_cancel_purchase
-                        )
-                    }
-                }
-            }
-        }
-    }
-
     private fun observeEvents() {
-        viewModel.requestUpdate.observe(this) {
-            onRequestUpdate()
-        }
         viewModel.reflectDonation.observe(this) {
             it ?: return@observe
             onReflectDonation(it)
         }
 
-        spotifyApiClient.refreshedUserInfo.observe(this) {
-            if (sharedPreferences.getDebugSpotifySearchFlag()) {
-                AlertDialog.Builder(this).setMessage("$it").show()
+        viewModel.spotifyUserInfo.observe(this) { userInfo ->
+            if (userInfo == null) {
+                onAuthSpotifyError()
+                return@observe
             }
+
+            binding.itemAuthSpotify.summary = getString(
+                R.string.pref_item_summary_auth_spotify,
+                userInfo.userName
+            )
+            Snackbar.make(
+                binding.root,
+                R.string.snackbar_text_success_auth_spotify,
+                Snackbar.LENGTH_LONG
+            ).show()
         }
+    }
+
+    private fun requestNotificationListenerPermission(onGranted: () -> Unit = {}) {
+        val notificationListenerNotEnabled =
+            NotificationManagerCompat.getEnabledListenerPackages(this)
+                .contains(packageName)
+                .not()
+        if (notificationListenerNotEnabled) {
+            if (viewModel.showingNotificationServicePermissionDialog.not()) {
+                viewModel.showingNotificationServicePermissionDialog = true
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
+                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
+                        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                            requestNotificationListenerPermission { onRequestUpdate() }
+                        }.launch(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                        dialog.dismiss()
+                        viewModel.showingNotificationServicePermissionDialog = false
+                    }.show()
+            }
+        } else onGranted()
     }
 
     private fun setupItems() {
@@ -592,7 +560,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         binding.itemDonate.also { b ->
             if (sharedPreferences.getDonateBillingState()) b.root.visibility = View.GONE
             else b.root.setOnClickListener {
-                startBillingTransaction(this, billingService)
+                startBillingTransaction(billingService)
             }
         }
     }
@@ -1039,40 +1007,62 @@ class SettingsActivity : WithCrashlyticsActivity() {
         startActivity(SharingActivity.getIntent(this))
     }
 
-    private fun startBillingTransaction(
-        activity: Activity, billingService: IInAppBillingService?
-    ) = viewModel.viewModelScope.launch(Dispatchers.IO) {
-        billingService?.let {
-            val skuName = BuildConfig.SKU_KEY_DONATE
-            BillingApiClient(it).apply {
-                val sku = getSkuDetails(activity, skuName).firstOrNull() ?: run {
-                    showErrorDialog(
-                        R.string.dialog_title_alert_failure_purchase,
-                        R.string.dialog_message_alert_on_start_purchase
-                    )
-                    return@launch
+    private fun startBillingTransaction(billingService: IInAppBillingService?) =
+        viewModel.viewModelScope.launch(Dispatchers.IO) {
+            billingService?.let {
+                val skuName = BuildConfig.SKU_KEY_DONATE
+                BillingApiClient(it).apply {
+                    val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_on_start_purchase
+                        )
+                        return@launch
+                    }
+
+                    if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_already_purchase
+                        )
+                        viewModel.reflectDonation.postValue(true)
+                        return@launch
+                    }
                 }
 
-                if (getPurchasedItems(activity).contains(sku.productId)) {
-                    showErrorDialog(
-                        R.string.dialog_title_alert_failure_purchase,
-                        R.string.dialog_message_alert_already_purchase
-                    )
-                    viewModel.reflectDonation.postValue(true)
-                    return@launch
-                }
+                val intentSender = BillingApiClient(it).getBuyIntent(this@SettingsActivity, skuName)
+                    ?.intentSender ?: return@let
+                registerForActivityResult(
+                    ActivityResultContracts.StartIntentSenderForResult()
+                ) { result ->
+                    when (result.resultCode) {
+                        Activity.RESULT_OK -> {
+                            val purchaseResult: PurchaseResult? =
+                                json.parseOrNull(
+                                    result.data
+                                        ?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
+                                )
+
+                            if (purchaseResult?.purchaseState == 0) {
+                                onReflectDonation(true)
+                            } else {
+                                showErrorDialog(
+                                    R.string.dialog_title_alert_failure_purchase,
+                                    R.string.dialog_message_alert_failure_purchase
+                                )
+                            }
+                        }
+
+                        Activity.RESULT_CANCELED -> {
+                            showErrorDialog(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_on_cancel_purchase
+                            )
+                        }
+                    }
+                }.launch(IntentSenderRequest.Builder(intentSender).build())
             }
-
-            activity.startIntentSenderForResult(
-                BillingApiClient(it).getBuyIntent(activity, skuName)?.intentSender,
-                RequestCode.BILLING.ordinal,
-                Intent(),
-                0,
-                0,
-                0
-            )
         }
-    }
 
     private fun onClickItemChooseColor(
         sharedPreferences: SharedPreferences, chooseColorBinding: ItemPrefItemBinding
@@ -1126,7 +1116,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
     }
 
     private fun onAuthSpotifyCallback(
-        intent: Intent, rootView: View, authSpotifyBinding: ItemPrefItemBinding
+        intent: Intent
     ) {
         val verifier = intent.data?.getQueryParameter("code")
         if (verifier == null) {
@@ -1134,25 +1124,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
             return
         }
 
-        viewModel.viewModelScope.launch {
-            spotifyApiClient.storeSpotifyUserInfo(verifier)
-
-            val userInfo = sharedPreferences.getSpotifyUserInfo()
-            if (userInfo == null) {
-                onAuthSpotifyError()
-                return@launch
-            }
-
-            authSpotifyBinding.summary = getString(
-                R.string.pref_item_summary_auth_spotify,
-                userInfo.userName
-            )
-            Snackbar.make(
-                rootView,
-                R.string.snackbar_text_success_auth_spotify,
-                Snackbar.LENGTH_LONG
-            ).show()
-        }
+        viewModel.storeSpotifyUserInfo(verifier)
     }
 
     private fun onAuthTwitterCallback(

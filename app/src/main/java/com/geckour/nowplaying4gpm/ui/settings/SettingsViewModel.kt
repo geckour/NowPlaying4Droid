@@ -1,43 +1,24 @@
 package com.geckour.nowplaying4gpm.ui.settings
 
-import android.app.Activity
-import android.app.AlertDialog
-import android.content.Intent
-import androidx.core.app.NotificationManagerCompat
-import androidx.lifecycle.ViewModel
-import com.geckour.nowplaying4gpm.R
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.geckour.nowplaying4gpm.api.SpotifyApiClient
+import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.ui.SingleLiveEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class SettingsViewModel : ViewModel() {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var showingNotificationServicePermissionDialog = false
+    private val spotifyApiClient = SpotifyApiClient(application)
 
-    internal val requestUpdate = SingleLiveEvent<Unit>()
+    internal var showingNotificationServicePermissionDialog = false
+
     internal val reflectDonation = SingleLiveEvent<Boolean>()
+    internal val spotifyUserInfo = SingleLiveEvent<SpotifyUserInfo>()
 
-    internal fun requestNotificationListenerPermission(
-        activity: Activity, onGranted: () -> Unit = {}
-    ) {
-        if (NotificationManagerCompat.getEnabledListenerPackages(activity).contains(activity.packageName).not()) {
-            if (showingNotificationServicePermissionDialog.not()) {
-                showingNotificationServicePermissionDialog = true
-                AlertDialog.Builder(activity)
-                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
-                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                        activity.startActivityForResult(
-                            Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"),
-                            SettingsActivity.RequestCode.GRANT_NOTIFICATION_LISTENER.ordinal
-                        )
-                        dialog.dismiss()
-                        showingNotificationServicePermissionDialog = false
-                    }.show()
-            }
-        } else onGranted()
-    }
-
-    internal fun onRequestUpdate() {
-        if (showingNotificationServicePermissionDialog.not()) requestUpdate.call()
+    internal fun storeSpotifyUserInfo(verifier: String) = viewModelScope.launch(Dispatchers.IO) {
+        spotifyUserInfo.postValue(spotifyApiClient.storeSpotifyUserInfo(verifier))
     }
 }

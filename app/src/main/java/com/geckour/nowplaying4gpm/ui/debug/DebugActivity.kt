@@ -29,25 +29,16 @@ class DebugActivity : WithCrashlyticsActivity() {
         PreferenceManager.getDefaultSharedPreferences(application)
     }
 
-    private lateinit var spotifyApiClient: SpotifyApiClient
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        spotifyApiClient = SpotifyApiClient(this@DebugActivity)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_debug)
         binding.toolbarTitle =
             "${getString(R.string.activity_title_debug)} - ${getString(R.string.app_name)}"
-        binding.recyclerView.adapter = DebugMenuListAdapter { debugMenu, summaryView ->
+        binding.recyclerView.adapter = DebugMenuListAdapter { debugMenu, _ ->
             when (debugMenu) {
-                DebugMenuListAdapter.DebugMenu.TOGGLE_SPOTIFY_SEARCH_DEBUG -> {
-                    val flag = sharedPreferences.toggleDebugSpotifySearchFlag()
-                    summaryView.text = flag.toString()
-                }
-                DebugMenuListAdapter.DebugMenu.REFRESH_SPOTIFY_TOKEN -> {
-                    GlobalScope.launch { spotifyApiClient.refreshTokenIfNeeded() }
-                }
+                DebugMenuListAdapter.DebugMenu.TOGGLE_SPOTIFY_SEARCH_DEBUG -> Unit
+                DebugMenuListAdapter.DebugMenu.REFRESH_SPOTIFY_TOKEN -> Unit
             }
         }.apply {
             submitList(
@@ -64,10 +55,6 @@ class DebugActivity : WithCrashlyticsActivity() {
                         )
                     }
             )
-        }
-
-        spotifyApiClient.refreshedUserInfo.observe(this) {
-            AlertDialog.Builder(this).setMessage("$it").show()
         }
     }
 }
