@@ -55,10 +55,10 @@ data class ArtworkResolveMethod(
     enum class ArtworkResolveMethodKey(val strResId: Int) {
         CONTENT_RESOLVER(R.string.dialog_list_item_content_resolver),
         MEDIA_METADATA_URI(R.string.dialog_list_item_media_metadata_uri),
+        SPOTIFY(R.string.dialog_list_item_spotify),
         MEDIA_METADATA_BITMAP(R.string.dialog_list_item_media_metadata_bitmap),
         NOTIFICATION_BITMAP(R.string.dialog_list_item_notification_bitmap),
-        LAST_FM(R.string.dialog_list_item_last_fm),
-        SPOTIFY(R.string.dialog_list_item_spotify)
+        LAST_FM(R.string.dialog_list_item_last_fm)
     }
 }
 
