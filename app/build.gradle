@@ -91,7 +91,6 @@ dependencies {
     def permission_dispatcher_version = "4.5.0"
     def retrofit2_version = "2.6.4"
     def okhttp_version = "3.11.0"
-    def glide_version = "4.10.0"
     def mockk_version = "1.9.1"
 
     wearApp project(":wear")
@@ -159,8 +158,7 @@ dependencies {
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
 
     // Image processing
-    implementation "com.github.bumptech.glide:glide:$glide_version"
-    kapt "com.github.bumptech.glide:compiler:$glide_version"
+    implementation "io.coil-kt:coil:0.11.0"
 
     // Wear
     implementation "com.google.android.gms:play-services-wearable:17.0.0"

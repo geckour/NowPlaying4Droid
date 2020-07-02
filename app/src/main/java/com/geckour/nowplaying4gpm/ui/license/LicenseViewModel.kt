@@ -31,7 +31,7 @@ class LicenseViewModel : ViewModel() {
             R.string.license_kotlin_serialization_converter,
             false
         ),
-        LicenseListAdapter.LicenseItem(R.string.library_glide, R.string.license_glide, false),
+        LicenseListAdapter.LicenseItem(R.string.library_coil, R.string.license_coil, false),
         LicenseListAdapter.LicenseItem(
             R.string.library_twitter4j,
             R.string.license_twitter4j,

@@ -7,7 +7,7 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
+import coil.api.load
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseBinding
 import com.geckour.nowplaying4gpm.databinding.ItemLicenseFooterBinding
 import com.geckour.nowplaying4gpm.ui.debug.DebugActivity
@@ -101,9 +101,7 @@ class LicenseListAdapter :
 
         fun bind() {
             binding.buttonStart.setOnClickListener { openDebugActivity() }
-            Glide.with(binding.buttonEnd)
-                .load(easterEggIconUrl)
-                .into(binding.buttonEnd)
+            binding.buttonEnd.load(easterEggIconUrl)
             binding.buttonEnd.setOnClickListener { toggleDonateState() }
         }
 

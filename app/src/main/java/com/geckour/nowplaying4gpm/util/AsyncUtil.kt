@@ -5,12 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestOptions
+import coil.Coil
+import coil.request.CachePolicy
+import coil.request.GetRequest
 import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
@@ -58,25 +58,22 @@ suspend fun refreshArtworkUriFromSpotify(
 
 suspend fun Context.getBitmapFromUriString(
     uriString: String,
-    maxWidth: Int? = null,
-    maxHeight: Int? = null
+    maxSize: Int? = null
 ): Bitmap? = try {
-    val glideOptions =
-        RequestOptions().diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
-            .signature { System.currentTimeMillis().toString() }
     withContext(Dispatchers.IO) {
-        Glide.with(this@getBitmapFromUriString).asBitmap().load(uriString).apply(glideOptions)
-            .apply {
-                when {
-                    maxWidth != null -> override(maxWidth, maxHeight ?: maxWidth)
-                    maxHeight != null -> override(maxWidth ?: maxHeight, maxHeight)
-                }
-            }
-            .submit().get()
+        (Coil.imageLoader(this@getBitmapFromUriString)
+            .execute(
+                GetRequest.Builder(this@getBitmapFromUriString)
+                    .data(uriString)
+                    .allowHardware(false)
+                    .diskCachePolicy(CachePolicy.DISABLED)
+                    .memoryCachePolicy(CachePolicy.DISABLED)
+                    .apply { maxSize?.let { size(it) } }
+                    .build()
+            )
+            .drawable as BitmapDrawable)
+            .bitmap
     }
-} catch (e: GlideException) {
-    e.logRootCauses("np4d")
-    null
 } catch (t: Throwable) {
     Timber.e(t)
     Crashlytics.logException(t)

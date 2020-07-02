@@ -19,9 +19,8 @@ class SharingActivity : WithCrashlyticsActivity() {
 
         private const val ARGS_KEY_REQUIRE_UNLOCK = "args_key_require_unlock"
 
-        fun getIntent(context: Context, requireUnlock: Boolean = true): Intent =
+        fun getIntent(context: Context): Intent =
             Intent(context, SharingActivity::class.java)
-                .putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
@@ -35,7 +34,7 @@ class SharingActivity : WithCrashlyticsActivity() {
         super.onNewIntent(intent)
 
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
-        viewModel.startShare(this, sharedPreferences, intent.requireUnlock(), trackInfo)
+        viewModel.startShare(this, sharedPreferences, trackInfo)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -49,16 +49,6 @@
 -dontwarn android.databinding.adapters.CardViewBindingAdapter
 
 
-#Glide
--keep class * implements com.bumptech.glide.** { *; }
--keep public class * implements com.bumptech.glide.module.GlideModule
--keep public class * extends com.bumptech.glide.module.AppGlideModule
--keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
-  **[] $VALUES;
-  public *;
-}
-
-
 #Twitter4J
 -keep class twitter4j.** { *; }
 -dontwarn javax.management.**

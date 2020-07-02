@@ -23,6 +23,7 @@ allprojects {
     repositories {
         google()
         jcenter()
+        mavenCentral()
         maven { url 'https://jitpack.io' }
         maven { url 'https://s3.amazonaws.com/fabric-artifacts-private/internal-snapshots' }
         maven { url 'https://maven.fabric.io/public' }

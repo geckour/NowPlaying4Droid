@@ -49,27 +49,27 @@ class AsyncUtilTest {
     }
 
     @Test
-    fun getBitmapFromUrl_withInvalidUrl_returnNull() { // TODO: mock Glide
+    fun getBitmapFromUrl_withInvalidUrl_returnNull() {
     }
 
     @Test
-    fun getBitmapFromUrl_withValidUrl_returnNotNull() { // TODO: mock Glide
+    fun getBitmapFromUrl_withValidUrl_returnNotNull() {
     }
 
     @Test
-    fun getBitmapFromUri_withEmptyUri_returnNull() { // TODO: mock Glide
+    fun getBitmapFromUri_withEmptyUri_returnNull() {
     }
 
     @Test
-    fun getBitmapFromUri_withValidUri_returnNotNull() { // TODO: mock Glide
+    fun getBitmapFromUri_withValidUri_returnNotNull() {
     }
 
     @Test
-    fun getBitmapFromUriString_withInvalidUrl_returnNull() { // TODO: mock Glide
+    fun getBitmapFromUriString_withInvalidUrl_returnNull() {
     }
 
     @Test
-    fun getBitmapFromUriString_withValidUrl_returnNotNull() { // TODO: mock Glide
+    fun getBitmapFromUriString_withValidUrl_returnNotNull() {
     }
 
     @After

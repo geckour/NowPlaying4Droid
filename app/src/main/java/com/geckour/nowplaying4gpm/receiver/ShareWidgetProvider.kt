@@ -141,7 +141,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
             && blockCount > 1
         ) {
             val artwork = info?.artworkUriString
-                ?.let { context.getBitmapFromUriString(it, maxHeight = 500) }
+                ?.let { context.getBitmapFromUriString(it, 500) }
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
             } else {
