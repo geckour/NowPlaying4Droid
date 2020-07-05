@@ -19,6 +19,7 @@ class LicenseViewModel : ViewModel() {
         ),
         LicenseListAdapter.LicenseItem(R.string.library_timber, R.string.license_timber, false),
         LicenseListAdapter.LicenseItem(R.string.library_stetho, R.string.license_stetho, false),
+        LicenseListAdapter.LicenseItem(R.string.library_koin, R.string.license_koin, false),
         LicenseListAdapter.LicenseItem(R.string.library_retrofit, R.string.license_retrofit, false),
         LicenseListAdapter.LicenseItem(R.string.library_okhttp, R.string.license_okhttp, false),
         LicenseListAdapter.LicenseItem(
