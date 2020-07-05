@@ -28,7 +28,6 @@ import android.widget.Switch
 import android.widget.TextView
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
 import androidx.annotation.StringRes
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.NotificationManagerCompat
@@ -108,6 +107,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.android.get
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.RuntimePermissions
@@ -127,7 +128,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
         val time: Long
     )
 
-    private val viewModel: SettingsViewModel by viewModels()
+    private val viewModel: SettingsViewModel by viewModel()
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -807,7 +808,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
             editText.setSelection(editText.text.length)
 
             viewModel.viewModelScope.launch(Dispatchers.IO) {
-                val instances = MastodonInstancesApiClient().getList()
+                val instances = get<MastodonInstancesApiClient>().getList()
                 withContext(Dispatchers.Main) {
                     editText.setAdapter(
                         ArrayAdapter(this@SettingsActivity,

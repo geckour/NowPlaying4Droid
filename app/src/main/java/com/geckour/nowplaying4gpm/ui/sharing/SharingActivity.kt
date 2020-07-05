@@ -17,8 +17,6 @@ class SharingActivity : WithCrashlyticsActivity() {
 
     companion object {
 
-        private const val ARGS_KEY_REQUIRE_UNLOCK = "args_key_require_unlock"
-
         fun getIntent(context: Context): Intent =
             Intent(context, SharingActivity::class.java)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -42,13 +40,5 @@ class SharingActivity : WithCrashlyticsActivity() {
 
         onNewIntent(intent)
         finish()
-    }
-
-    private fun Intent?.requireUnlock(): Boolean {
-        val default = true
-
-        return if (this?.hasExtra(ARGS_KEY_REQUIRE_UNLOCK) == true)
-            this.getBooleanExtra(ARGS_KEY_REQUIRE_UNLOCK, default)
-        else default
     }
 }

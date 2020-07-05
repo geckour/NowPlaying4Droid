@@ -45,6 +45,8 @@ class SpotifyApiClient(context: Context) {
 
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
+    private var currentQueryAndResult: Pair<String, SpotifySearchResult>? = null
+
     suspend fun storeSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
         val token = withCatching { authService.getToken(code) }
             ?: return@withContext null
@@ -59,7 +61,7 @@ class SpotifyApiClient(context: Context) {
         return@withContext userInfo
     }
 
-    suspend fun refreshTokenIfNeeded(): SpotifyUserInfo? {
+    private suspend fun refreshTokenIfNeeded(): SpotifyUserInfo? {
         val currentUserInfo = sharedPreferences.getSpotifyUserInfo() ?: return null
         if (currentUserInfo.refreshTokenExpiredAt == null ||
             currentUserInfo.refreshTokenExpiredAt <= System.currentTimeMillis()
@@ -86,7 +88,10 @@ class SpotifyApiClient(context: Context) {
 
     suspend fun getSpotifyData(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
         val query = trackCoreElement.spotifySearchQuery
-        return withCatching({ return SpotifySearchResult.Failure(query, it) }) {
+        currentQueryAndResult?.let {
+            if (it.second !is SpotifySearchResult.Failure && query == it.first) return it.second
+        }
+        return (withCatching({ return SpotifySearchResult.Failure(query, it) }) {
             val token =
                 (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
                     ?: throw IllegalStateException("Init token first.")
@@ -106,6 +111,8 @@ class SpotifyApiClient(context: Context) {
                         )
                     )
                 } ?: SpotifySearchResult.Failure(query, IllegalStateException("No search result"))
-        } ?: SpotifySearchResult.Failure(null, IllegalStateException("Unknown error"))
+        } ?: SpotifySearchResult.Failure(null, IllegalStateException("Unknown error"))).apply {
+            currentQueryAndResult = query to this
+        }
     }
 }

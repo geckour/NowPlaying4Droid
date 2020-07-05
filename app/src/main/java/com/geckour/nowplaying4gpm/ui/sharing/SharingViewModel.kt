@@ -19,6 +19,7 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import timber.log.Timber
 
 class SharingViewModel : ViewModel() {
+
     fun startShare(
         context: Context,
         sharedPreferences: SharedPreferences,
@@ -46,9 +47,7 @@ class SharingViewModel : ViewModel() {
             .getSwitchState(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD)
         if (copyIntoClipboard) {
             context.getSystemService(ClipboardManager::class.java)
-                ?.setPrimaryClip(
-                    ClipData.newPlainText(context.packageName, sharingText)
-                )
+                ?.setPrimaryClip(ClipData.newPlainText(context.packageName, sharingText))
         }
 
         val intent = Intent(Intent.ACTION_SEND).apply {

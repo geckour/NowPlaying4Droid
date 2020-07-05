@@ -1,7 +1,6 @@
 package com.geckour.nowplaying4gpm.ui.settings
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
@@ -9,9 +8,7 @@ import com.geckour.nowplaying4gpm.ui.SingleLiveEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val spotifyApiClient = SpotifyApiClient(application)
+class SettingsViewModel(private val spotifyApiClient: SpotifyApiClient) : ViewModel() {
 
     internal var showingNotificationServicePermissionDialog = false
 

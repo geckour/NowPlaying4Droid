@@ -10,6 +10,8 @@ apply plugin: "io.fabric"
 
 apply plugin: 'kotlinx-serialization'
 
+apply plugin: 'koin'
+
 kapt.mapDiagnosticLocations = true
 
 android {
@@ -120,6 +122,13 @@ dependencies {
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
+
+    // DI
+    implementation "org.koin:koin-android:$koin_version"
+    implementation "org.koin:koin-androidx-scope:$koin_version"
+    implementation "org.koin:koin-androidx-viewmodel:$koin_version"
+    implementation "org.koin:koin-androidx-fragment:$koin_version"
+    testImplementation "org.koin:koin-test:$koin_version"
 
     // Logging
     implementation "com.jakewharton.timber:timber:4.7.1"

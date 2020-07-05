@@ -25,7 +25,6 @@ import android.service.notification.StatusBarNotification
 import android.text.Html
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
-import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
@@ -96,6 +95,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import org.koin.android.ext.android.get
 import timber.log.Timber
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -180,11 +180,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val keyguardManager: KeyguardManager? by lazy {
         withCatching { getSystemService(KeyguardManager::class.java) }
     }
-    private val lastFmApiClient: LastFmApiClient = LastFmApiClient()
-    private val spotifyApiClient: SpotifyApiClient by lazy { SpotifyApiClient(this) }
-    private val twitterApiClient: TwitterApiClient by lazy {
-        TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
-    }
+    private val lastFmApiClient: LastFmApiClient = get()
+    private val spotifyApiClient: SpotifyApiClient = get()
+    private val twitterApiClient: TwitterApiClient = get()
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
