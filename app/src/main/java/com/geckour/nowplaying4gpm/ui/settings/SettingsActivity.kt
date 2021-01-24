@@ -65,6 +65,7 @@ import com.geckour.nowplaying4gpm.util.PaletteColor
 import com.geckour.nowplaying4gpm.util.PlayerPackageState
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.Visibility
+import com.geckour.nowplaying4gpm.util.checkStoragePermission
 import com.geckour.nowplaying4gpm.util.cleaerSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
 import com.geckour.nowplaying4gpm.util.generate
@@ -108,12 +109,9 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.android.get
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import permissions.dispatcher.NeedsPermission
-import permissions.dispatcher.OnNeverAskAgain
-import permissions.dispatcher.RuntimePermissions
+import permissions.dispatcher.ktx.constructPermissionsRequest
 import timber.log.Timber
 
-@RuntimePermissions
 class SettingsActivity : AppCompatActivity() {
 
     companion object {
@@ -140,6 +138,19 @@ class SettingsActivity : AppCompatActivity() {
 
     private val mastodonScope = Scope(Scope.Name.ALL)
     private var mastodonRegistrationInfo: AppRegistration? = null
+
+    private val requestUpdate = constructPermissionsRequest(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        onPermissionDenied = ::onPermissionDenied,
+        onNeverAskAgain = ::onNeverAskPermissionAgain,
+        requiresPermission = ::invokeUpdate
+    )
+
+    private val activityResultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            requestNotificationListenerPermission { requestUpdate.launch() }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -201,7 +212,7 @@ class SettingsActivity : AppCompatActivity() {
         onReflectDonation()
 
         requestNotificationListenerPermission {
-            onRequestUpdate()
+            requestUpdate.launch()
         }
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
@@ -212,15 +223,6 @@ class SettingsActivity : AppCompatActivity() {
                 sharedPreferences.setAlertTwitterAuthFlag(false)
             }
         }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        onRequestPermissionsResult(requestCode, grantResults)
     }
 
     override fun onDestroy() {
@@ -294,9 +296,7 @@ class SettingsActivity : AppCompatActivity() {
                     .setMessage(R.string.dialog_message_alert_grant_notification_listener)
                     .setCancelable(false)
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                            requestNotificationListenerPermission { onRequestUpdate() }
-                        }.launch(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                        activityResultLauncher.launch(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
                         dialog.dismiss()
                         viewModel.showingNotificationServicePermissionDialog = false
                     }.show()
@@ -379,7 +379,7 @@ class SettingsActivity : AppCompatActivity() {
                 addView(getSwitch(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE) { _, summary ->
                     b.summary = summary
 
-                    onRequestUpdate()
+                    requestUpdate.launch()
                 })
             }
         }
@@ -391,7 +391,7 @@ class SettingsActivity : AppCompatActivity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
                     b.summary = summary
 
-                    onRequestUpdate()
+                    requestUpdate.launch()
                 })
             }
         }
@@ -403,7 +403,7 @@ class SettingsActivity : AppCompatActivity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD) { _, summary ->
                     b.summary = summary
 
-                    onRequestUpdate()
+                    requestUpdate.launch()
                 })
             }
         }
@@ -478,7 +478,7 @@ class SettingsActivity : AppCompatActivity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { state, summary ->
                     b.summary = summary
 
-                    if (state) onRequestUpdate()
+                    if (state) requestUpdate.launch()
                     else destroyNotification()
                 })
             }
@@ -491,7 +491,7 @@ class SettingsActivity : AppCompatActivity() {
                 addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION) { _, summary ->
                     b.summary = summary
 
-                    onRequestUpdate()
+                    requestUpdate.launch()
                 })
             }
         }
@@ -509,7 +509,7 @@ class SettingsActivity : AppCompatActivity() {
                     addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
                         b.summary = summary
 
-                        onRequestUpdate()
+                        requestUpdate.launch()
                     })
                 }
             }
@@ -563,27 +563,22 @@ class SettingsActivity : AppCompatActivity() {
                 startBillingTransaction(billingService)
             }
         }
+
+        checkStoragePermission(onNotGranted = { binding.maskInactiveApp.visibility = View.VISIBLE })
     }
 
-    private fun onRequestUpdate() {
-        invokeUpdateWithPermissionCheck()
-    }
-
-    @NeedsPermission(
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
-    )
-    internal fun invokeUpdate() {
+    private fun invokeUpdate() {
         binding.maskInactiveApp.visibility = View.GONE
 
         NotificationService.sendRequestInvokeUpdate(this)
     }
 
-    @OnNeverAskAgain(
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
-    )
-    internal fun onNeverAskPermissionAgain() {
+
+    private fun onPermissionDenied() {
+        binding.maskInactiveApp.visibility = View.VISIBLE
+    }
+
+    private fun onNeverAskPermissionAgain() {
         binding.maskInactiveApp.visibility = View.VISIBLE
     }
 
@@ -673,7 +668,7 @@ class SettingsActivity : AppCompatActivity() {
                     patternFormatBinding.summary = pattern
                 }
             }
-            onRequestUpdate()
+            requestUpdate.launch()
             dialog.dismiss()
         }.show()
     }
@@ -740,7 +735,7 @@ class SettingsActivity : AppCompatActivity() {
                     sharedPreferences.setArtworkResolveOrder(order)
                 }
             }
-            onRequestUpdate()
+            requestUpdate.launch()
             dialog.dismiss()
         }.show()
     }
@@ -764,7 +759,7 @@ class SettingsActivity : AppCompatActivity() {
                     sharedPreferences.setFormatPatternModifiers(modifiers)
                 }
             }
-            onRequestUpdate()
+            requestUpdate.launch()
             dialog.dismiss()
         }
         dialog.show()
@@ -944,7 +939,7 @@ class SettingsActivity : AppCompatActivity() {
                         .apply()
                     visibilityMastodonBinding.summary =
                         getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
-                    onRequestUpdate()
+                    requestUpdate.launch()
                 }
             }
             dialog.dismiss()
@@ -990,7 +985,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             }
-            onRequestUpdate()
+            requestUpdate.launch()
             dialog.dismiss()
         }.show()
     }
@@ -1108,7 +1103,7 @@ class SettingsActivity : AppCompatActivity() {
                     chooseColorBinding.summary = getString(
                         PaletteColor.getFromIndex(paletteIndex).getSummaryResId()
                     )
-                    onRequestUpdate()
+                    requestUpdate.launch()
                 }
             }
             dialog.dismiss()

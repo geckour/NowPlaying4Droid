@@ -274,12 +274,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         sbn ?: return
-
-        if (sbn.packageName != packageName) {
-            (sbn.notification.mediaMetadata ?: digMetadata(sbn.packageName))?.let {
-                currentSbn = sbn
-                sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
-                onMetadataChanged(it, sbn.packageName, sbn.notification)
+        checkStoragePermission {
+            if (sbn.packageName != packageName) {
+                (sbn.notification.mediaMetadata ?: digMetadata(sbn.packageName))?.let {
+                    currentSbn = sbn
+                    sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
+                    onMetadataChanged(it, sbn.packageName, sbn.notification)
+                }
             }
         }
     }
