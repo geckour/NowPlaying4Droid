@@ -28,7 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
@@ -46,7 +45,6 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         fun blockCount(widgetOptions: Bundle?): Int {
             if (widgetOptions == null) return 0
             val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
-            Timber.d("np4d max width: $maxWidth")
             return maxWidth / 113
         }
     }

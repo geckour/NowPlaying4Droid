@@ -18,8 +18,6 @@ import android.view.View
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.BuildConfig
@@ -28,9 +26,6 @@ import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.launch
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
@@ -44,8 +39,6 @@ import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 enum class PaletteColor {
     LIGHT_VIBRANT {
@@ -320,16 +313,26 @@ fun <T> MutableList<T>.swap(from: Int, to: Int) {
     this[from] = tmp
 }
 
-fun ViewModel.launch(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-) {
-    viewModelScope.launch(context, start, block)
-}
+fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
+    getMediaIdInfoFromDevice(trackCoreElement)?.let {
+        withCatching {
+            val contentUri = ContentUris.withAppendedId(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId
+            )
+            val retriever = MediaMetadataRetriever().apply {
+                setDataSource(this@getArtworkUriFromDevice, contentUri)
+            }
+            retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
+                ?: ContentUris.withAppendedId(
+                    Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
+                ).also { uri ->
+                    contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
+                    PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
+                }
+        }
+    }
 
-
-fun Context.getMediaIdInfoFromDevice(
+private fun Context.getMediaIdInfoFromDevice(
     trackCoreElement: TrackInfo.TrackCoreElement
 ): MediaIdInfo? {
     if (trackCoreElement.isAllNonNull.not()) return null
@@ -343,34 +346,13 @@ fun Context.getMediaIdInfoFromDevice(
     )?.use { it.getMediaIdInfoFromDevice() }
 }
 
-fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
+private fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
     if (this?.moveToFirst() == true) {
         MediaIdInfo(
             getLong(getColumnIndex(MediaStore.Audio.Media._ID)),
             getLong(getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
         )
     } else null
-
-fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdInfo?.let {
-    withCatching {
-        val contentUri = ContentUris.withAppendedId(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId
-        )
-        val retriever = MediaMetadataRetriever().apply {
-            setDataSource(this@getArtworkUriFromDevice, contentUri)
-        }
-        retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
-            ?: ContentUris.withAppendedId(
-                Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
-            ).also { uri ->
-                contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
-                PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
-            }
-    }
-}
-
-fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
-    getArtworkUriFromDevice(getMediaIdInfoFromDevice(trackCoreElement))
 
 fun ByteArray.toBitmap(): Bitmap? =
     withCatching { BitmapFactory.decodeByteArray(this, 0, this.size) }
