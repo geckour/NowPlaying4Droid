@@ -15,6 +15,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import timber.log.Timber
 import java.util.*
@@ -32,14 +33,14 @@ class SpotifyApiClient(context: Context) {
     private val authService = Retrofit.Builder()
         .client(OkHttpProvider.spotifyAuthClient)
         .baseUrl("https://accounts.spotify.com/")
-        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(SpotifyAuthService::class.java)
 
     private fun getService(token: String): SpotifyApiService = Retrofit.Builder()
         .client(OkHttpProvider.getSpotifyApiClient(token))
         .baseUrl("https://api.spotify.com/")
-        .addConverterFactory(json.asConverterFactory(MediaType.get("application/json")))
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(SpotifyApiService::class.java)
 

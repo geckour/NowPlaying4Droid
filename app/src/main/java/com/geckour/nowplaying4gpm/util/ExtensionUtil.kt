@@ -22,22 +22,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
-import io.fabric.sdk.android.Fabric
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ImplicitReflectionSerializer
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.parse
-import kotlinx.serialization.parseList
-import kotlinx.serialization.stringify
+import kotlinx.serialization.serializer
 import timber.log.Timber
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -141,7 +139,7 @@ inline fun <reified T> withCatching(
     block()
 } catch (t: Throwable) {
     Timber.e(t)
-    Crashlytics.logException(t)
+    FirebaseCrashlytics.getInstance().recordException(t)
     onError(t)
     null
 }
@@ -292,23 +290,21 @@ fun Palette.getOptimizedColor(context: Context): Int {
     }?.let { getColorFromPaletteColor(it) } ?: Color.WHITE
 }
 
-fun Context.setCrashlytics() {
-    if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
-}
-
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Any> Json.parseOrNull(
     json: String?,
     deserializationStrategy: DeserializationStrategy<T>? = null,
     onError: Throwable.() -> Unit = {}
 ): T? = withCatching(onError) {
-    deserializationStrategy?.let { this.parse(it, json!!) } ?: this.parse(json!!)
+    deserializationStrategy?.let { this.decodeFromString(it, json!!) }
+        ?: this.decodeFromString(T::class.serializer(), json!!)
 }
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Any> Json.parseListOrNull(
-    json: String?, onError: Throwable.() -> Unit = {}
-): List<T>? = withCatching(onError) { this.parseList<T>(json!!) }
+    json: String?,
+    onError: Throwable.() -> Unit = {}
+): List<T>? = this.parseOrNull(json, ListSerializer(T::class.serializer()), onError)
 
 fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
 
@@ -333,7 +329,7 @@ fun ViewModel.launch(
 }
 
 
-fun Context.getAlbumIdFromDevice(
+fun Context.getMediaIdInfoFromDevice(
     trackCoreElement: TrackInfo.TrackCoreElement
 ): MediaIdInfo? {
     if (trackCoreElement.isAllNonNull.not()) return null
@@ -344,17 +340,16 @@ fun Context.getAlbumIdFromDevice(
         contentQuerySelection,
         trackCoreElement.contentQueryArgs,
         null
-    )?.use { it.getAlbumIdFromDevice() }
+    )?.use { it.getMediaIdInfoFromDevice() }
 }
 
-fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? = this?.let {
-    (if (it.moveToFirst()) {
+fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
+    if (this?.moveToFirst() == true) {
         MediaIdInfo(
-            it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
-            it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+            getLong(getColumnIndex(MediaStore.Audio.Media._ID)),
+            getLong(getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
         )
-    } else null)
-}
+    } else null
 
 fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdInfo?.let {
     withCatching {
@@ -375,7 +370,7 @@ fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdIn
 }
 
 fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
-    getArtworkUriFromDevice(getAlbumIdFromDevice(trackCoreElement))
+    getArtworkUriFromDevice(getMediaIdInfoFromDevice(trackCoreElement))
 
 fun ByteArray.toBitmap(): Bitmap? =
     withCatching { BitmapFactory.decodeByteArray(this, 0, this.size) }
@@ -404,14 +399,14 @@ fun Bitmap.toByteArray(): ByteArray? = ByteArrayOutputStream().apply {
     compress(Bitmap.CompressFormat.PNG, 100, this)
 }.toByteArray()
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 fun Serializable.asString(): String =
     ByteArrayOutputStream().use { byteArrayStream ->
         ObjectOutputStream(byteArrayStream).writeObject(this)
-        json.stringify(byteArrayStream.toByteArray())
+        json.encodeToString(ByteArray::class.serializer(), byteArrayStream.toByteArray())
     }
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Serializable> String.toSerializableObject(): T? =
     withCatching {
         json.parseOrNull<ByteArray>(this).let { byteArray ->

@@ -29,6 +29,7 @@ import android.widget.TextView
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.NotificationManagerCompat
 import androidx.databinding.DataBindingUtil
@@ -36,7 +37,6 @@ import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.android.vending.billing.IInAppBillingService
-import com.crashlytics.android.Crashlytics
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
@@ -56,9 +56,7 @@ import com.geckour.nowplaying4gpm.databinding.ItemPrefItemBinding
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
-import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 import com.geckour.nowplaying4gpm.ui.license.LicensesActivity
-import com.geckour.nowplaying4gpm.ui.observe
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdapter
 import com.geckour.nowplaying4gpm.ui.widget.adapter.FormatPatternModifierListAdapter
@@ -96,6 +94,7 @@ import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.Gson
 import com.sys1yagi.mastodon4j.MastodonClient
 import com.sys1yagi.mastodon4j.api.Scope
@@ -115,7 +114,7 @@ import permissions.dispatcher.RuntimePermissions
 import timber.log.Timber
 
 @RuntimePermissions
-class SettingsActivity : WithCrashlyticsActivity() {
+class SettingsActivity : AppCompatActivity() {
 
     companion object {
         fun getIntent(context: Context): Intent =
@@ -843,7 +842,7 @@ class SettingsActivity : WithCrashlyticsActivity() {
                                 App.MASTODON_WEB_URL
                             ).executeCatching {
                                 Timber.e(it)
-                                Crashlytics.logException(it)
+                                FirebaseCrashlytics.getInstance().recordException(it)
                             } ?: run {
                                 onAuthMastodonError()
                                 return@launch

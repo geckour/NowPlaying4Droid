@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.util.getSharingText
-import com.geckour.nowplaying4gpm.util.setCrashlytics
 
 class MushroomActivity : Activity() {
 
@@ -15,8 +14,6 @@ class MushroomActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        setCrashlytics()
 
         val subject = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
             .getSharingText(this)

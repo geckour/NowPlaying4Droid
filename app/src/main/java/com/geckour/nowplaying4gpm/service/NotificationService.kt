@@ -71,7 +71,6 @@ import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromSpotify
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.refreshTempArtwork
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
-import com.geckour.nowplaying4gpm.util.setCrashlytics
 import com.geckour.nowplaying4gpm.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.toByteArray
@@ -92,9 +91,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.android.ext.android.get
 import timber.log.Timber
 import java.io.PrintWriter
@@ -224,7 +223,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onCreate()
 
         job = Job()
-        setCrashlytics()
 
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_CLEAR_TRACK_INFO)
@@ -497,7 +495,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             val mediaId = artworkBytes?.let {
                 Media(mastodonClient).postMedia(
                     MultipartBody.Part.createFormData(
-                        "file", "artwork.png", RequestBody.create(MediaType.get("image/png"), it)
+                        "file",
+                        "artwork.png",
+                        it.toRequestBody("image/png".toMediaTypeOrNull())
                     )
                 ).executeCatching()?.id
             }
@@ -849,11 +849,13 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     is SpotifySearchResult.Success -> spotifySearchResult.data.sharingUrl
                     is SpotifySearchResult.Failure -> spotifySearchResult.cause.let { t ->
                         StringWriter().use {
-                            "expiredAt: ${sharedPreferences.getSpotifyUserInfo()?.refreshTokenExpiredAt}\n${it.apply {
-                                t.printStackTrace(
-                                    PrintWriter(this)
-                                )
-                            }}"
+                            "expiredAt: ${sharedPreferences.getSpotifyUserInfo()?.refreshTokenExpiredAt}\n${
+                                it.apply {
+                                    t.printStackTrace(
+                                        PrintWriter(this)
+                                    )
+                                }
+                            }"
                         }
                     }
                 }

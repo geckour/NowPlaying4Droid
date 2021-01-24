@@ -1,23 +1,17 @@
 package com.geckour.nowplaying4gpm.ui.debug
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.databinding.ActivityDebugBinding
-import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
-import com.geckour.nowplaying4gpm.ui.observe
 import com.geckour.nowplaying4gpm.util.getDebugSpotifySearchFlag
-import com.geckour.nowplaying4gpm.util.toggleDebugSpotifySearchFlag
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
-class DebugActivity : WithCrashlyticsActivity() {
+class DebugActivity : AppCompatActivity() {
 
     companion object {
 

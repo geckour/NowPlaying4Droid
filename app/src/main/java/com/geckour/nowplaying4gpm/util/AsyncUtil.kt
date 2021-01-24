@@ -10,14 +10,14 @@ import android.net.Uri
 import androidx.core.content.ContextCompat
 import coil.Coil
 import coil.request.CachePolicy
-import coil.request.GetRequest
-import com.crashlytics.android.Crashlytics
+import coil.request.ImageRequest
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.sys1yagi.mastodon4j.MastodonRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -63,7 +63,7 @@ suspend fun Context.getBitmapFromUriString(
     withContext(Dispatchers.IO) {
         (Coil.imageLoader(this@getBitmapFromUriString)
             .execute(
-                GetRequest.Builder(this@getBitmapFromUriString)
+                ImageRequest.Builder(this@getBitmapFromUriString)
                     .data(uriString)
                     .allowHardware(false)
                     .diskCachePolicy(CachePolicy.DISABLED)
@@ -76,7 +76,7 @@ suspend fun Context.getBitmapFromUriString(
     }
 } catch (t: Throwable) {
     Timber.e(t)
-    Crashlytics.logException(t)
+    FirebaseCrashlytics.getInstance().recordException(t)
     null
 }
 

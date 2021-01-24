@@ -3,16 +3,16 @@ package com.geckour.nowplaying4gpm.util
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import androidx.core.content.edit
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.ArtworkInfo
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.list
-import kotlinx.serialization.stringify
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encodeToString
 import twitter4j.auth.AccessToken
 
 enum class PrefKey(val defaultValue: Any? = null) {
@@ -76,19 +76,18 @@ data class PlayerPackageState(
     val state: Boolean
 )
 
-@OptIn(ImplicitReflectionSerializer::class)
-fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) =
-    edit().putString(
-        PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-        trackInfo?.let { json.stringify(it) }
-    ).apply()
+fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) {
+    edit {
+        putString(
+            PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
+            trackInfo?.let { json.encodeToString(it) }
+        )
+    }
+}
 
-@OptIn(ImplicitReflectionSerializer::class)
-fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) =
-    edit().putString(
-        PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name,
-        json.stringify(order)
-    ).apply()
+fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) {
+    edit { putString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, json.encodeToString(order)) }
+}
 
 fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
@@ -100,12 +99,14 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
         stored + (origin - stored.map { it.key }).map { ArtworkResolveMethod(it, true) }
     }
 
-@OptIn(ImplicitReflectionSerializer::class)
-fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) =
-    edit().putString(
-        PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
-        json.stringify(FormatPatternModifier.serializer().list, modifiers)
-    ).apply()
+fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) {
+    edit {
+        putString(
+            PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name,
+            json.encodeToString(ListSerializer(FormatPatternModifier.serializer()), modifiers)
+        )
+    }
+}
 
 fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { jsonString ->
@@ -124,12 +125,13 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
         ?: context.getString(R.string.default_sharing_text_pattern)
 
-@OptIn(ImplicitReflectionSerializer::class)
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
-    edit().putString(
-        PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
-        json.stringify(ArtworkInfo(artworkUri?.toString()))
-    ).apply()
+    edit {
+        putString(
+            PrefKey.PREF_KEY_TEMP_ARTWORK_INFO.name,
+            json.encodeToString(ArtworkInfo(artworkUri?.toString()))
+        )
+    }
 }
 
 fun SharedPreferences.getTempArtworkInfo(): ArtworkInfo? {
@@ -204,15 +206,13 @@ fun SharedPreferences.getVisibilityMastodon(): Visibility =
         )
     ) ?: Visibility.PUBLIC
 
-@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
     if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name))
         getString(PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name, null)
-            ?.let { json.parseListOrNull<PackageState>(it) }
+            ?.let { json.parseListOrNull(it) }
             ?: emptyList()
     else emptyList()
 
-@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
     val toStore = getPackageStateListPostMastodon().let { stateList ->
         val index = stateList.indexOfFirst { it.packageName == packageName }
@@ -220,14 +220,16 @@ fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: 
             stateList.apply { stateList[index].state = state ?: return@apply }
         else stateList + PackageState(packageName)
     }
-    edit().putString(
-        PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
-        json.stringify(toStore)
-    ).apply()
+    edit {
+        putString(
+            PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
+            json.encodeToString(toStore)
+        )
+    }
 }
 
 fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
-    edit().putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration).apply()
+    edit { putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration) }
 }
 
 fun SharedPreferences.getDonateBillingState(): Boolean =
@@ -238,16 +240,14 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
     )
 
 fun SharedPreferences.cleaerSpotifyUserInfoImmediately() {
-    edit().remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name).commit()
+    edit(true) { remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name) }
 }
 
-@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
-    edit().remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name)
-        .putString(
-            PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name,
-            json.stringify(spotifyUserInfo)
-        ).commit()
+    edit(true) {
+        remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name)
+        putString(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name, json.encodeToString(spotifyUserInfo))
+    }
 }
 
 fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
@@ -261,12 +261,8 @@ fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
     else null
 }
 
-@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
-    edit().putString(
-        PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-        accessToken.asString()
-    ).apply()
+    edit { putString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, accessToken.asString()) }
 }
 
 fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
@@ -274,16 +270,12 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
         getString(
             PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
             PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
-        )?.let { it.toSerializableObject<AccessToken>() }
+        )?.toSerializableObject()
     else null
 }
 
-@OptIn(ImplicitReflectionSerializer::class)
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
-    edit().putString(
-        PrefKey.PREF_KEY_MASTODON_USER_INFO.name,
-        json.stringify(userInfo)
-    ).apply()
+    edit { putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, json.encodeToString(userInfo)) }
 }
 
 fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
@@ -298,7 +290,7 @@ fun SharedPreferences.getMastodonUserInfo(): MastodonUserInfo? {
 }
 
 fun SharedPreferences.setAlertTwitterAuthFlag(flag: Boolean) {
-    edit().putBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name, flag).apply()
+    edit { putBoolean(PrefKey.PREF_KEY_FLAG_ALERT_AUTH_TWITTER.name, flag) }
 }
 
 fun SharedPreferences.getAlertTwitterAuthFlag(): Boolean =
@@ -330,7 +322,7 @@ fun SharedPreferences.toggleDebugSpotifySearchFlag(): Boolean {
     val key = PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH
 
     val setTo = getDebugSpotifySearchFlag().not()
-    edit().putBoolean(key.name, setTo).apply()
+    edit { putBoolean(key.name, setTo) }
 
     return setTo
 }
@@ -338,8 +330,6 @@ fun SharedPreferences.toggleDebugSpotifySearchFlag(): Boolean {
 fun SharedPreferences.readyForShare(
     context: Context,
     trackInfo: TrackInfo? = getCurrentTrackInfo()
-): Boolean {
-    return trackInfo != null &&
-            (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
-                    trackInfo.isSatisfiedSpecifier(getFormatPattern(context)))
-}
+): Boolean = trackInfo != null &&
+        (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
+                trackInfo.isSatisfiedSpecifier(getFormatPattern(context)))
