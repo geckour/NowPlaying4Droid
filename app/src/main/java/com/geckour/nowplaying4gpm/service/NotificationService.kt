@@ -324,15 +324,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private fun onMetadataChanged(
         metadata: MediaMetadata, playerPackageName: String, notification: Notification? = null
     ) {
-        val trackCoreElement = metadata.getTrackCoreElement()
-        if (trackCoreElement != currentMetadata?.getTrackCoreElement()) {
+        if (metadata != currentMetadata) {
             refreshMetadataJob?.cancel()
             currentMetadata = metadata
             refreshMetadataJob = launch {
                 currentTrackClearJob?.cancelAndJoin()
 
                 val trackInfo = updateTrackInfo(
-                    metadata, playerPackageName, notification, trackCoreElement
+                    metadata, playerPackageName, notification, metadata.getTrackCoreElement()
                 ) ?: return@launch
                 val allowedPostMastodon = sharedPreferences.getPackageStateListPostMastodon()
                     .firstOrNull { it.packageName == playerPackageName }
