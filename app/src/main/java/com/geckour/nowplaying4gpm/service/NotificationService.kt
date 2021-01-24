@@ -323,7 +323,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun onMetadataChanged(
-        metadata: MediaMetadata, playerPackageName: String, notification: Notification? = null
+        metadata: MediaMetadata,
+        playerPackageName: String,
+        notification: Notification? = null
     ) {
         if (metadata != currentMetadata) {
             refreshMetadataJob?.cancel()

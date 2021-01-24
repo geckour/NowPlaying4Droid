@@ -573,7 +573,6 @@ class SettingsActivity : AppCompatActivity() {
         NotificationService.sendRequestInvokeUpdate(this)
     }
 
-
     private fun onPermissionDenied() {
         binding.maskInactiveApp.visibility = View.VISIBLE
     }
@@ -949,24 +948,29 @@ class SettingsActivity : AppCompatActivity() {
     private fun onClickPlayerPackageMastodon(sharedPreferences: SharedPreferences) {
         val adapter =
             PlayerPackageListAdapter(
-                sharedPreferences.getPackageStateListPostMastodon().mapNotNull { packageState ->
-                    val appName = packageManager?.let {
-                        withCatching {
-                            it.getApplicationLabel(
-                                it.getApplicationInfo(
-                                    packageState.packageName,
-                                    PackageManager.GET_META_DATA
+                sharedPreferences.getPackageStateListPostMastodon()
+                    .mapNotNull { packageState ->
+                        val appName = packageManager?.let {
+                            withCatching {
+                                it.getApplicationLabel(
+                                    it.getApplicationInfo(
+                                        packageState.packageName,
+                                        PackageManager.GET_META_DATA
+                                    )
                                 )
+                            }
+                        }?.toString()
+                        if (appName == null) {
+                            sharedPreferences.storePackageStatePostMastodon(
+                                packageState.packageName, false
                             )
-                        }
-                    }?.toString()
-                    if (appName == null) {
-                        sharedPreferences.storePackageStatePostMastodon(
-                            packageState.packageName, false
+                            null
+                        } else PlayerPackageState(
+                            packageState.packageName,
+                            appName,
+                            packageState.state
                         )
-                        null
-                    } else PlayerPackageState(packageState.packageName, appName, packageState.state)
-                })
+                    })
         val dialogRecyclerViewBinding = DialogRecyclerViewBinding.inflate(
             LayoutInflater.from(this), null, false
         ).apply {
