@@ -204,16 +204,16 @@ class SettingsActivity : AppCompatActivity() {
         observeEvents()
 
         showIgnoreBatteryOptimizationDialog()
+
+        requestNotificationListenerPermission {
+            requestUpdate.launch()
+        }
     }
 
     override fun onResume() {
         super.onResume()
 
         onReflectDonation()
-
-        requestNotificationListenerPermission {
-            requestUpdate.launch()
-        }
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
             showErrorDialog(
