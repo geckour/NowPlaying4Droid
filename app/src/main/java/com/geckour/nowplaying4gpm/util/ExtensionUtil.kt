@@ -128,14 +128,13 @@ enum class FormatPattern(val value: String) {
 
 inline fun <reified T> withCatching(
     onError: (Throwable) -> Unit = {}, block: () -> T
-) = try {
+) = runCatching {
     block()
-} catch (t: Throwable) {
-    Timber.e(t)
-    FirebaseCrashlytics.getInstance().recordException(t)
-    onError(t)
-    null
-}
+}.onFailure {
+    Timber.e(it)
+    FirebaseCrashlytics.getInstance().recordException(it)
+    onError(it)
+}.getOrNull()
 
 fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
     trackInfo?.let { info ->

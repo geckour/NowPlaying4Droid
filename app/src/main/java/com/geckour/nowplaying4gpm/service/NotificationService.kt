@@ -254,19 +254,23 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         Wearable.getMessageClient(this).addListener(onMessageReceived)
-        getSystemService(MediaSessionManager::class.java)
-            ?.removeOnActiveSessionsChangedListener(onActiveSessionChanged)
+        withCatching {
+            getSystemService(MediaSessionManager::class.java)
+                ?.removeOnActiveSessionsChangedListener(onActiveSessionChanged)
+        }
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
 
         Wearable.getMessageClient(this).removeListener(onMessageReceived)
-        getSystemService(MediaSessionManager::class.java)
-            ?.addOnActiveSessionsChangedListener(
-                onActiveSessionChanged,
-                getComponentName(this)
-            )
+        withCatching {
+            getSystemService(MediaSessionManager::class.java)
+                ?.addOnActiveSessionsChangedListener(
+                    onActiveSessionChanged,
+                    getComponentName(this)
+                )
+        }
 
         requestRebind()
     }
