@@ -12,7 +12,6 @@ class SettingsViewModel(private val spotifyApiClient: SpotifyApiClient) : ViewMo
 
     internal var showingNotificationServicePermissionDialog = false
 
-    internal val reflectDonation = SingleLiveEvent<Boolean>()
     internal val spotifyUserInfo = SingleLiveEvent<SpotifyUserInfo>()
 
     internal fun storeSpotifyUserInfo(verifier: String) = viewModelScope.launch(Dispatchers.IO) {

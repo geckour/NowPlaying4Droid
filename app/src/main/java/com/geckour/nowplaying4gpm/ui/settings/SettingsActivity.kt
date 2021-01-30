@@ -1,19 +1,15 @@
 package com.geckour.nowplaying4gpm.ui.settings
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
-import android.content.ComponentName
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
 import android.text.InputType
@@ -26,17 +22,15 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.NotificationManagerCompat
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
-import com.android.vending.billing.IInAppBillingService
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
@@ -45,7 +39,6 @@ import com.geckour.nowplaying4gpm.api.BillingApiClient
 import com.geckour.nowplaying4gpm.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
-import com.geckour.nowplaying4gpm.api.model.PurchaseResult
 import com.geckour.nowplaying4gpm.databinding.ActivitySettingsBinding
 import com.geckour.nowplaying4gpm.databinding.DialogAutoCompleteEditTextBinding
 import com.geckour.nowplaying4gpm.databinding.DialogEditTextBinding
@@ -83,12 +76,11 @@ import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
-import com.geckour.nowplaying4gpm.util.json
-import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.setArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
+import com.geckour.nowplaying4gpm.util.showErrorDialog
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
@@ -130,8 +122,8 @@ class SettingsActivity : AppCompatActivity() {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
     private lateinit var binding: ActivitySettingsBinding
-    private lateinit var serviceConnection: ServiceConnection
-    private var billingService: IInAppBillingService? = null
+
+    private lateinit var billingApiClient: BillingApiClient
 
     private val twitterApiClient =
         TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
@@ -156,6 +148,29 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
+        billingApiClient = BillingApiClient(this) {
+            when (it) {
+                BillingApiClient.BillingResult.SUCCESS -> reflectDonation(true)
+                BillingApiClient.BillingResult.DUPLICATED -> {
+                    showErrorDialog(
+                        R.string.dialog_title_alert_failure_purchase,
+                        R.string.dialog_message_alert_already_purchase
+                    )
+                }
+                BillingApiClient.BillingResult.CANCELLED -> {
+                    showErrorDialog(
+                        R.string.dialog_title_alert_failure_purchase,
+                        R.string.dialog_message_alert_on_cancel_purchase
+                    )
+                }
+                BillingApiClient.BillingResult.FAILURE -> {
+                    showErrorDialog(
+                        R.string.dialog_title_alert_failure_purchase,
+                        R.string.dialog_message_alert_failure_purchase
+                    )
+                }
+            }
+        }
 
         binding.toolbarTitle =
             "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
@@ -182,25 +197,6 @@ class SettingsActivity : AppCompatActivity() {
 
         setupItems()
 
-        serviceConnection = object : ServiceConnection {
-            override fun onServiceDisconnected(name: ComponentName?) {
-                billingService = null
-            }
-
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                IInAppBillingService.Stub.asInterface(service).apply {
-                    billingService = IInAppBillingService.Stub.asInterface(service)
-                }
-            }
-        }
-        bindService(
-            Intent("com.android.vending.billing.InAppBillingService.BIND").apply {
-                `package` = "com.android.vending"
-            },
-            serviceConnection,
-            Context.BIND_AUTO_CREATE
-        )
-
         observeEvents()
 
         showIgnoreBatteryOptimizationDialog()
@@ -213,7 +209,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        onReflectDonation()
+        reflectDonation()
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
             showErrorDialog(
@@ -223,12 +219,6 @@ class SettingsActivity : AppCompatActivity() {
                 sharedPreferences.setAlertTwitterAuthFlag(false)
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        billingService?.apply { unbindService(serviceConnection) }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -260,11 +250,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun observeEvents() {
-        viewModel.reflectDonation.observe(this) {
-            it ?: return@observe
-            onReflectDonation(it)
-        }
-
         viewModel.spotifyUserInfo.observe(this) { userInfo ->
             if (userInfo == null) {
                 onAuthSpotifyError()
@@ -560,7 +545,12 @@ class SettingsActivity : AppCompatActivity() {
         binding.itemDonate.also { b ->
             if (sharedPreferences.getDonateBillingState()) b.root.visibility = View.GONE
             else b.root.setOnClickListener {
-                startBillingTransaction(billingService)
+                lifecycleScope.launch {
+                    billingApiClient.startBilling(
+                        this@SettingsActivity,
+                        listOf(BuildConfig.SKU_KEY_DONATE)
+                    )
+                }
             }
         }
 
@@ -635,11 +625,12 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onReflectDonation(state: Boolean? = null) {
-        val s = state ?: sharedPreferences.getDonateBillingState()
-
-        sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, s).apply()
-        binding.donated = s
+    private fun reflectDonation(state: Boolean? = null) {
+        (state ?: sharedPreferences.getDonateBillingState()).let {
+            sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, it).apply()
+            binding.donated = it
+        }
+        billingApiClient.requestUpdate()
     }
 
     private fun onClickItemPatternFormat(
@@ -670,16 +661,6 @@ class SettingsActivity : AppCompatActivity() {
             requestUpdate.launch()
             dialog.dismiss()
         }.show()
-    }
-
-    private fun showErrorDialog(
-        @StringRes titleResId: Int,
-        @StringRes messageResId: Int,
-        onDismiss: () -> Unit = {}
-    ) = runOnUiThread {
-        AlertDialog.Builder(this).setTitle(titleResId).setMessage(messageResId)
-            .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
-            .setOnDismissListener { onDismiss() }.show()
     }
 
     private fun onAuthSpotifyError() {
@@ -1005,63 +986,6 @@ class SettingsActivity : AppCompatActivity() {
 
         startActivity(SharingActivity.getIntent(this))
     }
-
-    private fun startBillingTransaction(billingService: IInAppBillingService?) =
-        viewModel.viewModelScope.launch(Dispatchers.IO) {
-            billingService?.let {
-                val skuName = BuildConfig.SKU_KEY_DONATE
-                BillingApiClient(it).apply {
-                    val sku = getSkuDetails(this@SettingsActivity, skuName).firstOrNull() ?: run {
-                        showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_start_purchase
-                        )
-                        return@launch
-                    }
-
-                    if (getPurchasedItems(this@SettingsActivity).contains(sku.productId)) {
-                        showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_already_purchase
-                        )
-                        viewModel.reflectDonation.postValue(true)
-                        return@launch
-                    }
-                }
-
-                val intentSender = BillingApiClient(it).getBuyIntent(this@SettingsActivity, skuName)
-                    ?.intentSender ?: return@let
-                registerForActivityResult(
-                    ActivityResultContracts.StartIntentSenderForResult()
-                ) { result ->
-                    when (result.resultCode) {
-                        Activity.RESULT_OK -> {
-                            val purchaseResult: PurchaseResult? =
-                                json.parseOrNull(
-                                    result.data
-                                        ?.getStringExtra(BillingApiClient.BUNDLE_KEY_PURCHASE_DATA)
-                                )
-
-                            if (purchaseResult?.purchaseState == 0) {
-                                onReflectDonation(true)
-                            } else {
-                                showErrorDialog(
-                                    R.string.dialog_title_alert_failure_purchase,
-                                    R.string.dialog_message_alert_failure_purchase
-                                )
-                            }
-                        }
-
-                        Activity.RESULT_CANCELED -> {
-                            showErrorDialog(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_on_cancel_purchase
-                            )
-                        }
-                    }
-                }.launch(IntentSenderRequest.Builder(intentSender).build())
-            }
-        }
 
     private fun onClickItemChooseColor(
         sharedPreferences: SharedPreferences, chooseColorBinding: ItemPrefItemBinding

@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentUris
 import android.content.Context
@@ -16,6 +17,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.view.View
 import androidx.annotation.ColorInt
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.palette.graphics.Palette
@@ -135,6 +137,16 @@ inline fun <reified T> withCatching(
     FirebaseCrashlytics.getInstance().recordException(it)
     onError(it)
 }.getOrNull()
+
+fun Activity.showErrorDialog(
+    @StringRes titleResId: Int,
+    @StringRes messageResId: Int,
+    onDismiss: () -> Unit = {}
+) = runOnUiThread {
+    AlertDialog.Builder(this).setTitle(titleResId).setMessage(messageResId)
+        .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+        .setOnDismissListener { onDismiss() }.show()
+}
 
 fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
     trackInfo?.let { info ->
