@@ -5,8 +5,8 @@ import android.content.Context
 import android.os.Bundle
 import com.android.vending.billing.IInAppBillingService
 import com.geckour.nowplaying4gpm.api.model.SkuDetail
-import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.json
+import com.geckour.nowplaying4gpm.util.parseOrNull
 import com.geckour.nowplaying4gpm.util.withCatching
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -37,7 +37,7 @@ class BillingApiClient(private val service: IInAppBillingService) {
                 BILLING_TYPE,
                 null
             ).getStringArrayList(BUNDLE_KEY_PURCHASE_ITEM_LIST)
-        } ?: emptyList<String>()
+        } ?: emptyList()
     }
 
     suspend fun getSkuDetails(context: Context, vararg skus: String): List<SkuDetail> =
@@ -67,8 +67,8 @@ class BillingApiClient(private val service: IInAppBillingService) {
         service.getBuyIntent(API_VERSION, context.packageName, sku, BILLING_TYPE, null)?.let {
             if (it.containsKey(BUNDLE_KEY_RESPONSE_CODE)
                 && it.getInt(BUNDLE_KEY_RESPONSE_CODE) == 0
-            )
-                it.getParcelable(BUNDLE_KEY_BUY_INTENT)
-            else null
+            ) {
+                it.getParcelable<PendingIntent>(BUNDLE_KEY_BUY_INTENT)
+            } else null
         }
 }
