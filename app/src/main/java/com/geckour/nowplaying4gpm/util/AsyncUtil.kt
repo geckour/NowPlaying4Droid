@@ -17,10 +17,7 @@ import com.geckour.nowplaying4gpm.api.model.Image
 import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
@@ -39,7 +36,9 @@ else client.searchAlbum(
 }?.url
 
 suspend fun refreshArtworkUriFromLastFmApi(
-    context: Context, client: LastFmApiClient, trackCoreElement: TrackInfo.TrackCoreElement
+    context: Context,
+    client: LastFmApiClient,
+    trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
 
@@ -47,7 +46,9 @@ suspend fun refreshArtworkUriFromLastFmApi(
 }
 
 suspend fun refreshArtworkUriFromSpotify(
-    context: Context, client: SpotifyApiClient, trackCoreElement: TrackInfo.TrackCoreElement
+    context: Context,
+    client: SpotifyApiClient,
+    trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url =
         (client.getSpotifyData(trackCoreElement) as? SpotifySearchResult.Success)?.data?.artworkUrl
@@ -59,25 +60,19 @@ suspend fun refreshArtworkUriFromSpotify(
 suspend fun Context.getBitmapFromUriString(
     uriString: String,
     maxSize: Int? = null
-): Bitmap? = try {
-    withContext(Dispatchers.IO) {
-        (Coil.imageLoader(this@getBitmapFromUriString)
-            .execute(
-                ImageRequest.Builder(this@getBitmapFromUriString)
-                    .data(uriString)
-                    .allowHardware(false)
-                    .diskCachePolicy(CachePolicy.DISABLED)
-                    .memoryCachePolicy(CachePolicy.DISABLED)
-                    .apply { maxSize?.let { size(it) } }
-                    .build()
-            )
-            .drawable as BitmapDrawable)
-            .bitmap
-    }
-} catch (t: Throwable) {
-    Timber.e(t)
-    FirebaseCrashlytics.getInstance().recordException(t)
-    null
+): Bitmap? = withCatching {
+    Timber.d("np4d uriString: $uriString")
+    val drawable = Coil.execute(
+        ImageRequest.Builder(this)
+            .data(uriString)
+            .allowHardware(false)
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .apply { maxSize?.let { size(it) } }
+            .build()
+    ).drawable as BitmapDrawable?
+
+    return@withCatching drawable?.bitmap
 }
 
 suspend fun Context.checkStoragePermissionAsync(

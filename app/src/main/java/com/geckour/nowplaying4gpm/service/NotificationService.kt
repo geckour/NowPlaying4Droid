@@ -378,9 +378,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 }
             } else null
 
-        val artworkUri = metadata.storeArtworkUri(
-            coreElement, notification?.getArtworkBitmap()
-        )
+        val artworkUri = metadata.storeArtworkUri(coreElement, notification?.getArtworkBitmap())
 
         val trackInfo = TrackInfo(
             coreElement,
@@ -488,7 +486,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 )
             ) {
                 trackInfo.artworkUriString?.let {
-                    return@let withCatching { getBitmapFromUriString(it)?.toByteArray() }
+                    return@let withCatching {
+                        getBitmapFromUriString(it)?.toByteArray()
+                    }
                 }
             } else null
 
@@ -520,14 +520,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
                 }).executeCatching() ?: return
 
-            showShortNotify(result)
+            showShortNotify(result, trackInfo.playerPackageName ?: return)
         }
     }
 
-    private suspend fun showShortNotify(status: Status) {
+    private suspend fun showShortNotify(status: Status, playerPackageName: String) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
             notificationManager.apply {
-                showNotification(status)
+                showNotification(status, playerPackageName)
                 delay(2500)
                 cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
             }
@@ -609,7 +609,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private suspend fun MediaMetadata.storeArtworkUri(
-        coreElement: TrackInfo.TrackCoreElement, notificationBitmap: Bitmap?
+        coreElement: TrackInfo.TrackCoreElement,
+        notificationBitmap: Bitmap?
     ): Uri? {
         // Check whether arg metadata and current metadata are the same or not
         val cacheInfo = sharedPreferences.getCurrentTrackInfo()
@@ -628,7 +629,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
                     this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.let { uri ->
-                        getBitmapFromUriString(uri)?.refreshArtworkUri(this@NotificationService)
+                        getBitmapFromUriString(uri)
+                            ?.refreshArtworkUri(this@NotificationService)
                             ?.let { return it }
                     }
                 }
@@ -644,12 +646,16 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
                     refreshArtworkUriFromLastFmApi(
-                        this@NotificationService, lastFmApiClient, coreElement
+                        this@NotificationService,
+                        lastFmApiClient,
+                        coreElement
                     )?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
                     refreshArtworkUriFromSpotify(
-                        this@NotificationService, spotifyApiClient, coreElement
+                        this@NotificationService,
+                        spotifyApiClient,
+                        coreElement
                     )?.let { return it }
                 }
             }
@@ -681,7 +687,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         } else this.destroyNotification()
     }
 
-    private suspend fun NotificationManager.showNotification(status: Status) {
+    private suspend fun NotificationManager.showNotification(
+        status: Status,
+        playerPackageName: String
+    ) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
             checkStoragePermissionAsync {
                 getNotification(this@NotificationService, status)?.apply {
@@ -720,7 +729,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 Notification.Builder(
                     context,
-                    NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                    Channel.NOTIFICATION_CHANNEL_SHARE.name
                 )
             else Notification.Builder(context)
 
@@ -748,7 +757,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                         R.drawable.ic_clear
                     ),
                     context.getString(R.string.action_clear_notification),
-                    NotificationService.getClearTrackInfoPendingIntent(context)
+                    getClearTrackInfoPendingIntent(context)
                 ).build()
             val notificationText =
                 sharedPreferences.getFormatPattern(context)
@@ -797,12 +806,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }.build()
     }
 
-    private suspend fun getNotification(context: Context, status: Status): Notification? {
+    private suspend fun getNotification(
+        context: Context,
+        status: Status
+    ): Notification? {
         val notificationBuilder =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 Notification.Builder(
                     context,
-                    NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                    Channel.NOTIFICATION_CHANNEL_SHARE.name
                 )
             else Notification.Builder(context)
 
@@ -810,8 +822,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             val notificationText =
                 Html.fromHtml(status.content, Html.FROM_HTML_MODE_COMPACT).toString()
 
-            val thumb =
-                status.mediaAttachments.firstOrNull()?.url?.let { context.getBitmapFromUriString(it) }
+            val thumb = status.mediaAttachments
+                .firstOrNull()
+                ?.url
+                ?.let { context.getBitmapFromUriString(it) }
 
             setSmallIcon(R.drawable.ic_notification_notify)
             setLargeIcon(thumb)
@@ -838,7 +852,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 Notification.Builder(
                     context,
-                    NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                    Channel.NOTIFICATION_CHANNEL_SHARE.name
                 )
             else Notification.Builder(context)
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)

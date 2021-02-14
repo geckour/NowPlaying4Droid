@@ -129,7 +129,8 @@ enum class FormatPattern(val value: String) {
 }
 
 inline fun <reified T> withCatching(
-    onError: (Throwable) -> Unit = {}, block: () -> T
+    onError: (Throwable) -> Unit = {},
+    block: () -> T
 ) = runCatching {
     block()
 }.onFailure {
