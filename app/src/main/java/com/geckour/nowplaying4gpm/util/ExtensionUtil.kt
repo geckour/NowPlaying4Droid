@@ -1,7 +1,6 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentUris
 import android.content.Context
@@ -28,6 +27,8 @@ import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
@@ -139,14 +140,17 @@ inline fun <reified T> withCatching(
     onError(it)
 }.getOrNull()
 
-fun Activity.showErrorDialog(
+suspend fun Context.showErrorDialog(
     @StringRes titleResId: Int,
     @StringRes messageResId: Int,
     onDismiss: () -> Unit = {}
-) = runOnUiThread {
-    AlertDialog.Builder(this).setTitle(titleResId).setMessage(messageResId)
-        .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
-        .setOnDismissListener { onDismiss() }.show()
+) {
+    withContext(Dispatchers.Main) {
+        AlertDialog.Builder(this@showErrorDialog).setTitle(titleResId).setMessage(messageResId)
+            .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+            .setOnDismissListener { onDismiss() }
+            .show()
+    }
 }
 
 fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =

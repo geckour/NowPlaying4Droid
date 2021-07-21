@@ -1,7 +1,9 @@
 package com.geckour.nowplaying4gpm.api
 
-import android.app.Activity
 import android.content.Context
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -11,8 +13,7 @@ import com.android.billingclient.api.SkuDetailsParams
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.util.showErrorDialog
 import com.geckour.nowplaying4gpm.util.withCatching
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 class BillingApiClient(
     context: Context,
@@ -61,28 +62,30 @@ class BillingApiClient(
         onDonateCompleted(billingResult)
     }
 
-    suspend fun startBilling(activity: Activity, skus: List<String>) {
-        withContext(Dispatchers.IO) {
-            withCatching {
-                val params = SkuDetailsParams.newBuilder()
-                    .setType(BillingClient.SkuType.INAPP)
-                    .setSkusList(skus)
-                    .build()
-                client.querySkuDetailsAsync(params) { result, skuDetailsList ->
-                    if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+    suspend fun startBilling(activity: AppCompatActivity, skus: List<String>) {
+        withCatching {
+            val params = SkuDetailsParams.newBuilder()
+                .setType(BillingClient.SkuType.INAPP)
+                .setSkusList(skus)
+                .build()
+            client.querySkuDetailsAsync(params) { result, skuDetailsList ->
+                if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                    activity.lifecycleScope.launch {
                         activity.showErrorDialog(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_on_start_purchase
                         )
-                        return@querySkuDetailsAsync
                     }
+                    return@querySkuDetailsAsync
+                }
 
-                    skuDetailsList?.firstOrNull()?.let {
-                        val flowParams = BillingFlowParams.newBuilder()
-                            .setSkuDetails(skuDetailsList.first())
-                            .build()
-                        client.launchBillingFlow(activity, flowParams)
-                    } ?: run {
+                skuDetailsList?.firstOrNull()?.let {
+                    val flowParams = BillingFlowParams.newBuilder()
+                        .setSkuDetails(skuDetailsList.first())
+                        .build()
+                    client.launchBillingFlow(activity, flowParams)
+                } ?: run {
+                    activity.lifecycleScope.launch {
                         activity.showErrorDialog(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_on_start_purchase
@@ -94,6 +97,20 @@ class BillingApiClient(
     }
 
     fun requestUpdate() {
-        client.queryPurchases(BillingClient.SkuType.INAPP)
+        withCatching {
+            client.queryPurchasesAsync(BillingClient.SkuType.INAPP) { result, purchases ->
+                if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                    purchases.forEach {
+                        if (it.purchaseState != Purchase.PurchaseState.PURCHASED) return@forEach
+                        if (it.isAcknowledged) return@forEach
+
+                        val params = AcknowledgePurchaseParams.newBuilder()
+                            .setPurchaseToken(it.purchaseToken)
+                            .build()
+                        client.acknowledgePurchase(params) {}
+                    }
+                }
+            }
+        }
     }
 }

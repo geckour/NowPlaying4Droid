@@ -148,25 +148,27 @@ class SettingsActivity : AppCompatActivity() {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
         billingApiClient = BillingApiClient(this) {
-            when (it) {
-                BillingApiClient.BillingResult.SUCCESS -> reflectDonation(true)
-                BillingApiClient.BillingResult.DUPLICATED -> {
-                    showErrorDialog(
-                        R.string.dialog_title_alert_failure_purchase,
-                        R.string.dialog_message_alert_already_purchase
-                    )
-                }
-                BillingApiClient.BillingResult.CANCELLED -> {
-                    showErrorDialog(
-                        R.string.dialog_title_alert_failure_purchase,
-                        R.string.dialog_message_alert_on_cancel_purchase
-                    )
-                }
-                BillingApiClient.BillingResult.FAILURE -> {
-                    showErrorDialog(
-                        R.string.dialog_title_alert_failure_purchase,
-                        R.string.dialog_message_alert_failure_purchase
-                    )
+            lifecycleScope.launchWhenResumed {
+                when (it) {
+                    BillingApiClient.BillingResult.SUCCESS -> reflectDonation(true)
+                    BillingApiClient.BillingResult.DUPLICATED -> {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_already_purchase
+                        )
+                    }
+                    BillingApiClient.BillingResult.CANCELLED -> {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_on_cancel_purchase
+                        )
+                    }
+                    BillingApiClient.BillingResult.FAILURE -> {
+                        showErrorDialog(
+                            R.string.dialog_title_alert_failure_purchase,
+                            R.string.dialog_message_alert_failure_purchase
+                        )
+                    }
                 }
             }
         }
@@ -211,11 +213,13 @@ class SettingsActivity : AppCompatActivity() {
         reflectDonation()
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
-            showErrorDialog(
-                R.string.dialog_title_alert_must_auth_twitter,
-                R.string.dialog_message_alert_must_auth_twitter
-            ) {
-                sharedPreferences.setAlertTwitterAuthFlag(false)
+            lifecycleScope.launchWhenResumed {
+                showErrorDialog(
+                    R.string.dialog_title_alert_must_auth_twitter,
+                    R.string.dialog_message_alert_must_auth_twitter
+                ) {
+                    sharedPreferences.setAlertTwitterAuthFlag(false)
+                }
             }
         }
     }
@@ -251,7 +255,9 @@ class SettingsActivity : AppCompatActivity() {
     private fun observeEvents() {
         viewModel.spotifyUserInfo.observe(this) { userInfo ->
             if (userInfo == null) {
-                onAuthSpotifyError()
+                lifecycleScope.launchWhenResumed {
+                    onAuthSpotifyError()
+                }
                 return@observe
             }
 
@@ -662,21 +668,21 @@ class SettingsActivity : AppCompatActivity() {
         }.show()
     }
 
-    private fun onAuthSpotifyError() {
+    private suspend fun onAuthSpotifyError() {
         showErrorDialog(
             R.string.dialog_title_alert_failure_auth_spotify,
             R.string.dialog_message_alert_failure_auth_spotify
         )
     }
 
-    private fun onAuthMastodonError() {
+    private suspend fun onAuthMastodonError() {
         showErrorDialog(
             R.string.dialog_title_alert_failure_auth_mastodon,
             R.string.dialog_message_alert_failure_auth_mastodon
         )
     }
 
-    private fun onAuthTwitterError() {
+    private suspend fun onAuthTwitterError() {
         showErrorDialog(
             R.string.dialog_title_alert_failure_auth_twitter,
             R.string.dialog_message_alert_failure_auth_twitter
@@ -863,10 +869,12 @@ class SettingsActivity : AppCompatActivity() {
                         itemDelayMastodonBinding.summary =
                             getString(R.string.pref_item_summary_delay_mastodon, duration)
                     } else {
-                        showErrorDialog(
-                            R.string.dialog_title_alert_invalid_duration_value,
-                            R.string.dialog_message_alert_invalid_duration_value
-                        )
+                        lifecycleScope.launchWhenResumed {
+                            showErrorDialog(
+                                R.string.dialog_title_alert_invalid_duration_value,
+                                R.string.dialog_message_alert_invalid_duration_value
+                            )
+                        }
                     }
                 }
             }
@@ -975,10 +983,12 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun onClickFab(sharedPreferences: SharedPreferences) {
         if (sharedPreferences.readyForShare(this).not()) {
-            showErrorDialog(
-                R.string.dialog_title_alert_no_metadata,
-                R.string.dialog_message_alert_no_metadata
-            )
+            lifecycleScope.launchWhenResumed {
+                showErrorDialog(
+                    R.string.dialog_title_alert_no_metadata,
+                    R.string.dialog_message_alert_no_metadata
+                )
+            }
             return
         }
 
@@ -1041,7 +1051,9 @@ class SettingsActivity : AppCompatActivity() {
     ) {
         val verifier = intent.data?.getQueryParameter("code")
         if (verifier == null) {
-            onAuthSpotifyError()
+            lifecycleScope.launchWhenResumed {
+                onAuthSpotifyError()
+            }
             return
         }
 
@@ -1058,7 +1070,9 @@ class SettingsActivity : AppCompatActivity() {
 
         val verifier = intent.data?.getQueryParameter("oauth_verifier")
         if (verifier == null) {
-            onAuthTwitterError()
+            lifecycleScope.launchWhenResumed {
+                onAuthTwitterError()
+            }
             return
         }
 
@@ -1090,7 +1104,9 @@ class SettingsActivity : AppCompatActivity() {
         mastodonRegistrationInfo?.apply {
             val token = intent.data?.getQueryParameter("code")
             if (token == null) {
-                onAuthMastodonError()
+                lifecycleScope.launchWhenResumed {
+                    onAuthMastodonError()
+                }
                 return
             }
 
