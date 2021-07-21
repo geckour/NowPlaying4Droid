@@ -16,28 +16,24 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.view.View
 import androidx.annotation.ColorInt
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
-import io.fabric.sdk.android.Fabric
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.launch
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ImplicitReflectionSerializer
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.parse
-import kotlinx.serialization.parseList
-import kotlinx.serialization.stringify
+import kotlinx.serialization.serializer
 import timber.log.Timber
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -46,8 +42,6 @@ import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 enum class PaletteColor {
     LIGHT_VIBRANT {
@@ -136,14 +130,27 @@ enum class FormatPattern(val value: String) {
 }
 
 inline fun <reified T> withCatching(
-    onError: (Throwable) -> Unit = {}, block: () -> T
-) = try {
+    onError: (Throwable) -> Unit = {},
+    block: () -> T
+) = runCatching {
     block()
-} catch (t: Throwable) {
-    Timber.e(t)
-    Crashlytics.logException(t)
-    onError(t)
-    null
+}.onFailure {
+    Timber.e(it)
+    FirebaseCrashlytics.getInstance().recordException(it)
+    onError(it)
+}.getOrNull()
+
+suspend fun Context.showErrorDialog(
+    @StringRes titleResId: Int,
+    @StringRes messageResId: Int,
+    onDismiss: () -> Unit = {}
+) {
+    withContext(Dispatchers.Main) {
+        AlertDialog.Builder(this@showErrorDialog).setTitle(titleResId).setMessage(messageResId)
+            .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
+            .setOnDismissListener { onDismiss() }
+            .show()
+    }
 }
 
 fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
@@ -292,23 +299,21 @@ fun Palette.getOptimizedColor(context: Context): Int {
     }?.let { getColorFromPaletteColor(it) } ?: Color.WHITE
 }
 
-fun Context.setCrashlytics() {
-    if (BuildConfig.DEBUG.not()) Fabric.with(this, Crashlytics())
-}
-
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Any> Json.parseOrNull(
     json: String?,
     deserializationStrategy: DeserializationStrategy<T>? = null,
     onError: Throwable.() -> Unit = {}
 ): T? = withCatching(onError) {
-    deserializationStrategy?.let { this.parse(it, json!!) } ?: this.parse(json!!)
+    deserializationStrategy?.let { this.decodeFromString(it, json!!) }
+        ?: this.decodeFromString(T::class.serializer(), json!!)
 }
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Any> Json.parseListOrNull(
-    json: String?, onError: Throwable.() -> Unit = {}
-): List<T>? = withCatching(onError) { this.parseList<T>(json!!) }
+    json: String?,
+    onError: Throwable.() -> Unit = {}
+): List<T>? = this.parseOrNull(json, ListSerializer(T::class.serializer()), onError)
 
 fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
 
@@ -324,16 +329,26 @@ fun <T> MutableList<T>.swap(from: Int, to: Int) {
     this[from] = tmp
 }
 
-fun ViewModel.launch(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-) {
-    viewModelScope.launch(context, start, block)
-}
+fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
+    getMediaIdInfoFromDevice(trackCoreElement)?.let {
+        withCatching {
+            val contentUri = ContentUris.withAppendedId(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId
+            )
+            val retriever = MediaMetadataRetriever().apply {
+                setDataSource(this@getArtworkUriFromDevice, contentUri)
+            }
+            retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
+                ?: ContentUris.withAppendedId(
+                    Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
+                ).also { uri ->
+                    contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
+                    PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
+                }
+        }
+    }
 
-
-fun Context.getAlbumIdFromDevice(
+private fun Context.getMediaIdInfoFromDevice(
     trackCoreElement: TrackInfo.TrackCoreElement
 ): MediaIdInfo? {
     if (trackCoreElement.isAllNonNull.not()) return null
@@ -344,38 +359,16 @@ fun Context.getAlbumIdFromDevice(
         contentQuerySelection,
         trackCoreElement.contentQueryArgs,
         null
-    )?.use { it.getAlbumIdFromDevice() }
+    )?.use { it.getMediaIdInfoFromDevice() }
 }
 
-fun Cursor?.getAlbumIdFromDevice(): MediaIdInfo? = this?.let {
-    (if (it.moveToFirst()) {
+private fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
+    if (this?.moveToFirst() == true) {
         MediaIdInfo(
-            it.getLong(it.getColumnIndex(MediaStore.Audio.Media._ID)),
-            it.getLong(it.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+            getLong(getColumnIndex(MediaStore.Audio.Media._ID)),
+            getLong(getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
         )
-    } else null)
-}
-
-fun Context.getArtworkUriFromDevice(mediaIdInfo: MediaIdInfo?): Uri? = mediaIdInfo?.let {
-    withCatching {
-        val contentUri = ContentUris.withAppendedId(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it.mediaTrackId
-        )
-        val retriever = MediaMetadataRetriever().apply {
-            setDataSource(this@getArtworkUriFromDevice, contentUri)
-        }
-        retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
-            ?: ContentUris.withAppendedId(
-                Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
-            ).also { uri ->
-                contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
-                PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
-            }
-    }
-}
-
-fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
-    getArtworkUriFromDevice(getAlbumIdFromDevice(trackCoreElement))
+    } else null
 
 fun ByteArray.toBitmap(): Bitmap? =
     withCatching { BitmapFactory.decodeByteArray(this, 0, this.size) }
@@ -404,14 +397,14 @@ fun Bitmap.toByteArray(): ByteArray? = ByteArrayOutputStream().apply {
     compress(Bitmap.CompressFormat.PNG, 100, this)
 }.toByteArray()
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 fun Serializable.asString(): String =
     ByteArrayOutputStream().use { byteArrayStream ->
         ObjectOutputStream(byteArrayStream).writeObject(this)
-        json.stringify(byteArrayStream.toByteArray())
+        json.encodeToString(ByteArray::class.serializer(), byteArrayStream.toByteArray())
     }
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Serializable> String.toSerializableObject(): T? =
     withCatching {
         json.parseOrNull<ByteArray>(this).let { byteArray ->

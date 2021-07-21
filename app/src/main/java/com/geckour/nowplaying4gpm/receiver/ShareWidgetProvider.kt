@@ -28,8 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
+import kotlin.random.Random
 
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
@@ -46,7 +46,6 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         fun blockCount(widgetOptions: Bundle?): Int {
             if (widgetOptions == null) return 0
             val maxWidth = widgetOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
-            Timber.d("np4d max width: $maxWidth")
             return maxWidth / 113
         }
     }
@@ -141,7 +140,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
             && blockCount > 1
         ) {
             val artwork = info?.artworkUriString
-                ?.let { context.getBitmapFromUriString(it, maxHeight = 500) }
+                ?.let { context.getBitmapFromUriString(it, 500) }
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
             } else {
@@ -199,16 +198,16 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
     private fun getShareIntent(context: Context): PendingIntent =
         PendingIntent.getActivity(
             context.applicationContext,
-            0,
-            SharingActivity.getIntent(context.applicationContext),
-            PendingIntent.FLAG_UPDATE_CURRENT
+            Random(System.currentTimeMillis()).nextInt(1, Int.MAX_VALUE),
+            SharingActivity.getIntent(context),
+            PendingIntent.FLAG_CANCEL_CURRENT
         )
 
     private fun getSettingsIntent(context: Context): PendingIntent =
         PendingIntent.getActivity(
             context.applicationContext,
-            1,
-            SettingsActivity.getIntent(context.applicationContext),
-            PendingIntent.FLAG_UPDATE_CURRENT
+            0,
+            SettingsActivity.getIntent(context),
+            PendingIntent.FLAG_CANCEL_CURRENT
         )
 }

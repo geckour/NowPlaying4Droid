@@ -1,33 +1,34 @@
 package com.geckour.nowplaying4gpm.util
 
 import com.sys1yagi.mastodon4j.api.entity.auth.AccessToken
-import kotlinx.serialization.Decoder
-import kotlinx.serialization.Encoder
-import kotlinx.serialization.ImplicitReflectionSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.PrimitiveDescriptor
-import kotlinx.serialization.PrimitiveKind
-import kotlinx.serialization.SerialDescriptor
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Serializer
-import kotlinx.serialization.encode
-import kotlinx.serialization.parse
-import kotlinx.serialization.stringify
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
 
-@OptIn(ImplicitReflectionSerializer::class)
+@OptIn(ExperimentalSerializationApi::class)
 @Serializer(AccessToken::class)
 object MastodonAccessTokenSerializer : KSerializer<AccessToken> {
 
     override val descriptor: SerialDescriptor =
-        PrimitiveDescriptor(AccessToken::class.java.name, PrimitiveKind.STRING)
+        PrimitiveSerialDescriptor(AccessToken::class.java.name, PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: AccessToken) {
-        encoder.encode(json.stringify(MastodonAccessToken.from(value)))
+    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: AccessToken) {
+        encoder.encodeString(
+            json.encodeToString(
+                MastodonAccessToken.serializer(),
+                MastodonAccessToken.from(value)
+            )
+        )
     }
 
-    override fun deserialize(decoder: Decoder): AccessToken =
-        json.parse<MastodonAccessToken>(decoder.decodeString()).toAccessToken()
+    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): AccessToken =
+        json.decodeFromString<MastodonAccessToken>(decoder.decodeString()).toAccessToken()
 
     @Serializable
     data class MastodonAccessToken(

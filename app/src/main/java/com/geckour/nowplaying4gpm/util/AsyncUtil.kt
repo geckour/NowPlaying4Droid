@@ -5,13 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestOptions
-import com.crashlytics.android.Crashlytics
+import coil.Coil
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
@@ -19,8 +18,6 @@ import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
@@ -39,7 +36,9 @@ else client.searchAlbum(
 }?.url
 
 suspend fun refreshArtworkUriFromLastFmApi(
-    context: Context, client: LastFmApiClient, trackCoreElement: TrackInfo.TrackCoreElement
+    context: Context,
+    client: LastFmApiClient,
+    trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
 
@@ -47,7 +46,9 @@ suspend fun refreshArtworkUriFromLastFmApi(
 }
 
 suspend fun refreshArtworkUriFromSpotify(
-    context: Context, client: SpotifyApiClient, trackCoreElement: TrackInfo.TrackCoreElement
+    context: Context,
+    client: SpotifyApiClient,
+    trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url =
         (client.getSpotifyData(trackCoreElement) as? SpotifySearchResult.Success)?.data?.artworkUrl
@@ -58,29 +59,20 @@ suspend fun refreshArtworkUriFromSpotify(
 
 suspend fun Context.getBitmapFromUriString(
     uriString: String,
-    maxWidth: Int? = null,
-    maxHeight: Int? = null
-): Bitmap? = try {
-    val glideOptions =
-        RequestOptions().diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
-            .signature { System.currentTimeMillis().toString() }
-    withContext(Dispatchers.IO) {
-        Glide.with(this@getBitmapFromUriString).asBitmap().load(uriString).apply(glideOptions)
-            .apply {
-                when {
-                    maxWidth != null -> override(maxWidth, maxHeight ?: maxWidth)
-                    maxHeight != null -> override(maxWidth ?: maxHeight, maxHeight)
-                }
-            }
-            .submit().get()
-    }
-} catch (e: GlideException) {
-    e.logRootCauses("np4d")
-    null
-} catch (t: Throwable) {
-    Timber.e(t)
-    Crashlytics.logException(t)
-    null
+    maxSize: Int? = null
+): Bitmap? = withCatching {
+    Timber.d("np4d uriString: $uriString")
+    val drawable = Coil.execute(
+        ImageRequest.Builder(this)
+            .data(uriString)
+            .allowHardware(false)
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .apply { maxSize?.let { size(it) } }
+            .build()
+    ).drawable as BitmapDrawable?
+
+    return@withCatching drawable?.bitmap
 }
 
 suspend fun Context.checkStoragePermissionAsync(

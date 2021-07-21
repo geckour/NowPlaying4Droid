@@ -5,11 +5,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
-import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 
-class SharingActivity : WithCrashlyticsActivity() {
+class SharingActivity : AppCompatActivity() {
 
     enum class IntentRequestCode {
         SHARE
@@ -17,11 +17,8 @@ class SharingActivity : WithCrashlyticsActivity() {
 
     companion object {
 
-        private const val ARGS_KEY_REQUIRE_UNLOCK = "args_key_require_unlock"
-
-        fun getIntent(context: Context, requireUnlock: Boolean = true): Intent =
+        fun getIntent(context: Context): Intent =
             Intent(context, SharingActivity::class.java)
-                .putExtra(ARGS_KEY_REQUIRE_UNLOCK, requireUnlock)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
@@ -35,7 +32,7 @@ class SharingActivity : WithCrashlyticsActivity() {
         super.onNewIntent(intent)
 
         val trackInfo = sharedPreferences.getCurrentTrackInfo()
-        viewModel.startShare(this, sharedPreferences, intent.requireUnlock(), trackInfo)
+        viewModel.startShare(this, sharedPreferences, trackInfo)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,13 +40,5 @@ class SharingActivity : WithCrashlyticsActivity() {
 
         onNewIntent(intent)
         finish()
-    }
-
-    private fun Intent?.requireUnlock(): Boolean {
-        val default = true
-
-        return if (this?.hasExtra(ARGS_KEY_REQUIRE_UNLOCK) == true)
-            this.getBooleanExtra(ARGS_KEY_REQUIRE_UNLOCK, default)
-        else default
     }
 }

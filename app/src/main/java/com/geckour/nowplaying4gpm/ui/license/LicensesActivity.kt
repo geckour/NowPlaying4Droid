@@ -4,14 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.databinding.ActivityLicensesBinding
-import com.geckour.nowplaying4gpm.ui.WithCrashlyticsActivity
 
-class LicensesActivity : WithCrashlyticsActivity() {
+class LicensesActivity : AppCompatActivity() {
 
     companion object {
 
