@@ -31,7 +31,6 @@ import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
-import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -807,7 +806,6 @@ class SettingsActivity : AppCompatActivity() {
                                         addNetworkInterceptor(
                                             HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
                                         )
-                                        addNetworkInterceptor(StethoInterceptor())
                                     }
                                 }, Gson()).build()
                             val registrationInfo = Apps(mastodonApiClient).createApp(
@@ -1102,7 +1100,6 @@ class SettingsActivity : AppCompatActivity() {
                         addNetworkInterceptor(
                             HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
                         )
-                        addNetworkInterceptor(StethoInterceptor())
                     }
                 }, Gson()
             )

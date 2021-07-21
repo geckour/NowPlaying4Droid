@@ -1,7 +1,6 @@
 package com.geckour.nowplaying4gpm.api
 
 import android.util.Base64
-import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.geckour.nowplaying4gpm.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -69,7 +68,6 @@ object OkHttpProvider {
                     HttpLoggingInterceptor()
                         .setLevel(HttpLoggingInterceptor.Level.BODY)
                 )
-                addNetworkInterceptor(StethoInterceptor())
             }
         }
 }

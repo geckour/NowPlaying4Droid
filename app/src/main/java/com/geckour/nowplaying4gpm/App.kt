@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.preference.PreferenceManager
-import com.facebook.stetho.Stetho
 import com.geckour.nowplaying4gpm.api.di.clientModule
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.di.settingsViewModelModule
@@ -32,7 +31,6 @@ class App : Application() {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
-            Stetho.initializeWithDefaults(this)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
