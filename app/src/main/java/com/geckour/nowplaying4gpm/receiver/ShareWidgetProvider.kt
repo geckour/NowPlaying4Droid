@@ -29,6 +29,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
+import kotlin.random.Random
 
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
@@ -197,16 +198,16 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
     private fun getShareIntent(context: Context): PendingIntent =
         PendingIntent.getActivity(
             context.applicationContext,
-            0,
-            SharingActivity.getIntent(context.applicationContext),
-            PendingIntent.FLAG_UPDATE_CURRENT
+            Random(System.currentTimeMillis()).nextInt(1, Int.MAX_VALUE),
+            SharingActivity.getIntent(context),
+            PendingIntent.FLAG_CANCEL_CURRENT
         )
 
     private fun getSettingsIntent(context: Context): PendingIntent =
         PendingIntent.getActivity(
             context.applicationContext,
-            1,
-            SettingsActivity.getIntent(context.applicationContext),
-            PendingIntent.FLAG_UPDATE_CURRENT
+            0,
+            SettingsActivity.getIntent(context),
+            PendingIntent.FLAG_CANCEL_CURRENT
         )
 }
