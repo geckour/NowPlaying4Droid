@@ -23,12 +23,20 @@ data class SpotifySearchResult(
             @SerialName("external_urls")
             val urls: Map<String, String>,
 
-            val album: SpotifyAlbum
-        )
+            val name: String,
+
+            val album: SpotifyAlbum,
+
+            val artists: List<SpotifyArtist>,
+        ) {
+
+            val artistString = artists.joinToString { it.name }
+        }
     }
 
     @Serializable
     data class SpotifyAlbum(
+        val name: String,
         val images: List<SpotifyImage>
     ) {
 
@@ -39,4 +47,9 @@ data class SpotifySearchResult(
             val width: Int
         )
     }
+
+    @Serializable
+    data class SpotifyArtist(
+        val name: String,
+    )
 }

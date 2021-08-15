@@ -30,6 +30,8 @@
     <string name="pref_item_desc_simplify_share">単純な共有フローを使う</string>
     <string name="pref_item_title_auth_spotify">Spotify認証</string>
     <string name="pref_item_desc_auth_spotify">Spotify APIを使用するためにSpotifyアカウントを認証する</string>
+    <string name="pref_item_title_use_spotify_data">Spotifyデータの使用</string>
+    <string name="pref_item_desc_use_spotify_data">楽曲情報のソースとして可能な場合Spotify APIからのデータを使用する</string>
     <string name="pref_item_title_strict_match_pattern">全てのフォーマットパターンの解決</string>
     <string name="pref_item_desc_strict_match_pattern">全てのフォーマットパターンが解決されたときのみ共有文を生成する </string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>

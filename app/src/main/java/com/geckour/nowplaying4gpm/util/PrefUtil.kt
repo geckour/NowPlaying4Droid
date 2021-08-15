@@ -44,7 +44,8 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE,
     PREF_KEY_DEBUG_SPOTIFY_SEARCH(false),
     PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION(false),
-    PREF_KEY_WHETHER_USE_SIMPLE_SHARE(false)
+    PREF_KEY_WHETHER_USE_SIMPLE_SHARE(false),
+    PREF_KEY_WHETHER_USE_SPOTIFY_DATA(false),
 }
 
 @Serializable
@@ -317,15 +318,6 @@ fun SharedPreferences.getDebugSpotifySearchFlag(): Boolean =
     PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH.let { key ->
         getBoolean(key.name, key.defaultValue as Boolean)
     }
-
-fun SharedPreferences.toggleDebugSpotifySearchFlag(): Boolean {
-    val key = PrefKey.PREF_KEY_DEBUG_SPOTIFY_SEARCH
-
-    val setTo = getDebugSpotifySearchFlag().not()
-    edit { putBoolean(key.name, setTo) }
-
-    return setTo
-}
 
 fun SharedPreferences.readyForShare(
     context: Context,

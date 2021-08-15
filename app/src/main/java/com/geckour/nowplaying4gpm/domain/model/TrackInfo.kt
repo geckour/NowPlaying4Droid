@@ -10,7 +10,7 @@ data class TrackInfo(
     val artworkUriString: String?,
     val playerPackageName: String?,
     val playerAppName: String?,
-    val spotifyUrl: String?
+    val spotifyData: SpotifySearchResult.Data?
 ) : Serializable {
 
     fun isSatisfiedSpecifier(sharingFormatText: String): Boolean =
@@ -21,7 +21,7 @@ data class TrackInfo(
                 FormatPattern.ALBUM -> this.coreElement.album != null
                 FormatPattern.COMPOSER -> this.coreElement.composer != null
                 FormatPattern.PLAYER_NAME -> this.playerAppName != null
-                FormatPattern.SPOTIFY_URL -> this.spotifyUrl != null
+                FormatPattern.SPOTIFY_URL -> this.spotifyData != null
                 else -> true
             }
         }
@@ -44,7 +44,7 @@ data class TrackInfo(
                 album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
             ).joinToString(" ")
 
-        val String.isAscii: Boolean get() = all { it.toInt() in 0x20..0x7E }
+        private val String.isAscii: Boolean get() = all { it.code in 0x20..0x7E }
     }
 }
 

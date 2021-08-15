@@ -359,7 +359,20 @@ class SettingsActivity : AppCompatActivity() {
             val userInfo = sharedPreferences.getSpotifyUserInfo()
             if (userInfo != null) b.summary =
                 getString(R.string.pref_item_summary_auth_spotify, userInfo.userName)
+            binding.spotifyAuthenticated = userInfo != null
             b.root.setOnClickListener { onClickAuthSpotify() }
+        }
+
+        binding.itemSwitchUseSpotifyData.also { b ->
+            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
+            b.extra.apply {
+                visibility = View.VISIBLE
+                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA) { _, summary ->
+                    b.summary = summary
+
+                    requestUpdate.launch()
+                })
+            }
         }
 
         binding.itemSwitchStrictMatchPattern.also { b ->
@@ -1057,6 +1070,7 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
 
+        binding.spotifyAuthenticated = true
         viewModel.storeSpotifyUserInfo(verifier)
     }
 
