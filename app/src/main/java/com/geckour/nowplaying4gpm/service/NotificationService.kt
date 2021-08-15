@@ -156,8 +156,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
 
                     ACTION_INVOKE_UPDATE -> {
-                        val trackInfo = sharedPreferences.getCurrentTrackInfo()
-                        launch { reflectTrackInfo(trackInfo) }
+                        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return@apply
+                        launch {
+                            updateTrackInfo(
+                                currentMetadata ?: return@launch,
+                                currentSbn?.packageName ?: return@launch,
+                                currentSbn?.notification,
+                                trackInfo.coreElement
+                            )
+                        }
                     }
 
                     Intent.ACTION_USER_PRESENT -> {
@@ -371,21 +378,24 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     else "OFF: Spotify URL trying"
                 )
             })
-        val spotifyData =
-            if (containsSpotifyPattern) {
+        val useSpotifyData =
+            sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA)
+        val spotifyResult =
+            if (containsSpotifyPattern || useSpotifyData) {
                 spotifyApiClient.getSpotifyData(coreElement).also {
                     notificationManager.showDebugSpotifySearchNotificationIfNeeded(it)
                 }
             } else null
 
         val artworkUri = metadata.storeArtworkUri(coreElement, notification?.getArtworkBitmap())
+        val spotifyData = (spotifyResult as? SpotifySearchResult.Success)?.data
 
         val trackInfo = TrackInfo(
-            coreElement,
+            if (useSpotifyData) coreElement.withSpotifyData(spotifyData) else coreElement,
             artworkUri?.toString(),
             playerPackageName,
             playerPackageName.getAppName(this),
-            (spotifyData as? SpotifySearchResult.Success)?.data?.sharingUrl
+            spotifyData
         )
 
         reflectTrackInfo(trackInfo)
@@ -411,6 +421,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         TrackInfo.TrackCoreElement(track, artist, album, composer)
     }
+
+    private fun TrackInfo.TrackCoreElement.withSpotifyData(data: SpotifySearchResult.Data?): TrackInfo.TrackCoreElement =
+        TrackInfo.TrackCoreElement(
+            data?.trackName ?: title,
+            data?.artistName ?: artist,
+            data?.albumName ?: album,
+            composer
+        )
 
     private suspend fun onQuickUpdate(
         coreElement: TrackInfo.TrackCoreElement, packageName: String

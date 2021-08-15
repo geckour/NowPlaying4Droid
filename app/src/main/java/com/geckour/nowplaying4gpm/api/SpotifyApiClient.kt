@@ -104,11 +104,15 @@ class SpotifyApiClient(context: Context) {
                 ?.items
                 ?.firstOrNull()
                 ?.let {
+                    Timber.d("np4d track: $it")
                     SpotifySearchResult.Success(
                         query,
                         SpotifySearchResult.Data(
                             it.urls["spotify"] ?: return@let null,
-                            it.album.images.firstOrNull()?.url
+                            it.album.images.firstOrNull()?.url,
+                            it.name,
+                            it.artistString,
+                            it.album.name
                         )
                     )
                 } ?: SpotifySearchResult.Failure(query, IllegalStateException("No search result"))

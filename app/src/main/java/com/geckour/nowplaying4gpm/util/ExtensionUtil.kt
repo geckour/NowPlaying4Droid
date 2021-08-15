@@ -176,7 +176,7 @@ fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternMo
                     FormatPattern.PLAYER_NAME.value -> info.playerAppName?.getReplacerWithModifier(
                         modifiers, it
                     ) ?: ""
-                    FormatPattern.SPOTIFY_URL.value -> info.spotifyUrl?.getReplacerWithModifier(
+                    FormatPattern.SPOTIFY_URL.value -> info.spotifyData?.sharingUrl?.getReplacerWithModifier(
                         modifiers, it
                     ) ?: ""
                     FormatPattern.NEW_LINE.value -> "\n"

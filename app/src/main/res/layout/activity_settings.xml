@@ -18,6 +18,10 @@
         <variable
             name="mastodonEnabled"
             type="Boolean" />
+
+        <variable
+            name="spotifyAuthenticated"
+            type="Boolean" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -113,6 +117,16 @@
                     app:categoryId="@{@id/category_share}"
                     app:desc="@{@string/pref_item_desc_auth_spotify}"
                     app:title="@{@string/pref_item_title_auth_spotify}" />
+
+                <include
+                    android:id="@+id/item_switch_use_spotify_data"
+                    layout="@layout/item_pref_item"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:categoryId="@{@id/category_share}"
+                    app:desc="@{@string/pref_item_desc_use_spotify_data}"
+                    app:maskInactiveVisible="@{!spotifyAuthenticated}"
+                    app:title="@{@string/pref_item_title_use_spotify_data}" />
 
                 <include
                     android:id="@+id/item_switch_strict_match_pattern"
