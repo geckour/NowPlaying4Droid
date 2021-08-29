@@ -22,15 +22,58 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Snackbar
+import androidx.compose.material.Surface
+import androidx.compose.material.Switch
+import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
-import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
@@ -48,6 +91,15 @@ import com.geckour.nowplaying4gpm.databinding.ItemPrefItemBinding
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
+import com.geckour.nowplaying4gpm.ui.compose.CleanBlue
+import com.geckour.nowplaying4gpm.ui.compose.DarkRed
+import com.geckour.nowplaying4gpm.ui.compose.DeepBlue
+import com.geckour.nowplaying4gpm.ui.compose.DeepRed
+import com.geckour.nowplaying4gpm.ui.compose.InkBlackWeak
+import com.geckour.nowplaying4gpm.ui.compose.LightRed
+import com.geckour.nowplaying4gpm.ui.compose.SmokeWhite
+import com.geckour.nowplaying4gpm.ui.compose.SettingsTheme
+import com.geckour.nowplaying4gpm.ui.compose.SmokeBlack
 import com.geckour.nowplaying4gpm.ui.license.LicensesActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdapter
@@ -94,12 +146,15 @@ import com.sys1yagi.mastodon4j.api.entity.auth.AppRegistration
 import com.sys1yagi.mastodon4j.api.method.Accounts
 import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.android.get
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import permissions.dispatcher.ktx.PermissionsRequester
 import permissions.dispatcher.ktx.constructPermissionsRequest
 import timber.log.Timber
 
@@ -111,16 +166,8 @@ class SettingsActivity : AppCompatActivity() {
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
-    private data class EasterEggTag(
-        val count: Int,
-        val time: Long
-    )
-
     private val viewModel: SettingsViewModel by viewModel()
-    private val sharedPreferences: SharedPreferences by lazy {
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-    }
-    private lateinit var binding: ActivitySettingsBinding
+    private val sharedPreferences: SharedPreferences = get()
 
     private lateinit var billingApiClient: BillingApiClient
 
@@ -130,13 +177,7 @@ class SettingsActivity : AppCompatActivity() {
     private val mastodonScope = Scope(Scope.Name.ALL)
     private var mastodonRegistrationInfo: AppRegistration? = null
 
-    private val requestUpdate = constructPermissionsRequest(
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        onPermissionDenied = ::onPermissionDenied,
-        onNeverAskAgain = ::onNeverAskPermissionAgain,
-        requiresPermission = ::invokeUpdate
-    )
+    private lateinit var requestUpdate: PermissionsRequester
 
     private val activityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -146,11 +187,31 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_settings)
+        requestUpdate = constructPermissionsRequest(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            onPermissionDenied = ::onPermissionDenied,
+            onNeverAskAgain = ::onNeverAskPermissionAgain,
+            requiresPermission = ::invokeUpdate
+        )
+
+        setContent {
+            SettingsTheme {
+                // A surface container using the 'background' color from the theme
+                Surface(color = MaterialTheme.colors.background) {
+                    Content(viewModel.setting.value, viewModel.settingsVisible) {
+                        startActivity(LicensesActivity.getIntent(this@SettingsActivity))
+                    }
+                }
+            }
+        }
+
         billingApiClient = BillingApiClient(this) {
             lifecycleScope.launchWhenResumed {
                 when (it) {
-                    BillingApiClient.BillingResult.SUCCESS -> reflectDonation(true)
+                    BillingApiClient.BillingResult.SUCCESS -> {
+                        reflectDonation(viewModel.donated, true)
+                    }
                     BillingApiClient.BillingResult.DUPLICATED -> {
                         showErrorDialog(
                             R.string.dialog_title_alert_failure_purchase,
@@ -173,31 +234,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        binding.toolbarTitle =
-            "${getString(R.string.activity_title_settings)} - ${getString(R.string.app_name)}"
-        setSupportActionBar(binding.toolbar)
-
-        binding.toolbar.apply {
-            tag = EasterEggTag(0, -1L)
-
-            setOnClickListener {
-                val countLimit = 7
-                val timeLimit = 300L
-                val count = (tag as? EasterEggTag)?.count?.inc() ?: 1
-                val time = (tag as? EasterEggTag)?.time ?: -1L
-                val now = System.currentTimeMillis()
-                tag = if (count < countLimit) {
-                    if (time < 0 || now - time < timeLimit) EasterEggTag(count, now)
-                    else EasterEggTag(0, -1L)
-                } else {
-                    startActivity(LicensesActivity.getIntent(this@SettingsActivity))
-                    EasterEggTag(0, -1L)
-                }
-            }
-        }
-
-        setupItems()
-
         observeEvents()
 
         showIgnoreBatteryOptimizationDialog()
@@ -210,7 +246,12 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        reflectDonation()
+        checkStoragePermission(
+            onNotGranted = { viewModel.settingsVisible.value = false },
+            onGranted =  { viewModel.settingsVisible.value = true }
+        )
+
+        reflectDonation(viewModel.donated)
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
             lifecycleScope.launchWhenResumed {
@@ -236,23 +277,64 @@ class SettingsActivity : AppCompatActivity() {
             uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
                 onAuthTwitterCallback(
                     intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthTwitter
+                    window.decorView,
+                    viewModel.authTwitterSummary
                 )
             }
             uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
                 onAuthMastodonCallback(
                     intent,
-                    sharedPreferences,
-                    binding.root,
-                    binding.itemAuthMastodon
+                    window.decorView,
+                    viewModel.authMastodonSummary
                 )
             }
         }
     }
 
     private fun observeEvents() {
+        viewModel.event.onEach {
+            when (it) {
+                is SettingsViewModel.Event.ChangeArtworkResolveOrder -> {
+                    onClickChangeArtworkResolveOrder()
+                }
+                is SettingsViewModel.Event.ChangePatternFormat -> {
+                    onClickItemPatternFormat(it.summary)
+                }
+                is SettingsViewModel.Event.EditPatternModifier -> {
+                    onClickFormatPatternModifiers()
+                }
+                is SettingsViewModel.Event.AuthSpotify -> {
+                    onClickAuthSpotify()
+                }
+                is SettingsViewModel.Event.AuthMastodon -> {
+                    onClickAuthMastodon()
+                }
+                is SettingsViewModel.Event.SetMastodonPostDelay -> {
+                    onClickDelayMastodon(it.summary)
+                }
+                is SettingsViewModel.Event.SetMastodonPostVisibility -> {
+                    onClickVisibilityMastodon(it.summary)
+                }
+                is SettingsViewModel.Event.SelectPlayerPostMastodon -> {
+                    onClickPlayerPackageMastodon()
+                }
+                is SettingsViewModel.Event.SelectNotificationColor -> {
+                    onClickItemChooseColor(it.summary)
+                }
+                is SettingsViewModel.Event.AuthTwitter -> {
+                    onClickAuthTwitter(window.decorView)
+                }
+                is SettingsViewModel.Event.Donate -> {
+                    lifecycleScope.launch {
+                        billingApiClient.startBilling(
+                            this@SettingsActivity,
+                            listOf(BuildConfig.SKU_KEY_DONATE)
+                        )
+                    }
+                }
+            }
+        }.launchIn(lifecycleScope)
+
         viewModel.spotifyUserInfo.observe(this) { userInfo ->
             if (userInfo == null) {
                 lifecycleScope.launchWhenResumed {
@@ -261,12 +343,15 @@ class SettingsActivity : AppCompatActivity() {
                 return@observe
             }
 
-            binding.itemAuthSpotify.summary = getString(
+            viewModel.authSpotifySummary.value = getString(
                 R.string.pref_item_summary_auth_spotify,
                 userInfo.userName
             )
+            viewModel.spotifyEnabledStates.forEach {
+                it.value = true
+            }
             Snackbar.make(
-                binding.root,
+                window.decorView,
                 R.string.snackbar_text_success_auth_spotify,
                 Snackbar.LENGTH_LONG
             ).show()
@@ -294,299 +379,19 @@ class SettingsActivity : AppCompatActivity() {
         } else onGranted()
     }
 
-    private fun setupItems() {
-        binding.itemPatternFormat.summary = sharedPreferences.getFormatPattern(this)
-        binding.itemChooseColor.summary =
-            getString(sharedPreferences.getChosePaletteColor().getSummaryResId())
-
-        binding.fab.setOnClickListener { onClickFab(sharedPreferences) }
-
-        binding.scrollView.apply {
-            setOnScrollChangeListener { _, _, y, _, oldY ->
-                if (y > oldY && getChildAt(0).measuredHeight <= measuredHeight + y) binding.fab.hide()
-                if (y < oldY && binding.fab.isShown.not()) binding.fab.show()
-            }
-        }
-
-        binding.scrollView.getChildAt(0).addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            val visible =
-                (binding.scrollView.getChildAt(0) as? LinearLayout)?.let { itemsContainer ->
-                    (0 until itemsContainer.childCount)
-                        .mapNotNull {
-                            DataBindingUtil.findBinding<ViewDataBinding>(
-                                itemsContainer.getChildAt(it)
-                            )
-                        }
-                        .filterIsInstance<ItemPrefItemBinding>()
-                        .any {
-                            it.root.visibility == View.VISIBLE &&
-                                    it.categoryId == binding.categoryOthers.root.id
-                        }
-                } == true
-
-            binding.categoryOthers.root.visibility = if (visible) View.VISIBLE else View.GONE
-        }
-
-        binding.itemChangeArtworkResolveOrder.also { b ->
-            b.maskInactiveDonate.visibility =
-                if (sharedPreferences.getDonateBillingState()) View.GONE
-                else View.VISIBLE
-
-            b.root.setOnClickListener {
-                onClickChangeArtworkResolveOrder(sharedPreferences)
-            }
-        }
-
-        binding.itemPatternFormat.root.setOnClickListener {
-            onClickItemPatternFormat(sharedPreferences, binding.itemPatternFormat)
-        }
-
-        binding.itemFormatPatternModifiers.root.setOnClickListener {
-            onClickFormatPatternModifiers(sharedPreferences)
-        }
-
-        binding.itemSwitchSimplifyShare.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_SIMPLE_SHARE) { _, summary ->
-                    b.summary = summary
-                })
-            }
-        }
-
-        binding.itemAuthSpotify.also { b ->
-            val userInfo = sharedPreferences.getSpotifyUserInfo()
-            if (userInfo != null) b.summary =
-                getString(R.string.pref_item_summary_auth_spotify, userInfo.userName)
-            binding.spotifyAuthenticated = userInfo != null
-            b.root.setOnClickListener { onClickAuthSpotify() }
-        }
-
-        binding.itemSwitchUseSpotifyData.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA) { _, summary ->
-                    b.summary = summary
-
-                    requestUpdate.launch()
-                })
-            }
-        }
-
-        binding.itemSwitchStrictMatchPattern.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE) { _, summary ->
-                    b.summary = summary
-
-                    requestUpdate.launch()
-                })
-            }
-        }
-
-        binding.itemSwitchBundleArtwork.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK) { _, summary ->
-                    b.summary = summary
-
-                    requestUpdate.launch()
-                })
-            }
-        }
-
-        binding.itemSwitchCopyIntoClipboard.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD) { _, summary ->
-                    b.summary = summary
-
-                    requestUpdate.launch()
-                })
-            }
-        }
-
-        binding.itemSwitchAutoPostMastodon.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON) { checkState, summary ->
-                    b.summary = summary
-                    binding.mastodonEnabled = checkState
-                })
-            }
-        }
-
-        binding.itemAuthMastodon.also { b ->
-            val userInfo = sharedPreferences.getMastodonUserInfo()
-            if (userInfo != null) {
-                b.summary = getString(
-                    R.string.pref_item_summary_auth_mastodon,
-                    userInfo.userName,
-                    userInfo.instanceName
-                )
-            }
-            b.root.setOnClickListener { onClickAuthMastodon(sharedPreferences) }
-        }
-
-        binding.itemDelayMastodon.also { b ->
-            b.summary = getString(
-                R.string.pref_item_summary_delay_mastodon,
-                sharedPreferences.getDelayDurationPostMastodon()
-            )
-            b.root.setOnClickListener {
-                onClickDelayMastodon(sharedPreferences, b)
-            }
-        }
-
-        binding.itemVisibilityMastodon.also { b ->
-            b.summary = getString(sharedPreferences.getVisibilityMastodon().getSummaryResId())
-            b.root.setOnClickListener {
-                onClickVisibilityMastodon(sharedPreferences, b)
-            }
-        }
-
-        binding.itemPlayerPackageMastodon.also { b ->
-            b.root.setOnClickListener {
-                onClickPlayerPackageMastodon(sharedPreferences)
-            }
-        }
-
-        binding.itemSwitchSuccessNotificationMastodon.also { b ->
-            b.maskInactive.visibility =
-                if (sharedPreferences.getSwitchState(
-                        PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON
-                    )
-                ) View.GONE
-                else View.VISIBLE
-
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON) { _, summary ->
-                    b.summary = summary
-                })
-            }
-        }
-
-        binding.itemSwitchReside.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_RESIDE) { state, summary ->
-                    b.summary = summary
-
-                    if (state) requestUpdate.launch()
-                    else destroyNotification()
-                })
-            }
-        }
-
-        binding.itemSwitchShowArtworkInNotification.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION) { _, summary ->
-                    b.summary = summary
-
-                    requestUpdate.launch()
-                })
-            }
-        }
-
-        binding.itemChooseColor.root.setOnClickListener {
-            onClickItemChooseColor(sharedPreferences, binding.itemChooseColor)
-        }
-
-        binding.itemSwitchColorizeNotificationBg.also { b ->
-            if (Build.VERSION.SDK_INT < 26) b.root.visibility = View.GONE
-            else {
-                b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-                b.extra.apply {
-                    visibility = View.VISIBLE
-                    addView(getSwitch(PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG) { _, summary ->
-                        b.summary = summary
-
-                        requestUpdate.launch()
-                    })
-                }
-            }
-        }
-
-        binding.itemSwitchShowArtworkInWidget.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET) { _, summary ->
-                    b.summary = summary
-
-                    updateWidget(sharedPreferences)
-                })
-            }
-        }
-
-        binding.itemSwitchLaunchGpmOnClickWidgetArtwork.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_LAUNCH_GPM_WITH_WIDGET_ARTWORK) { _, summary ->
-                    b.summary = summary
-
-                    updateWidget(sharedPreferences)
-                })
-            }
-        }
-
-        binding.itemSwitchShowClearButtonInWidget.also { b ->
-            b.root.setOnClickListener { onClickItemWithSwitch(b.extra) }
-            b.extra.apply {
-                visibility = View.VISIBLE
-                addView(getSwitch(PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET) { _, summary ->
-                    b.summary = summary
-
-                    updateWidget(sharedPreferences)
-                })
-            }
-        }
-
-        binding.itemAuthTwitter.also { b ->
-            val accessToken = sharedPreferences.getTwitterAccessToken()
-            if (accessToken != null) b.summary = accessToken.screenName
-            b.root.setOnClickListener { onClickAuthTwitter(b.root) }
-        }
-
-        binding.itemDonate.also { b ->
-            if (sharedPreferences.getDonateBillingState()) b.root.visibility = View.GONE
-            else b.root.setOnClickListener {
-                lifecycleScope.launch {
-                    billingApiClient.startBilling(
-                        this@SettingsActivity,
-                        listOf(BuildConfig.SKU_KEY_DONATE)
-                    )
-                }
-            }
-        }
-
-        checkStoragePermission(onNotGranted = { binding.maskInactiveApp.visibility = View.VISIBLE })
-    }
-
     private fun invokeUpdate() {
-        binding.maskInactiveApp.visibility = View.GONE
+        viewModel.settingsVisible.value = true
+        viewModel.reflectSetting()
 
         NotificationService.sendRequestInvokeUpdate(this)
     }
 
     private fun onPermissionDenied() {
-        binding.maskInactiveApp.visibility = View.VISIBLE
+        viewModel.settingsVisible.value = false
     }
 
     private fun onNeverAskPermissionAgain() {
-        binding.maskInactiveApp.visibility = View.VISIBLE
+        viewModel.settingsVisible.value = false
     }
 
     private fun showIgnoreBatteryOptimizationDialog() {
@@ -621,40 +426,15 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onClickItemWithSwitch(extra: FrameLayout?) =
-        (extra?.getChildAt(0) as? Switch)?.performClick()
-
-    private fun getSwitch(
-        prefKey: PrefKey,
-        onCheckStateChanged: (checkState: Boolean, summary: String) -> Unit = { _, _ -> }
-    ): Switch {
-        return Switch(this@SettingsActivity).apply {
-            fun getSummary(): String = getString(
-                if (isChecked) R.string.pref_item_summary_switch_on
-                else R.string.pref_item_summary_switch_off
-            )
-            setOnClickListener {
-                sharedPreferences.edit().putBoolean(prefKey.name, isChecked).apply()
-
-                onCheckStateChanged(isChecked, getSummary())
-            }
-            isChecked = sharedPreferences.getSwitchState(prefKey)
-            onCheckStateChanged(isChecked, getSummary())
-        }
-    }
-
-    private fun reflectDonation(state: Boolean? = null) {
-        (state ?: sharedPreferences.getDonateBillingState()).let {
+    private fun reflectDonation(state: MutableState<Boolean>, donated: Boolean? = null) {
+        (donated ?: sharedPreferences.getDonateBillingState()).let {
             sharedPreferences.edit().putBoolean(PrefKey.PREF_KEY_BILLING_DONATE.name, it).apply()
-            binding.donated = it
+            state.value = it
         }
         billingApiClient.requestUpdate()
     }
 
-    private fun onClickItemPatternFormat(
-        sharedPreferences: SharedPreferences,
-        patternFormatBinding: ItemPrefItemBinding
-    ) {
+    private fun onClickItemPatternFormat(summary: MutableState<String?>) {
         val dialogBinding = DialogEditTextBinding.inflate(
             LayoutInflater.from(this), null, false
         ).apply {
@@ -673,7 +453,7 @@ class SettingsActivity : AppCompatActivity() {
                     val pattern = dialogBinding.editText.text.toString()
                     sharedPreferences.edit()
                         .putString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, pattern).apply()
-                    patternFormatBinding.summary = pattern
+                    summary.value = pattern
                 }
             }
             requestUpdate.launch()
@@ -702,16 +482,7 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    private fun destroyNotification() =
-        sendBroadcast(Intent().apply { action = NotificationService.ACTION_DESTROY_NOTIFICATION })
-
-    private fun updateWidget(sharedPreferences: SharedPreferences) {
-        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return
-
-        sendBroadcast(ShareWidgetProvider.getUpdateIntent(this@SettingsActivity, trackInfo))
-    }
-
-    private fun onClickChangeArtworkResolveOrder(sharedPreferences: SharedPreferences) {
+    private fun onClickChangeArtworkResolveOrder() {
         val adapter = ArtworkResolveMethodListAdapter(
             sharedPreferences.getArtworkResolveOrder().toMutableList()
         )
@@ -738,7 +509,7 @@ class SettingsActivity : AppCompatActivity() {
         }.show()
     }
 
-    private fun onClickFormatPatternModifiers(sharedPreferences: SharedPreferences) {
+    private fun onClickFormatPatternModifiers() {
         val adapter = FormatPatternModifierListAdapter(
             sharedPreferences.getFormatPatternModifiers().toMutableList()
         )
@@ -791,7 +562,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onClickAuthMastodon(sharedPreferences: SharedPreferences) {
+    private fun onClickAuthMastodon() {
         val instanceNameInputDialogBinding = DialogAutoCompleteEditTextBinding.inflate(
             LayoutInflater.from(this), null, false
         ).apply {
@@ -799,7 +570,7 @@ class SettingsActivity : AppCompatActivity() {
             editText.setText(sharedPreferences.getMastodonUserInfo()?.instanceName)
             editText.setSelection(editText.text.length)
 
-            viewModel.viewModelScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.IO) {
                 val instances = get<MastodonInstancesApiClient>().getList()
                 withContext(Dispatchers.Main) {
                     editText.setAdapter(
@@ -857,9 +628,7 @@ class SettingsActivity : AppCompatActivity() {
         }.show()
     }
 
-    private fun onClickDelayMastodon(
-        sharedPreferences: SharedPreferences, itemDelayMastodonBinding: ItemPrefItemBinding
-    ) {
+    private fun onClickDelayMastodon(summary: MutableState<String?>) {
         val delayTimeInputDialogBinding = DialogEditTextBinding.inflate(
             LayoutInflater.from(this), null, false
         ).apply {
@@ -879,7 +648,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     if (duration != null && duration in (500..60000)) {
                         sharedPreferences.storeDelayDurationPostMastodon(duration)
-                        itemDelayMastodonBinding.summary =
+                        summary.value =
                             getString(R.string.pref_item_summary_delay_mastodon, duration)
                     } else {
                         lifecycleScope.launchWhenResumed {
@@ -895,9 +664,7 @@ class SettingsActivity : AppCompatActivity() {
         }.show()
     }
 
-    private fun onClickVisibilityMastodon(
-        sharedPreferences: SharedPreferences, visibilityMastodonBinding: ItemPrefItemBinding
-    ) {
+    private fun onClickVisibilityMastodon(summary: MutableState<String?>) {
         val chooseVisibilityBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
             LayoutInflater.from(this), R.layout.dialog_spinner, null, false
         ).apply {
@@ -936,7 +703,7 @@ class SettingsActivity : AppCompatActivity() {
                     sharedPreferences.edit()
                         .putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
                         .apply()
-                    visibilityMastodonBinding.summary =
+                    summary.value =
                         getString(Visibility.getFromIndex(visibilityIndex).getSummaryResId())
                     requestUpdate.launch()
                 }
@@ -945,7 +712,7 @@ class SettingsActivity : AppCompatActivity() {
         }.show()
     }
 
-    private fun onClickPlayerPackageMastodon(sharedPreferences: SharedPreferences) {
+    private fun onClickPlayerPackageMastodon() {
         val adapter =
             PlayerPackageListAdapter(
                 sharedPreferences.getPackageStateListPostMastodon()
@@ -1008,9 +775,7 @@ class SettingsActivity : AppCompatActivity() {
         startActivity(SharingActivity.getIntent(this))
     }
 
-    private fun onClickItemChooseColor(
-        sharedPreferences: SharedPreferences, chooseColorBinding: ItemPrefItemBinding
-    ) {
+    private fun onClickItemChooseColor(summary: MutableState<String?>) {
         val dialogBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
             LayoutInflater.from(this), R.layout.dialog_spinner, null, false
         ).apply {
@@ -1049,7 +814,7 @@ class SettingsActivity : AppCompatActivity() {
                     val paletteIndex = dialogBinding.spinner.selectedItemPosition
                     sharedPreferences.edit()
                         .putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex).apply()
-                    chooseColorBinding.summary = getString(
+                    summary.value = getString(
                         PaletteColor.getFromIndex(paletteIndex).getSummaryResId()
                     )
                     requestUpdate.launch()
@@ -1070,15 +835,14 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
 
-        binding.spotifyAuthenticated = true
         viewModel.storeSpotifyUserInfo(verifier)
+        viewModel.spotifyAuthenticated.value = true
     }
 
     private fun onAuthTwitterCallback(
         intent: Intent,
-        sharedPreferences: SharedPreferences,
         rootView: View,
-        authTwitterBinding: ItemPrefItemBinding
+        summary: MutableState<String?>
     ) {
         sharedPreferences.setAlertTwitterAuthFlag(false)
 
@@ -1090,7 +854,7 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
 
-        viewModel.viewModelScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             val accessToken = twitterApiClient.getAccessToken(verifier)
 
             if (accessToken == null) {
@@ -1100,7 +864,8 @@ class SettingsActivity : AppCompatActivity() {
 
             sharedPreferences.storeTwitterAccessToken(accessToken)
 
-            authTwitterBinding.summary = accessToken.screenName
+            summary.value = accessToken.screenName
+            viewModel.reflectSetting()
             Snackbar.make(
                 rootView,
                 R.string.snackbar_text_success_auth_twitter,
@@ -1111,9 +876,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun onAuthMastodonCallback(
         intent: Intent,
-        sharedPreferences: SharedPreferences,
         rootView: View,
-        authMastodonBinding: ItemPrefItemBinding
+        summary: MutableState<String?>
     ) {
         mastodonRegistrationInfo?.apply {
             val token = intent.data?.getQueryParameter("code")
@@ -1133,7 +897,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }, Gson()
             )
-            viewModel.viewModelScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.IO) {
                 val accessToken = Apps(mastodonApiClientBuilder.build()).getAccessToken(
                     this@apply.clientId,
                     this@apply.clientSecret,
@@ -1158,15 +922,206 @@ class SettingsActivity : AppCompatActivity() {
                 val userInfo = MastodonUserInfo(accessToken, this@apply.instanceName, userName)
                 sharedPreferences.storeMastodonUserInfo(userInfo)
 
-                authMastodonBinding.summary = getString(
+                summary.value = getString(
                     R.string.pref_item_summary_auth_mastodon,
                     userInfo.userName,
                     userInfo.instanceName
                 )
+                viewModel.reflectSetting()
                 Snackbar.make(
                     rootView, R.string.snackbar_text_success_auth_mastodon, Snackbar.LENGTH_LONG
                 ).show()
             }
         }
     }
+
+    private data class EasterEggTag(
+        val count: Int,
+        val time: Long
+    )
+
+    @Composable
+    fun Content(setting: SettingsViewModel.Setting, settingsVisible: MutableState<Boolean>, onEasterEggActivate: () -> Unit) {
+        Box {
+            Column {
+                SettingTopBar(onEasterEggActivate)
+                Settings(Modifier.weight(1f), setting.categories)
+            }
+            FloatingActionButton(
+                onClick = {
+
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                backgroundColor = if (isSystemInDarkTheme()) DarkRed else LightRed,
+                contentColor = Color.White
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_app_icon),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(Color.White)
+                )
+            }
+
+            if (settingsVisible.value.not()) {
+                Box(
+                    modifier = Modifier
+                        .background(if (isSystemInDarkTheme()) SmokeBlack else SmokeWhite)
+                        .fillMaxSize()
+                        .clickable {}
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.pref_mask_inactive_app_desc),
+                        modifier = Modifier.align(Center)
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun SettingTopBar(onEasterEggActivate: () -> Unit) {
+        val tag = remember { mutableStateOf(EasterEggTag(0, -1L)) }
+        val countLimit = 7
+        TopAppBar(
+            backgroundColor = if (isSystemInDarkTheme()) DeepRed else LightRed,
+            contentPadding = PaddingValues(8.dp),
+            modifier = Modifier.clickable {
+                val timeLimit = 300L
+                val count = tag.value.count + 1
+                val time = tag.value.time
+                val now = System.currentTimeMillis()
+                tag.value = if (count < countLimit) {
+                    if (time < 0 || now - time < timeLimit) EasterEggTag(count, now)
+                    else EasterEggTag(0, -1L)
+                } else {
+                    onEasterEggActivate()
+                    EasterEggTag(0, -1L)
+                }
+            }
+        ) {
+            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+                Text(
+                    text = "${stringResource(R.string.activity_title_settings)} - ${stringResource(R.string.app_name)}",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun Settings(modifier: Modifier, categories: List<SettingsViewModel.Setting.Category>) {
+        LazyColumn(modifier = modifier) {
+            items(categories) {
+                if (it.items.any { it.visible }) Category(it)
+            }
+        }
+    }
+
+    @Composable
+    fun Category(category: SettingsViewModel.Setting.Category) {
+        Column {
+            Text(
+                text = stringResource(category.nameStringRes),
+                maxLines = 1,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = if (isSystemInDarkTheme()) CleanBlue else DeepBlue,
+                modifier = Modifier.padding(8.dp)
+            )
+            category.items.forEach {
+                if (it.visible) Item(it)
+            }
+        }
+    }
+
+    @Composable
+    fun Item(item: SettingsViewModel.Setting.Category.Item) {
+        Box(modifier = Modifier.height(IntrinsicSize.Max)) {
+            Row(modifier = Modifier.clickable {
+                item.switchPrefKey?.let {
+                    item.switchState.value = item.switchState.value?.not()
+                }
+                item.onClick(item)
+            }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(start = 24.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(item.titleStringRes),
+                        maxLines = 2,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSystemInDarkTheme()) LightRed else DarkRed,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                    Text(
+                        text = stringResource(item.descStringRes),
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .fillMaxWidth()
+                    )
+                    item.summary.value?.let {
+                        Text(
+                            text = it,
+                            maxLines = 1,
+                            fontSize = 12.sp,
+                            color = if (isSystemInDarkTheme()) SmokeWhite else InkBlackWeak,
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .fillMaxWidth()
+                        )
+                    }
+                }
+                item.switchPrefKey?.let {
+                    SettingSwitch(this, item.switchState, it, item.summary) {
+                        item.onSwitchCheckedChanged(it)
+                    }
+                }
+            }
+            if (item.enabled.value.not()) {
+                Box(
+                    modifier = Modifier
+                        .background(if (isSystemInDarkTheme()) SmokeBlack else SmokeWhite)
+                        .fillMaxSize()
+                        .clickable {}
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun SettingSwitch(scope: RowScope, switchState: MutableState<Boolean?>, prefKey: PrefKey, summary: MutableState<String?>, onCheckedChanged: ((Boolean) -> Unit)?) {
+        with(scope) {
+            switchState.value?.let {
+                sharedPreferences.edit { putBoolean(prefKey.name, it) }
+                onCheckedChanged?.invoke(it)
+            }
+            summary.value = switchState.value?.switchSummary
+            Switch(
+                checked = switchState.value ?: false,
+                onCheckedChange = {
+                    sharedPreferences.edit { putBoolean(prefKey.name, it) }
+                    switchState.value = it
+                    summary.value = it.switchSummary
+                    onCheckedChanged?.invoke(it)
+                },
+                modifier = Modifier
+                    .align(CenterVertically)
+                    .padding(8.dp)
+            )
+        }
+    }
+
+    private val Boolean.switchSummary
+        get() = getString(
+            if (this) R.string.pref_item_summary_switch_on
+            else R.string.pref_item_summary_switch_off
+        )
 }

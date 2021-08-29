@@ -48,8 +48,8 @@
     <string name="pref_item_desc_visibility_mastodon">Mastodonへの自動投稿の公開範囲を選択</string>
     <string name="pref_item_title_player_package_mastodon">自動投稿に用いるプレイヤーアプリ</string>
     <string name="pref_item_desc_player_package_mastodon">Mastodonへの自動投稿に用いるプレイヤーアプリを指定する</string>
-    <string name="pref_item_title_success_notification_mastodon">成功時の通知</string>
-    <string name="pref_item_desc_success_notification_mastodon">Mastodonへの自動投稿が成功した際に短い通知を表示する </string>
+    <string name="pref_item_title_switch_success_notification_mastodon">成功時の通知</string>
+    <string name="pref_item_desc_switch_success_notification_mastodon">Mastodonへの自動投稿が成功した際に短い通知を表示する </string>
 
     <string name="pref_category_notification">通知</string>
     <string name="pref_item_title_switch_reside_notification">通知の常駐切り替え</string>
@@ -64,8 +64,8 @@
     <string name="pref_category_widget">ウィジェット</string>
     <string name="pref_item_title_switch_show_artwork_in_widget">共有用ウィジェットのアートワーク</string>
     <string name="pref_item_desc_switch_show_artwork_in_widget">共有用ウィジェットにアートワークを表示</string>
-    <string name="pref_item_title_switch_launch_gpm_on_click_widget_artwork">ウィジェットのアートワークのタップ時 </string>
-    <string name="pref_item_desc_switch_launch_gpm_on_click_widget_artwork">再生中の音楽プレイヤーアプリを起動する </string>
+    <string name="pref_item_title_switch_launch_player_on_click_widget_artwork">ウィジェットのアートワークのタップ時 </string>
+    <string name="pref_item_desc_switch_launch_player_on_click_widget_artwork">再生中の音楽プレイヤーアプリを起動する </string>
     <string name="pref_item_title_switch_show_clear_button_in_widget">共有用ウィジェットのクリアボタン</string>
     <string name="pref_item_desc_switch_show_clear_button_in_widget">共有用ウィジェットに楽曲情報をクリアするボタンを表示する </string>
 

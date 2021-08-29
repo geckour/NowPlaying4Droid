@@ -8,6 +8,7 @@ import androidx.annotation.RequiresApi
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.api.di.clientModule
 import com.geckour.nowplaying4gpm.service.NotificationService
+import com.geckour.nowplaying4gpm.ui.di.dataModule
 import com.geckour.nowplaying4gpm.ui.di.settingsViewModelModule
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.refreshTempArtwork
@@ -39,7 +40,7 @@ class App : Application() {
 
         startKoin {
             androidContext(this@App)
-            modules(clientModule, settingsViewModelModule)
+            modules(clientModule, settingsViewModelModule, dataModule)
         }
 
         PreferenceManager.getDefaultSharedPreferences(this).apply {
