@@ -4,6 +4,7 @@
     <color name="colorPrimaryVariant">#b71c1c</color>
     <color name="colorAccent">#0176C4</color>
 
+    <color name="colorMask">#e01B1B1B</color>
     <color name="colorTextMiddle">#c0ffffff</color>
     <color name="colorTextWeak">#80ffffff</color>
     <color name="colorShadowTextDark">#40ffffff</color>

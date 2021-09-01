@@ -67,15 +67,8 @@ data class ArtworkResolveMethod(
 @Serializable
 data class FormatPatternModifier(
     val key: FormatPattern,
-    val prefix: String? = null,
-    val suffix: String? = null
-)
-
-@Serializable
-data class PlayerPackageState(
-    val packageName: String,
-    val appName: String,
-    val state: Boolean
+    val prefix: String = "",
+    val suffix: String = ""
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -120,7 +113,7 @@ fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
         return@let FormatPattern.replaceablePatterns
             .map { pattern ->
                 val modifier = stored.firstOrNull { it.key == pattern }
-                FormatPatternModifier(pattern, modifier?.prefix, modifier?.suffix)
+                FormatPatternModifier(pattern, modifier?.prefix ?: "", modifier?.suffix ?: "")
             }
     } ?: FormatPattern.replaceablePatterns
         .map { FormatPatternModifier(it) }

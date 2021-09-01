@@ -66,7 +66,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.BottomEnd
-import androidx.compose.ui.Alignment.Companion.BottomStart
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -111,7 +110,6 @@ import com.geckour.nowplaying4gpm.ui.compose.MilkWhite
 import com.geckour.nowplaying4gpm.ui.compose.SettingsTheme
 import com.geckour.nowplaying4gpm.ui.compose.SmokeBlack
 import com.geckour.nowplaying4gpm.ui.compose.SmokeWhite
-import com.geckour.nowplaying4gpm.ui.compose.TarBlack
 import com.geckour.nowplaying4gpm.ui.license.LicensesActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdapter
@@ -661,9 +659,13 @@ class SettingsActivity : AppCompatActivity() {
 
     @Composable
     fun ChangeArtworkResolveOrderDialog() {
-        val adapter = ArtworkResolveMethodListAdapter(
-            sharedPreferences.getArtworkResolveOrder().toMutableList()
-        )
+        val adapter by remember {
+            derivedStateOf {
+                ArtworkResolveMethodListAdapter(
+                    sharedPreferences.getArtworkResolveOrder().toMutableList()
+                )
+            }
+        }
         AlertDialog(
             onDismissRequest = { viewModel.openChangeArtworkResolveOrderDialog.value = false },
             confirmButton = {
@@ -768,7 +770,7 @@ class SettingsActivity : AppCompatActivity() {
 
     @Composable
     fun EditPatternModifierDialog() {
-        val items = sharedPreferences.getFormatPatternModifiers().toMutableList()
+        var items by remember { mutableStateOf(sharedPreferences.getFormatPatternModifiers()) }
         AlertDialog(
             onDismissRequest = { viewModel.openEditPatternModifierDialog.value = false },
             confirmButton = {
@@ -804,90 +806,95 @@ class SettingsActivity : AppCompatActivity() {
                     )
                     LazyColumn {
                         itemsIndexed(items) { index, item ->
-                            var prefixText by remember { mutableStateOf("") }
-                            var suffixText by remember { mutableStateOf("") }
+                            var prefixText by remember { mutableStateOf(item.prefix) }
+                            var suffixText by remember { mutableStateOf(item.suffix) }
                             Row(
                                 modifier = Modifier.padding(top = 4.dp),
                                 verticalAlignment = CenterVertically
                             ) {
-                                BasicTextField(
-                                    value = prefixText,
-                                    onValueChange = {
-                                        prefixText = it
-                                        items[index] = items[index].copy(prefix = it)
-                                    },
+                                Column(
                                     modifier = Modifier
                                         .padding(4.dp)
                                         .fillMaxWidth()
-                                        .weight(1f),
-                                    decorationBox = {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = BottomEnd
-                                        ) {
+                                        .weight(1f)
+                                ) {
+                                    BasicTextField(
+                                        value = prefixText,
+                                        onValueChange = {
+                                            prefixText = it
+                                            items = items.toMutableList().apply {
+                                                this[index] = this[index].copy(prefix = it)
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        decorationBox = {
                                             if (prefixText.isEmpty()) {
                                                 Text(
                                                     text = stringResource(
                                                         id = R.string.dialog_hint_format_pattern_prefix
-                                                    )
+                                                    ),
+                                                    textAlign = TextAlign.End
                                                 )
                                             }
-                                            Box(
-                                                modifier = Modifier
-                                                    .height(0.5.dp)
-                                                    .fillMaxWidth()
-                                                    .background(MaterialTheme.colors.onBackground)
-                                            )
-                                        }
-                                        it()
-                                    },
-                                    cursorBrush = SolidColor(MaterialTheme.colors.onBackground),
-                                    textStyle = TextStyle.Default.copy(
-                                        color = MaterialTheme.colors.onBackground,
-                                        textAlign = TextAlign.End
+                                            it()
+                                        },
+                                        cursorBrush = SolidColor(MaterialTheme.colors.onBackground),
+                                        textStyle = TextStyle.Default.copy(
+                                            color = MaterialTheme.colors.onBackground,
+                                            textAlign = TextAlign.End
+                                        )
                                     )
-                                )
+                                    Box(
+                                        modifier = Modifier
+                                            .height(0.5.dp)
+                                            .fillMaxWidth()
+                                            .background(MaterialTheme.colors.onBackground)
+                                    )
+                                }
                                 Text(
                                     text = item.key.value,
                                     modifier = Modifier.padding(start = 4.dp, end = 4.dp),
                                     color = MaterialTheme.colors.secondary
                                 )
-                                BasicTextField(
-                                    value = suffixText,
-                                    onValueChange = {
-                                        suffixText = it
-                                        items[index] = items[index].copy(prefix = it)
-                                    },
+                                Column(
                                     modifier = Modifier
+                                        .padding(4.dp)
                                         .fillMaxWidth()
-                                        .weight(1f),
-                                    decorationBox = {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = BottomStart
-                                        ) {
+                                        .weight(1f)
+                                ) {
+                                    BasicTextField(
+                                        value = suffixText,
+                                        onValueChange = {
+                                            suffixText = it
+                                            items = items.toMutableList().apply {
+                                                this[index] = this[index].copy(suffix = it)
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        decorationBox = {
                                             if (suffixText.isEmpty()) {
                                                 Text(
                                                     text = stringResource(
                                                         id = R.string.dialog_hint_format_pattern_suffix
-                                                    )
+                                                    ),
+                                                    textAlign = TextAlign.Start
                                                 )
                                             }
-                                            Box(
-                                                modifier = Modifier
-                                                    .height(0.5.dp)
-                                                    .fillMaxWidth()
-                                                    .background(MaterialTheme.colors.onBackground)
-                                            )
-                                        }
-                                        it()
-                                    },
-                                    cursorBrush = SolidColor(MaterialTheme.colors.onBackground),
-                                    textStyle = TextStyle.Default.copy(
-                                        color = MaterialTheme.colors.onBackground,
-                                        textAlign = TextAlign.Start
+                                            it()
+                                        },
+                                        cursorBrush = SolidColor(MaterialTheme.colors.onBackground),
+                                        textStyle = TextStyle.Default.copy(
+                                            color = MaterialTheme.colors.onBackground,
+                                            textAlign = TextAlign.Start
+                                        )
                                     )
-                                )
+                                    Box(
+                                        modifier = Modifier
+                                            .height(0.5.dp)
+                                            .fillMaxWidth()
+                                            .background(MaterialTheme.colors.onBackground)
+                                    )
+                                }
                             }
                         }
                     }
@@ -903,7 +910,7 @@ class SettingsActivity : AppCompatActivity() {
         var instances by remember { mutableStateOf(emptyList<String>()) }
         var showAutoCompleteList by remember { mutableStateOf(false) }
 
-        LaunchedEffect(System.currentTimeMillis()) {
+        LaunchedEffect(true) {
             instances = get<MastodonInstancesApiClient>().getList().mapNotNull { it.name }
         }
         AlertDialog(
@@ -1029,7 +1036,10 @@ class SettingsActivity : AppCompatActivity() {
                     duration.toLongOrNull()?.let {
                         if (it in (500..60000)) {
                             sharedPreferences.storeDelayDurationPostMastodon(it)
-                            viewModel.postMastodonDelaySummary.value = it
+                            viewModel.postMastodonDelaySummary.value = getString(
+                                R.string.pref_item_summary_delay_mastodon,
+                                it
+                            )
                             invokeUpdate()
                         } else {
                             null
@@ -1469,7 +1479,6 @@ class SettingsActivity : AppCompatActivity() {
                             PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON,
                             onSwitchCheckedChanged = { state ->
                                 mastodonEnabledState.value = state
-                                invokeUpdate()
                             }
                         )
                     }
@@ -1491,17 +1500,13 @@ class SettingsActivity : AppCompatActivity() {
                 Item(item = item)
             }
             item {
-                val summary = stringResource(
-                    id = R.string.pref_item_summary_delay_mastodon,
-                    viewModel.postMastodonDelaySummary.value
-                )
                 val item by remember {
                     derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences,
                             R.string.pref_item_title_delay_mastodon,
                             R.string.pref_item_desc_delay_mastodon,
-                            summary = mutableStateOf(summary),
+                            summary = viewModel.postMastodonDelaySummary,
                             enabled = mastodonEnabledState
                         ) { viewModel.openSetMastodonPostDelayDialog.value = true }
                     }
@@ -1777,6 +1782,7 @@ class SettingsActivity : AppCompatActivity() {
                     switchState.value = it
                     summary.value = it.switchSummary
                     onCheckedChanged?.invoke(it)
+                    invokeUpdate()
                 },
                 modifier = Modifier
                     .align(CenterVertically)

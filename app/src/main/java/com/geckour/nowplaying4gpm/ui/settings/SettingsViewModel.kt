@@ -38,7 +38,11 @@ class SettingsViewModel(
 
     internal val patternFormatSummary = mutableStateOf<String?>("")
     internal val postMastodonDelaySummary =
-        mutableStateOf(sharedPreferences.getDelayDurationPostMastodon())
+        mutableStateOf<String?>(
+            (getApplication() as Context).getString(
+                R.string.pref_item_summary_delay_mastodon,
+                sharedPreferences.getDelayDurationPostMastodon()
+            ))
     internal val postMastodonVisibilitySummary =
         mutableStateOf<String?>(
             (getApplication() as Context).getString(
