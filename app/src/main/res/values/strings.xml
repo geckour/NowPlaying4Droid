@@ -39,7 +39,6 @@
     <string name="pref_item_desc_auth_spotify">Authenticate Spotify account for using Spotify API</string>
     <string name="pref_item_title_use_spotify_data">Use Spotify data source</string>
     <string name="pref_item_desc_use_spotify_data">Use Spotify API as data source for track information if possible</string>
-    <string name="pref_item_summary_auth_spotify" translatable="false">%s</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
     <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are satisfied</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>

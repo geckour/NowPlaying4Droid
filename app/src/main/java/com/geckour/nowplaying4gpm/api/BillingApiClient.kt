@@ -55,6 +55,9 @@ class BillingApiClient(
             BillingClient.BillingResponseCode.USER_CANCELED -> {
                 BillingResult.CANCELLED
             }
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                BillingResult.DUPLICATED
+            }
             else -> {
                 BillingResult.FAILURE
             }

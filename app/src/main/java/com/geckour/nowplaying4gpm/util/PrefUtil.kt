@@ -10,6 +10,7 @@ import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
@@ -77,6 +78,7 @@ data class PlayerPackageState(
     val state: Boolean
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) {
     edit {
         putString(
@@ -86,6 +88,7 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) {
     }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) {
     edit { putString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, json.encodeToString(order)) }
 }
@@ -126,6 +129,7 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
         ?: context.getString(R.string.default_sharing_text_pattern)
 
+@OptIn(ExperimentalSerializationApi::class)
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit {
         putString(
@@ -214,6 +218,7 @@ fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
             ?: emptyList()
     else emptyList()
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
     val toStore = getPackageStateListPostMastodon().let { stateList ->
         val index = stateList.indexOfFirst { it.packageName == packageName }
@@ -240,10 +245,11 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
         PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
     )
 
-fun SharedPreferences.cleaerSpotifyUserInfoImmediately() {
+fun SharedPreferences.clearSpotifyUserInfoImmediately() {
     edit(true) { remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name) }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
     edit(true) {
         remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name)
@@ -275,6 +281,7 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     else null
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
     edit { putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, json.encodeToString(userInfo)) }
 }
@@ -303,7 +310,7 @@ fun SharedPreferences.getAlertTwitterAuthFlag(): Boolean =
     else false
 
 fun SharedPreferences.setReceivedDelegateShareNodeId(nodeId: String?) {
-    edit().putString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, nodeId).apply()
+    edit { putString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, nodeId) }
 }
 
 fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =
