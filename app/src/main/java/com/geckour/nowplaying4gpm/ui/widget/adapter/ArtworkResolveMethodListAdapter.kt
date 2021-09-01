@@ -50,8 +50,8 @@ class ArtworkResolveMethodListAdapter(val items: MutableList<ArtworkResolveMetho
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean {
-                val from = viewHolder.adapterPosition
-                val to = target.adapterPosition
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
 
                 if (this.from == null) this.from = from
                 this.to = to

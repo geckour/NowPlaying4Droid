@@ -10,6 +10,7 @@ import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.domain.model.PackageState
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
@@ -25,6 +26,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
     PREF_KEY_DELAY_POST_MASTODON(2000L),
     PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON(emptyList<String>()),
+    PREF_KEY_PACKAGE_LIST_SPOTIFY(emptyList<String>()),
     PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON(false),
     PREF_KEY_WHETHER_RESIDE(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION(true),
@@ -66,17 +68,11 @@ data class ArtworkResolveMethod(
 @Serializable
 data class FormatPatternModifier(
     val key: FormatPattern,
-    val prefix: String? = null,
-    val suffix: String? = null
+    val prefix: String = "",
+    val suffix: String = ""
 )
 
-@Serializable
-data class PlayerPackageState(
-    val packageName: String,
-    val appName: String,
-    val state: Boolean
-)
-
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) {
     edit {
         putString(
@@ -86,6 +82,7 @@ fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) {
     }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) {
     edit { putString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, json.encodeToString(order)) }
 }
@@ -117,7 +114,7 @@ fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
         return@let FormatPattern.replaceablePatterns
             .map { pattern ->
                 val modifier = stored.firstOrNull { it.key == pattern }
-                FormatPatternModifier(pattern, modifier?.prefix, modifier?.suffix)
+                FormatPatternModifier(pattern, modifier?.prefix ?: "", modifier?.suffix ?: "")
             }
     } ?: FormatPattern.replaceablePatterns
         .map { FormatPatternModifier(it) }
@@ -126,6 +123,7 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
         ?: context.getString(R.string.default_sharing_text_pattern)
 
+@OptIn(ExperimentalSerializationApi::class)
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit {
         putString(
@@ -214,6 +212,7 @@ fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
             ?: emptyList()
     else emptyList()
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
     val toStore = getPackageStateListPostMastodon().let { stateList ->
         val index = stateList.indexOfFirst { it.packageName == packageName }
@@ -224,6 +223,42 @@ fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: 
     edit {
         putString(
             PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
+            json.encodeToString(toStore)
+        )
+    }
+}
+
+fun SharedPreferences.getPackageStateListSpotify(): List<PackageState> =
+    (if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_SPOTIFY.name)) {
+        val spotifyPackageStates = getString(PrefKey.PREF_KEY_PACKAGE_LIST_SPOTIFY.name, null)
+            ?.let { json.parseListOrNull<PackageState>(it) }
+            ?: emptyList()
+        getPackageStateListPostMastodon().map { mastodonPackageState ->
+            mastodonPackageState.copy(
+                state = spotifyPackageStates.firstOrNull {
+                    it.packageName == mastodonPackageState.packageName
+                }?.state ?: true
+            )
+        }
+    } else {
+        emptyList()
+    }).let { states ->
+        if (states.isEmpty()) {
+            getPackageStateListPostMastodon().map { it.copy(state = true) }
+        } else states
+    }
+
+@OptIn(ExperimentalSerializationApi::class)
+fun SharedPreferences.storePackageStateSpotify(packageName: String, state: Boolean? = null) {
+    val toStore = getPackageStateListSpotify().let { stateList ->
+        val index = stateList.indexOfFirst { it.packageName == packageName }
+        if (index > -1)
+            stateList.apply { stateList[index].state = state ?: return@apply }
+        else stateList + PackageState(packageName)
+    }
+    edit {
+        putString(
+            PrefKey.PREF_KEY_PACKAGE_LIST_SPOTIFY.name,
             json.encodeToString(toStore)
         )
     }
@@ -240,10 +275,11 @@ fun SharedPreferences.getDonateBillingState(): Boolean =
         PrefKey.PREF_KEY_BILLING_DONATE.defaultValue as Boolean
     )
 
-fun SharedPreferences.cleaerSpotifyUserInfoImmediately() {
+fun SharedPreferences.clearSpotifyUserInfoImmediately() {
     edit(true) { remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name) }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
     edit(true) {
         remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name)
@@ -275,6 +311,7 @@ fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
     else null
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
     edit { putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, json.encodeToString(userInfo)) }
 }
@@ -303,7 +340,7 @@ fun SharedPreferences.getAlertTwitterAuthFlag(): Boolean =
     else false
 
 fun SharedPreferences.setReceivedDelegateShareNodeId(nodeId: String?) {
-    edit().putString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, nodeId).apply()
+    edit { putString(PrefKey.PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE.name, nodeId) }
 }
 
 fun SharedPreferences.getReceivedDelegateShareNodeId(): String? =

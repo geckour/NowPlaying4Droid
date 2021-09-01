@@ -56,6 +56,7 @@ import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.getMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.getOptimizedColor
 import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
+import com.geckour.nowplaying4gpm.util.getPackageStateListSpotify
 import com.geckour.nowplaying4gpm.util.getReceivedDelegateShareNodeId
 import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
@@ -380,8 +381,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             })
         val useSpotifyData =
             sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA)
+        val useSpotifyDataPackageState =
+            sharedPreferences.getPackageStateListSpotify()
+                .filter { it.state }
+                .map { it.packageName }
         val spotifyResult =
-            if (containsSpotifyPattern || useSpotifyData) {
+            if (containsSpotifyPattern || (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName))) {
                 spotifyApiClient.getSpotifyData(coreElement).also {
                     notificationManager.showDebugSpotifySearchNotificationIfNeeded(it)
                 }
@@ -391,7 +396,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         val spotifyData = (spotifyResult as? SpotifySearchResult.Success)?.data
 
         val trackInfo = TrackInfo(
-            if (useSpotifyData) coreElement.withSpotifyData(spotifyData) else coreElement,
+            if (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)) {
+                coreElement.withSpotifyData(spotifyData)
+            } else coreElement,
             artworkUri?.toString(),
             playerPackageName,
             playerPackageName.getAppName(this),

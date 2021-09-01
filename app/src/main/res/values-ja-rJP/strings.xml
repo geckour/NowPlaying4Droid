@@ -32,6 +32,8 @@
     <string name="pref_item_desc_auth_spotify">Spotify APIを使用するためにSpotifyアカウントを認証する</string>
     <string name="pref_item_title_use_spotify_data">Spotifyデータの使用</string>
     <string name="pref_item_desc_use_spotify_data">楽曲情報のソースとして可能な場合Spotify APIからのデータを使用する</string>
+    <string name="pref_item_title_player_package_spotify">Spotifyデータを用いるプレイヤーアプリ</string>
+    <string name="pref_item_desc_player_package_spotify">Spotify APIからのデータを用いるプレイヤーアプリを指定する</string>
     <string name="pref_item_title_strict_match_pattern">全てのフォーマットパターンの解決</string>
     <string name="pref_item_desc_strict_match_pattern">全てのフォーマットパターンが解決されたときのみ共有文を生成する </string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
@@ -48,8 +50,8 @@
     <string name="pref_item_desc_visibility_mastodon">Mastodonへの自動投稿の公開範囲を選択</string>
     <string name="pref_item_title_player_package_mastodon">自動投稿に用いるプレイヤーアプリ</string>
     <string name="pref_item_desc_player_package_mastodon">Mastodonへの自動投稿に用いるプレイヤーアプリを指定する</string>
-    <string name="pref_item_title_success_notification_mastodon">成功時の通知</string>
-    <string name="pref_item_desc_success_notification_mastodon">Mastodonへの自動投稿が成功した際に短い通知を表示する </string>
+    <string name="pref_item_title_switch_success_notification_mastodon">成功時の通知</string>
+    <string name="pref_item_desc_switch_success_notification_mastodon">Mastodonへの自動投稿が成功した際に短い通知を表示する </string>
 
     <string name="pref_category_notification">通知</string>
     <string name="pref_item_title_switch_reside_notification">通知の常駐切り替え</string>
@@ -64,8 +66,8 @@
     <string name="pref_category_widget">ウィジェット</string>
     <string name="pref_item_title_switch_show_artwork_in_widget">共有用ウィジェットのアートワーク</string>
     <string name="pref_item_desc_switch_show_artwork_in_widget">共有用ウィジェットにアートワークを表示</string>
-    <string name="pref_item_title_switch_launch_gpm_on_click_widget_artwork">ウィジェットのアートワークのタップ時 </string>
-    <string name="pref_item_desc_switch_launch_gpm_on_click_widget_artwork">再生中の音楽プレイヤーアプリを起動する </string>
+    <string name="pref_item_title_switch_launch_player_on_click_widget_artwork">ウィジェットのアートワークのタップ時 </string>
+    <string name="pref_item_desc_switch_launch_player_on_click_widget_artwork">再生中の音楽プレイヤーアプリを起動する </string>
     <string name="pref_item_title_switch_show_clear_button_in_widget">共有用ウィジェットのクリアボタン</string>
     <string name="pref_item_desc_switch_show_clear_button_in_widget">共有用ウィジェットに楽曲情報をクリアするボタンを表示する </string>
 
@@ -114,6 +116,8 @@
     <string name="dialog_message_mastodon_visibility">Mastodonへの自動投稿の公開範囲を選択</string>
     <string name="dialog_title_player_package_mastodon">自動投稿に用いるプレイヤーアプリ</string>
     <string name="dialog_message_player_package_mastodon">Mastodonへの自動投稿に用いるプレイヤーアプリを指定</string>
+    <string name="dialog_title_player_package_spotify">Spotifyデータを用いるプレイヤーアプリ</string>
+    <string name="dialog_message_player_package_spotify">Spotify APIからのデータを用いるプレイヤーアプリを指定</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
     <string name="dialog_title_alert_no_metadata">共有できません</string>

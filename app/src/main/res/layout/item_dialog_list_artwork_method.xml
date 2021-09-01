@@ -15,8 +15,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
-        android:foreground="?android:attr/selectableItemBackground">
+        android:background="?android:attr/selectableItemBackground">
 
         <TextView
             android:id="@+id/name"
@@ -43,14 +42,14 @@
             android:id="@+id/name_cover"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="@color/colorMaskInactive"
+            android:background="@color/colorMask"
             app:layout_constraintBottom_toTopOf="@id/barrier"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:visibility="@{!item.enabled}" />
 
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/enabled"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

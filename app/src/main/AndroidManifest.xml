@@ -70,7 +70,7 @@
         <activity
             android:name=".ui.license.LicensesActivity"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme.Dark" />
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.mushroom.MushroomActivity"
             android:launchMode="singleTop"
@@ -85,7 +85,7 @@
         <activity
             android:name=".ui.debug.DebugActivity"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme.Dark" />
+            android:theme="@style/AppTheme" />
 
         <service
             android:name=".service.NotificationService"

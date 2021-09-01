@@ -39,7 +39,8 @@
     <string name="pref_item_desc_auth_spotify">Authenticate Spotify account for using Spotify API</string>
     <string name="pref_item_title_use_spotify_data">Use Spotify data source</string>
     <string name="pref_item_desc_use_spotify_data">Use Spotify API as data source for track information if possible</string>
-    <string name="pref_item_summary_auth_spotify" translatable="false">%s</string>
+    <string name="pref_item_title_player_package_spotify">Select player apps for Spotify</string>
+    <string name="pref_item_desc_player_package_spotify">Select which player apps can be used with Spotify data source</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
     <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are satisfied</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
@@ -58,8 +59,8 @@
     <string name="pref_item_desc_visibility_mastodon">Select visibility of auto post for Mastodon</string>
     <string name="pref_item_title_player_package_mastodon">Select player apps for Mastodon</string>
     <string name="pref_item_desc_player_package_mastodon">Select which player apps can be used for auto post for Mastodon</string>
-    <string name="pref_item_title_success_notification_mastodon">Show notification on succeeded</string>
-    <string name="pref_item_desc_success_notification_mastodon">Show short notification on succeeded to post for Mastodon </string>
+    <string name="pref_item_title_switch_success_notification_mastodon">Show notification on succeeded</string>
+    <string name="pref_item_desc_switch_success_notification_mastodon">Show short notification on succeeded to post for Mastodon </string>
 
     <string name="pref_category_notification">Notification</string>
     <string name="pref_item_title_switch_reside_notification">Resident notification</string>
@@ -74,8 +75,8 @@
     <string name="pref_category_widget">Widget</string>
     <string name="pref_item_title_switch_show_artwork_in_widget">The artwork in sharing widget</string>
     <string name="pref_item_desc_switch_show_artwork_in_widget">Show the artwork in sharing widget</string>
-    <string name="pref_item_title_switch_launch_gpm_on_click_widget_artwork">On tap widget\'s artwork</string>
-    <string name="pref_item_desc_switch_launch_gpm_on_click_widget_artwork">Launch music player app which now playing </string>
+    <string name="pref_item_title_switch_launch_player_on_click_widget_artwork">On tap widget\'s artwork</string>
+    <string name="pref_item_desc_switch_launch_player_on_click_widget_artwork">Launch music player app which now playing </string>
     <string name="pref_item_title_switch_show_clear_button_in_widget">Clear button in sharing widget</string>
     <string name="pref_item_desc_switch_show_clear_button_in_widget">Show clear button for track information in sharing widget </string>
 
@@ -124,6 +125,8 @@
     <string name="dialog_message_mastodon_visibility">Select visibility of auto post for Mastodon</string>
     <string name="dialog_title_player_package_mastodon">Select player apps for Mastodon</string>
     <string name="dialog_message_player_package_mastodon">Specify which player apps can be used for auto post for Mastodon</string>
+    <string name="dialog_title_player_package_spotify">Select player apps for Spotify</string>
+    <string name="dialog_message_player_package_spotify">Specify which player apps can be used with Spotify data</string>
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_title_alert_no_metadata">Failure to share</string>

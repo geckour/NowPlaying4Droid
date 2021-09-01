@@ -2,7 +2,6 @@ package com.geckour.nowplaying4gpm.api
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -10,13 +9,11 @@ import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
-import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.util.showErrorDialog
 import com.geckour.nowplaying4gpm.util.withCatching
-import kotlinx.coroutines.launch
 
 class BillingApiClient(
     context: Context,
+    private val onError: () -> Unit,
     private val onDonateCompleted: (result: BillingResult) -> Unit
 ) : PurchasesUpdatedListener {
 
@@ -55,6 +52,9 @@ class BillingApiClient(
             BillingClient.BillingResponseCode.USER_CANCELED -> {
                 BillingResult.CANCELLED
             }
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                BillingResult.DUPLICATED
+            }
             else -> {
                 BillingResult.FAILURE
             }
@@ -62,7 +62,7 @@ class BillingApiClient(
         onDonateCompleted(billingResult)
     }
 
-    suspend fun startBilling(activity: AppCompatActivity, skus: List<String>) {
+    fun startBilling(activity: AppCompatActivity, skus: List<String>) {
         withCatching {
             val params = SkuDetailsParams.newBuilder()
                 .setType(BillingClient.SkuType.INAPP)
@@ -70,12 +70,7 @@ class BillingApiClient(
                 .build()
             client.querySkuDetailsAsync(params) { result, skuDetailsList ->
                 if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-                    activity.lifecycleScope.launch {
-                        activity.showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_start_purchase
-                        )
-                    }
+                    onError()
                     return@querySkuDetailsAsync
                 }
 
@@ -85,12 +80,7 @@ class BillingApiClient(
                         .build()
                     client.launchBillingFlow(activity, flowParams)
                 } ?: run {
-                    activity.lifecycleScope.launch {
-                        activity.showErrorDialog(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_start_purchase
-                        )
-                    }
+                    onError()
                 }
             }
         }
