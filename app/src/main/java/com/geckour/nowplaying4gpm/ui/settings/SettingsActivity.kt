@@ -193,8 +193,6 @@ class SettingsActivity : AppCompatActivity() {
             requiresPermission = ::invokeUpdate
         )
 
-        viewModel.patternFormatSummary.value = sharedPreferences.getFormatPattern(this)
-
         setContent {
             SettingsTheme {
                 // A surface container using the 'background' color from the theme
@@ -252,19 +250,17 @@ class SettingsActivity : AppCompatActivity() {
 
         checkStoragePermission(
             onNotGranted = { viewModel.settingsVisible.value = false },
-            onGranted = { viewModel.settingsVisible.value = true }
+            onGranted = { invokeUpdate() }
         )
 
         reflectDonation(viewModel.donated)
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
-            lifecycleScope.launchWhenResumed {
-                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                    R.string.dialog_title_alert_must_auth_twitter,
-                    R.string.dialog_message_alert_must_auth_twitter
-                ) {
-                    sharedPreferences.setAlertTwitterAuthFlag(false)
-                }
+            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                R.string.dialog_title_alert_must_auth_twitter,
+                R.string.dialog_message_alert_must_auth_twitter
+            ) {
+                sharedPreferences.setAlertTwitterAuthFlag(false)
             }
         }
     }
@@ -316,7 +312,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun invokeUpdate() {
         viewModel.settingsVisible.value = true
-
         NotificationService.sendRequestInvokeUpdate(this)
     }
 
@@ -423,12 +418,10 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun onClickFab() {
         if (sharedPreferences.readyForShare(this).not()) {
-            lifecycleScope.launchWhenResumed {
-                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                    R.string.dialog_title_alert_no_metadata,
-                    R.string.dialog_message_alert_no_metadata
-                )
-            }
+            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                R.string.dialog_title_alert_no_metadata,
+                R.string.dialog_message_alert_no_metadata
+            )
             return
         }
 
@@ -474,7 +467,7 @@ class SettingsActivity : AppCompatActivity() {
             sharedPreferences.storeTwitterAccessToken(accessToken)
 
             summary.value = accessToken.screenName
-            invokeUpdate()
+            requestUpdate.launch()
             viewModel.snackbarHostState.value
                 .showSnackbar(getString(R.string.snackbar_text_success_auth_twitter))
         }
@@ -532,7 +525,7 @@ class SettingsActivity : AppCompatActivity() {
                     userInfo.userName,
                     userInfo.instanceName
                 )
-                invokeUpdate()
+                requestUpdate.launch()
                 viewModel.snackbarHostState.value
                     .showSnackbar(getString(R.string.snackbar_text_success_auth_mastodon))
             }
@@ -672,7 +665,7 @@ class SettingsActivity : AppCompatActivity() {
                 TextButton(onClick = {
                     sharedPreferences.setArtworkResolveOrder(adapter.items)
                     viewModel.openChangeArtworkResolveOrderDialog.value = false
-                    invokeUpdate()
+                    requestUpdate.launch()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -730,7 +723,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     viewModel.patternFormatSummary.value = text
                     viewModel.openChangePatternFormatDialog.value = false
-                    invokeUpdate()
+                    requestUpdate.launch()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -778,7 +771,7 @@ class SettingsActivity : AppCompatActivity() {
                     sharedPreferences.edit {
                         sharedPreferences.setFormatPatternModifiers(items)
                         viewModel.openEditPatternModifierDialog.value = false
-                        invokeUpdate()
+                        requestUpdate.launch()
                     }
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
@@ -966,7 +959,7 @@ class SettingsActivity : AppCompatActivity() {
                         }
                     }
                     viewModel.openAuthMastodonDialog.value = false
-                    invokeUpdate()
+                    requestUpdate.launch()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1040,7 +1033,7 @@ class SettingsActivity : AppCompatActivity() {
                                 R.string.pref_item_summary_delay_mastodon,
                                 it
                             )
-                            invokeUpdate()
+                            requestUpdate.launch()
                         } else {
                             null
                         }
@@ -1100,7 +1093,7 @@ class SettingsActivity : AppCompatActivity() {
                     viewModel.postMastodonVisibilitySummary.value =
                         getString(visibility.getSummaryResId())
                     viewModel.openSetMastodonPostVisibilityDialog.value = false
-                    invokeUpdate()
+                    requestUpdate.launch()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1170,7 +1163,7 @@ class SettingsActivity : AppCompatActivity() {
                         sharedPreferences.storePackageStatePostMastodon(it.packageName, it.state)
                     }
                     viewModel.openSelectPlayerPostMastodonDialog.value = false
-                    invokeUpdate()
+                    requestUpdate.launch()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1259,7 +1252,7 @@ class SettingsActivity : AppCompatActivity() {
                     viewModel.chosePaletteColorSummary.value =
                         getString(paletteColor.getSummaryResId())
                     viewModel.openSelectNotificationColorDialog.value = false
-                    invokeUpdate()
+                    requestUpdate.launch()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1782,7 +1775,7 @@ class SettingsActivity : AppCompatActivity() {
                     switchState.value = it
                     summary.value = it.switchSummary
                     onCheckedChanged?.invoke(it)
-                    invokeUpdate()
+                    requestUpdate.launch()
                 },
                 modifier = Modifier
                     .align(CenterVertically)

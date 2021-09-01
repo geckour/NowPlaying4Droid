@@ -14,6 +14,7 @@ import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
+import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
@@ -36,7 +37,8 @@ class SettingsViewModel(
 
     internal val errorDialogData = mutableStateOf<ErrorDialogData?>(null)
 
-    internal val patternFormatSummary = mutableStateOf<String?>("")
+    internal val patternFormatSummary =
+        mutableStateOf<String?>(sharedPreferences.getFormatPattern(application))
     internal val postMastodonDelaySummary =
         mutableStateOf<String?>(
             (getApplication() as Context).getString(
