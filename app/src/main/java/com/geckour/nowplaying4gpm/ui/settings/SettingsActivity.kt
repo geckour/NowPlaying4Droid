@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -12,12 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.FrameLayout
-import android.widget.TextView
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -41,7 +35,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -95,7 +88,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
-import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -106,7 +98,6 @@ import com.geckour.nowplaying4gpm.api.BillingApiClient
 import com.geckour.nowplaying4gpm.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
-import com.geckour.nowplaying4gpm.databinding.DialogSpinnerBinding
 import com.geckour.nowplaying4gpm.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.compose.CleanBlue
@@ -115,9 +106,12 @@ import com.geckour.nowplaying4gpm.ui.compose.DeepBlue
 import com.geckour.nowplaying4gpm.ui.compose.DeepRed
 import com.geckour.nowplaying4gpm.ui.compose.InkBlackWeak
 import com.geckour.nowplaying4gpm.ui.compose.LightRed
+import com.geckour.nowplaying4gpm.ui.compose.MilkBlack
+import com.geckour.nowplaying4gpm.ui.compose.MilkWhite
 import com.geckour.nowplaying4gpm.ui.compose.SettingsTheme
 import com.geckour.nowplaying4gpm.ui.compose.SmokeBlack
 import com.geckour.nowplaying4gpm.ui.compose.SmokeWhite
+import com.geckour.nowplaying4gpm.ui.compose.TarBlack
 import com.geckour.nowplaying4gpm.ui.license.LicensesActivity
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdapter
@@ -127,7 +121,6 @@ import com.geckour.nowplaying4gpm.util.Visibility
 import com.geckour.nowplaying4gpm.util.checkStoragePermission
 import com.geckour.nowplaying4gpm.util.clearSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
-import com.geckour.nowplaying4gpm.util.generate
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
@@ -142,7 +135,6 @@ import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.setArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
-import com.geckour.nowplaying4gpm.util.showErrorDialog
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
@@ -216,27 +208,32 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        billingApiClient = BillingApiClient(this) {
+        billingApiClient = BillingApiClient(this, onError = {
+            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                R.string.dialog_title_alert_failure_purchase,
+                R.string.dialog_message_alert_on_start_purchase
+            )
+        }) {
             lifecycleScope.launchWhenResumed {
                 when (it) {
                     BillingApiClient.BillingResult.SUCCESS -> {
                         reflectDonation(viewModel.donated, true)
                     }
                     BillingApiClient.BillingResult.DUPLICATED -> {
-                        showErrorDialog(
+                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_already_purchase
                         )
                         reflectDonation(viewModel.donated, true)
                     }
                     BillingApiClient.BillingResult.CANCELLED -> {
-                        showErrorDialog(
+                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_on_cancel_purchase
                         )
                     }
                     BillingApiClient.BillingResult.FAILURE -> {
-                        showErrorDialog(
+                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_failure_purchase
                         )
@@ -264,7 +261,7 @@ class SettingsActivity : AppCompatActivity() {
 
         if (sharedPreferences.getAlertTwitterAuthFlag()) {
             lifecycleScope.launchWhenResumed {
-                showErrorDialog(
+                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                     R.string.dialog_title_alert_must_auth_twitter,
                     R.string.dialog_message_alert_must_auth_twitter
                 ) {
@@ -374,22 +371,22 @@ class SettingsActivity : AppCompatActivity() {
         billingApiClient.requestUpdate()
     }
 
-    private suspend fun onAuthSpotifyError() {
-        showErrorDialog(
+    private fun onAuthSpotifyError() {
+        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
             R.string.dialog_title_alert_failure_auth_spotify,
             R.string.dialog_message_alert_failure_auth_spotify
         )
     }
 
-    private suspend fun onAuthMastodonError() {
-        showErrorDialog(
+    private fun onAuthMastodonError() {
+        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
             R.string.dialog_title_alert_failure_auth_mastodon,
             R.string.dialog_message_alert_failure_auth_mastodon
         )
     }
 
-    private suspend fun onAuthTwitterError() {
-        showErrorDialog(
+    private fun onAuthTwitterError() {
+        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
             R.string.dialog_title_alert_failure_auth_twitter,
             R.string.dialog_message_alert_failure_auth_twitter
         )
@@ -429,7 +426,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun onClickFab() {
         if (sharedPreferences.readyForShare(this).not()) {
             lifecycleScope.launchWhenResumed {
-                showErrorDialog(
+                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                     R.string.dialog_title_alert_no_metadata,
                     R.string.dialog_message_alert_no_metadata
                 )
@@ -438,56 +435,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         startActivity(SharingActivity.getIntent(this))
-    }
-
-    private fun onClickItemChooseColor(summary: MutableState<String?>) {
-        val dialogBinding = DataBindingUtil.inflate<DialogSpinnerBinding>(
-            LayoutInflater.from(this), R.layout.dialog_spinner, null, false
-        ).apply {
-            val arrayAdapter = object : ArrayAdapter<String>(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                PaletteColor.values().map {
-                    getString(it.getSummaryResId())
-                }
-            ) {
-                override fun getDropDownView(
-                    position: Int, convertView: View?, parent: ViewGroup
-                ): View = super.getDropDownView(position, convertView, parent).apply {
-                    if (position == spinner.selectedItemPosition) {
-                        (this as TextView).setTextColor(
-                            context.getColor(R.color.colorPrimaryVariant)
-                        )
-                    }
-                }
-            }.apply {
-                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-            spinner.apply {
-                adapter = arrayAdapter
-                setSelection(sharedPreferences.getChosePaletteColor().ordinal)
-            }
-        }
-
-        AlertDialog.Builder(this).generate(
-            dialogBinding.root,
-            getString(R.string.dialog_title_choose_color),
-            getString(R.string.dialog_message_choose_color)
-        ) { dialog, which ->
-            when (which) {
-                DialogInterface.BUTTON_POSITIVE -> {
-                    val paletteIndex = dialogBinding.spinner.selectedItemPosition
-                    sharedPreferences.edit {
-                        putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
-                    }
-                    summary.value = getString(
-                        PaletteColor.getFromIndex(paletteIndex).getSummaryResId()
-                    )
-                    requestUpdate.launch()
-                }
-            }
-            dialog.dismiss()
-        }.show()
     }
 
     private fun onAuthSpotifyCallback(
@@ -687,7 +634,29 @@ class SettingsActivity : AppCompatActivity() {
             if (viewModel.openSelectNotificationColorDialog.value) {
                 SelectNotificationColorDialog()
             }
+            viewModel.errorDialogData.value?.let {
+                ErrorDialog(it)
+            }
         }
+    }
+
+    @Composable
+    fun ErrorDialog(errorDialogData: SettingsViewModel.ErrorDialogData) {
+        AlertDialog(
+            onDismissRequest = { viewModel.errorDialogData.value = null },
+            confirmButton = {
+                TextButton(onClick = { viewModel.errorDialogData.value = null }) {
+                    Text(text = stringResource(id = R.string.dialog_button_ok))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = errorDialogData.titleRes))
+            },
+            text = {
+                Text(text = stringResource(id = errorDialogData.textRes))
+            },
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
+        )
     }
 
     @Composable
@@ -741,7 +710,7 @@ class SettingsActivity : AppCompatActivity() {
                     })
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -793,7 +762,7 @@ class SettingsActivity : AppCompatActivity() {
                     )
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -924,7 +893,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -1044,7 +1013,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -1068,7 +1037,7 @@ class SettingsActivity : AppCompatActivity() {
                     } ?: run {
                         duration = sharedPreferences.getDelayDurationPostMastodon().toString()
                         lifecycleScope.launchWhenResumed {
-                            showErrorDialog(
+                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_invalid_duration_value,
                                 R.string.dialog_message_alert_invalid_duration_value
                             )
@@ -1102,7 +1071,7 @@ class SettingsActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxWidth()
                 )
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -1174,7 +1143,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -1262,7 +1231,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 
@@ -1333,7 +1302,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             },
-            backgroundColor = MaterialTheme.colors.background
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
         )
     }
 

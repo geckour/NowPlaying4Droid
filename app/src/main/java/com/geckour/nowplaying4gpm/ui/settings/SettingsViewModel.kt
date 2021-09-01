@@ -34,6 +34,8 @@ class SettingsViewModel(
     internal val spotifyEnabledState =
         mutableStateOf(sharedPreferences.getSpotifyUserInfo() != null)
 
+    internal val errorDialogData = mutableStateOf<ErrorDialogData?>(null)
+
     internal val patternFormatSummary = mutableStateOf<String?>("")
     internal val postMastodonDelaySummary =
         mutableStateOf(sharedPreferences.getDelayDurationPostMastodon())
@@ -95,5 +97,11 @@ class SettingsViewModel(
         val enabled: MutableState<Boolean> = mutableStateOf(true),
         val visible: Boolean = true,
         val onClick: (item: Item) -> Unit = {},
+    )
+
+    data class ErrorDialogData(
+        @StringRes val titleRes: Int,
+        @StringRes val textRes: Int,
+        val onDismiss: () -> Unit = {}
     )
 }

@@ -1,10 +1,8 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.ContentUris
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -14,9 +12,7 @@ import android.graphics.Color
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
-import android.view.View
 import androidx.annotation.ColorInt
-import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.palette.graphics.Palette
@@ -27,8 +23,6 @@ import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
@@ -91,10 +85,6 @@ enum class PaletteColor {
         MUTED -> R.string.palette_muted
         DARK_MUTED -> R.string.palette_dark_muted
     }
-
-    companion object {
-        fun getFromIndex(index: Int): PaletteColor = values().getOrNull(index) ?: LIGHT_VIBRANT
-    }
 }
 
 enum class Visibility {
@@ -104,10 +94,6 @@ enum class Visibility {
         PUBLIC -> R.string.mastodon_visibility_public
         UNLISTED -> R.string.mastodon_visibility_unlisted
         PRIVATE -> R.string.mastodon_visibility_private
-    }
-
-    companion object {
-        fun getFromIndex(index: Int): Visibility = values().getOrNull(index) ?: PUBLIC
     }
 }
 
@@ -139,19 +125,6 @@ inline fun <reified T> withCatching(
     FirebaseCrashlytics.getInstance().recordException(it)
     onError(it)
 }.getOrNull()
-
-suspend fun Context.showErrorDialog(
-    @StringRes titleResId: Int,
-    @StringRes messageResId: Int,
-    onDismiss: () -> Unit = {}
-) {
-    withContext(Dispatchers.Main) {
-        AlertDialog.Builder(this@showErrorDialog).setTitle(titleResId).setMessage(messageResId)
-            .setPositiveButton(R.string.dialog_button_ok) { dialog, _ -> dialog.dismiss() }
-            .setOnDismissListener { onDismiss() }
-            .show()
-    }
-}
 
 fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
     trackInfo?.let { info ->
@@ -246,21 +219,6 @@ fun String.splitIncludeDelimiter(vararg delimiters: String) =
     delimiters.joinToString("|").let { pattern ->
         this.split(Regex("(?<=$pattern)|(?=$pattern)"))
     }
-
-fun AlertDialog.Builder.generate(
-    view: View,
-    title: String,
-    message: String? = null,
-    callback: (dialog: DialogInterface, which: Int) -> Unit = { _, _ -> }
-): AlertDialog {
-    setTitle(title)
-    if (message != null) setMessage(message)
-    setView(view)
-    setPositiveButton(R.string.dialog_button_ok) { dialog, which -> callback(dialog, which) }
-    setNegativeButton(R.string.dialog_button_ng) { dialog, _ -> dialog.dismiss() }
-
-    return create()
-}
 
 fun Context.checkStoragePermission(
     onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}
@@ -364,10 +322,12 @@ private fun Context.getMediaIdInfoFromDevice(
 
 private fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
     if (this?.moveToFirst() == true) {
-        MediaIdInfo(
-            getLong(getColumnIndex(MediaStore.Audio.Media._ID)),
-            getLong(getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
-        )
+        withCatching {
+            MediaIdInfo(
+                getLong(getColumnIndexOrThrow(MediaStore.Audio.Media._ID)),
+                getLong(getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID))
+            )
+        }
     } else null
 
 fun ByteArray.toBitmap(): Bitmap? =
