@@ -26,6 +26,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON(false),
     PREF_KEY_DELAY_POST_MASTODON(2000L),
     PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON(emptyList<String>()),
+    PREF_KEY_PACKAGE_LIST_SPOTIFY(emptyList<String>()),
     PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON(false),
     PREF_KEY_WHETHER_RESIDE(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION(true),
@@ -222,6 +223,42 @@ fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: 
     edit {
         putString(
             PrefKey.PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON.name,
+            json.encodeToString(toStore)
+        )
+    }
+}
+
+fun SharedPreferences.getPackageStateListSpotify(): List<PackageState> =
+    (if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_SPOTIFY.name)) {
+        val spotifyPackageStates = getString(PrefKey.PREF_KEY_PACKAGE_LIST_SPOTIFY.name, null)
+            ?.let { json.parseListOrNull<PackageState>(it) }
+            ?: emptyList()
+        getPackageStateListPostMastodon().map { mastodonPackageState ->
+            mastodonPackageState.copy(
+                state = spotifyPackageStates.firstOrNull {
+                    it.packageName == mastodonPackageState.packageName
+                }?.state ?: true
+            )
+        }
+    } else {
+        emptyList()
+    }).let { states ->
+        if (states.isEmpty()) {
+            getPackageStateListPostMastodon().map { it.copy(state = true) }
+        } else states
+    }
+
+@OptIn(ExperimentalSerializationApi::class)
+fun SharedPreferences.storePackageStateSpotify(packageName: String, state: Boolean? = null) {
+    val toStore = getPackageStateListSpotify().let { stateList ->
+        val index = stateList.indexOfFirst { it.packageName == packageName }
+        if (index > -1)
+            stateList.apply { stateList[index].state = state ?: return@apply }
+        else stateList + PackageState(packageName)
+    }
+    edit {
+        putString(
+            PrefKey.PREF_KEY_PACKAGE_LIST_SPOTIFY.name,
             json.encodeToString(toStore)
         )
     }

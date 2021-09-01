@@ -35,6 +35,9 @@ class SettingsViewModel(
     internal val spotifyEnabledState =
         mutableStateOf(sharedPreferences.getSpotifyUserInfo() != null)
 
+    internal val spotifyDataEnabledState =
+        mutableStateOf(sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA))
+
     internal val errorDialogData = mutableStateOf<ErrorDialogData?>(null)
 
     internal val patternFormatSummary =
@@ -66,6 +69,7 @@ class SettingsViewModel(
     internal val openChangeArtworkResolveOrderDialog = mutableStateOf(false)
     internal val openChangePatternFormatDialog = mutableStateOf(false)
     internal val openEditPatternModifierDialog = mutableStateOf(false)
+    internal val openSelectPlayerSpotifyDialog = mutableStateOf(false)
     internal val openAuthMastodonDialog = mutableStateOf(false)
     internal val openSetMastodonPostDelayDialog = mutableStateOf(false)
     internal val openSetMastodonPostVisibilityDialog = mutableStateOf(false)

@@ -127,6 +127,7 @@ import com.geckour.nowplaying4gpm.util.getDonateBillingState
 import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
+import com.geckour.nowplaying4gpm.util.getPackageStateListSpotify
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
 import com.geckour.nowplaying4gpm.util.readyForShare
@@ -136,6 +137,7 @@ import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
 import com.geckour.nowplaying4gpm.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
+import com.geckour.nowplaying4gpm.util.storePackageStateSpotify
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -607,6 +609,9 @@ class SettingsActivity : AppCompatActivity() {
             if (viewModel.openChangePatternFormatDialog.value) {
                 ChangePatternFormatDialog()
             }
+            if (viewModel.openSelectPlayerSpotifyDialog.value) {
+                SelectPlayerSpotifyDialog()
+            }
             if (viewModel.openAuthMastodonDialog.value) {
                 AuthMastodonDialog()
             }
@@ -890,6 +895,94 @@ class SettingsActivity : AppCompatActivity() {
                                 }
                             }
                         }
+                    }
+                }
+            },
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
+        )
+    }
+
+    @Composable
+    fun SelectPlayerSpotifyDialog() {
+        var packageStates by remember {
+            mutableStateOf(sharedPreferences.getPackageStateListSpotify())
+        }
+        AlertDialog(
+            onDismissRequest = { viewModel.openSelectPlayerSpotifyDialog.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    packageStates.forEach {
+                        sharedPreferences.storePackageStateSpotify(it.packageName, it.state)
+                    }
+                    viewModel.openSelectPlayerSpotifyDialog.value = false
+                    requestUpdate.launch()
+                }) {
+                    Text(text = stringResource(id = R.string.dialog_button_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.openSelectPlayerSpotifyDialog.value = false
+                }) {
+                    Text(text = stringResource(id = R.string.dialog_button_ng))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = R.string.dialog_title_player_package_spotify))
+            },
+            text = {
+                Column {
+                    Text(text = stringResource(id = R.string.dialog_message_player_package_spotify))
+                    packageStates.forEachIndexed { index, packageState ->
+                        val appName = packageManager?.let {
+                            withCatching {
+                                it.getApplicationLabel(
+                                    it.getApplicationInfo(
+                                        packageState.packageName,
+                                        PackageManager.GET_META_DATA
+                                    )
+                                )
+                            }
+                        }?.toString() ?: return@forEachIndexed
+                        Row(
+                            modifier = Modifier
+                                .clickable {
+                                    packageStates = packageStates
+                                        .toMutableList()
+                                        .apply {
+                                            this[index] = this[index].let {
+                                                it.copy(state = it.state.not())
+                                            }
+                                        }
+                                }
+                                .padding(vertical = 4.dp, horizontal = 16.dp),
+                            verticalAlignment = CenterVertically
+                        ) {
+                            Text(
+                                text = appName,
+                                modifier = Modifier
+                                    .padding(end = 4.dp)
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                color = MaterialTheme.colors.secondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Switch(
+                                checked = packageState.state,
+                                onCheckedChange = { checked ->
+                                    packageStates = packageStates.toMutableList().apply {
+                                        this[index] = this[index].copy(state = checked)
+                                    }
+                                }
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(0.75.dp)
+                                .background(MaterialTheme.colors.secondary)
+                        )
                     }
                 }
             },
@@ -1417,8 +1510,24 @@ class SettingsActivity : AppCompatActivity() {
                             R.string.pref_item_title_use_spotify_data,
                             R.string.pref_item_desc_use_spotify_data,
                             PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA,
-                            enabled = viewModel.spotifyEnabledState
+                            enabled = viewModel.spotifyEnabledState,
+                            onSwitchCheckedChanged = {
+                                viewModel.spotifyDataEnabledState.value = it
+                            }
                         )
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
+                            R.string.pref_item_title_player_package_spotify,
+                            R.string.pref_item_desc_player_package_spotify,
+                            enabled = viewModel.spotifyDataEnabledState
+                        ) { viewModel.openSelectPlayerSpotifyDialog.value = true }
                     }
                 }
                 Item(item = item)
