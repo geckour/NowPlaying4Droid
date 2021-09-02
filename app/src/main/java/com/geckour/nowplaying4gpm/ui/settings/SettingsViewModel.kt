@@ -15,6 +15,7 @@ import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getFormatPattern
+import com.geckour.nowplaying4gpm.util.getMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getTwitterAccessToken
@@ -62,7 +63,14 @@ class SettingsViewModel(
         )
     internal val authSpotifySummary =
         mutableStateOf<String?>(sharedPreferences.getSpotifyUserInfo()?.userName ?: "")
-    internal val authMastodonSummary = mutableStateOf<String?>("")
+    internal val authMastodonSummary =
+        mutableStateOf<String?>(sharedPreferences.getMastodonUserInfo()?.let {
+            application.getString(
+                R.string.pref_item_summary_auth_mastodon,
+                it.userName,
+                it.instanceName
+            )
+        } ?: "")
     internal val authTwitterSummary =
         mutableStateOf<String?>(sharedPreferences.getTwitterAccessToken()?.screenName ?: "")
 
