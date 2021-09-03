@@ -177,7 +177,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
                     context.applicationContext,
                     2,
                     launchIntent,
-                    PendingIntent.FLAG_CANCEL_CURRENT
+                    PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
             } else {
                 getSettingsIntent(context)
@@ -200,7 +200,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
             context.applicationContext,
             Random(System.currentTimeMillis()).nextInt(1, Int.MAX_VALUE),
             SharingActivity.getIntent(context),
-            PendingIntent.FLAG_CANCEL_CURRENT
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
     private fun getSettingsIntent(context: Context): PendingIntent =
@@ -208,6 +208,6 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
             context.applicationContext,
             0,
             SettingsActivity.getIntent(context),
-            PendingIntent.FLAG_CANCEL_CURRENT
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 }

@@ -137,7 +137,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 context,
                 1,
                 Intent(ACTION_CLEAR_TRACK_INFO),
-                PendingIntent.FLAG_UPDATE_CURRENT
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
         fun getComponentName(context: Context) =
@@ -764,7 +764,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     context,
                     0,
                     SettingsActivity.getIntent(context),
-                    PendingIntent.FLAG_CANCEL_CURRENT
+                    PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 ).let {
                     Notification.Action.Builder(
                         Icon.createWithResource(
@@ -806,7 +806,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     context,
                     0,
                     SharingActivity.getIntent(context),
-                    PendingIntent.FLAG_CANCEL_CURRENT
+                    PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
             )
             setOngoing(true)

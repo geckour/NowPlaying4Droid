@@ -65,7 +65,7 @@ class SharingViewModel : ViewModel() {
             context,
             SharingActivity.IntentRequestCode.SHARE.ordinal,
             intent,
-            PendingIntent.FLAG_CANCEL_CURRENT
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
         ).send()
     }
 }
