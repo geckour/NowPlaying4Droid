@@ -12,15 +12,15 @@ import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.geckour.nowplaying4gpm.service.NotificationService
-import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
-import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
 import com.geckour.nowplaying4gpm.util.PrefKey
-import com.geckour.nowplaying4gpm.util.foldBreak
+import com.geckour.nowplaying4gpm.util.foldBreaks
 import com.geckour.nowplaying4gpm.util.getBitmapFromUriString
+import com.geckour.nowplaying4gpm.util.getClearTrackInfoPendingIntent
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.getFormatPattern
 import com.geckour.nowplaying4gpm.util.getFormatPatternModifiers
+import com.geckour.nowplaying4gpm.util.getSettingsIntent
+import com.geckour.nowplaying4gpm.util.getShareIntent
 import com.geckour.nowplaying4gpm.util.getSharingText
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +29,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
-import kotlin.random.Random
 
 class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
@@ -129,7 +128,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         val summary =
             sharedPreferences.getFormatPattern(context)
                 .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
-                ?.foldBreak()
+                ?.foldBreaks()
 
         setTextViewText(
             R.id.widget_summary_share,
@@ -191,23 +190,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         setOnClickPendingIntent(
             R.id.widget_button_clear,
-            NotificationService.getClearTrackInfoPendingIntent(context)
+            getClearTrackInfoPendingIntent(context)
         )
     }
-
-    private fun getShareIntent(context: Context): PendingIntent =
-        PendingIntent.getActivity(
-            context.applicationContext,
-            Random(System.currentTimeMillis()).nextInt(1, Int.MAX_VALUE),
-            SharingActivity.getIntent(context),
-            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-    private fun getSettingsIntent(context: Context): PendingIntent =
-        PendingIntent.getActivity(
-            context.applicationContext,
-            0,
-            SettingsActivity.getIntent(context),
-            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 }
