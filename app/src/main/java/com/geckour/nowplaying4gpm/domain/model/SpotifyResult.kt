@@ -2,9 +2,9 @@ package com.geckour.nowplaying4gpm.domain.model
 
 import kotlinx.serialization.Serializable
 
-sealed class SpotifySearchResult(val query: String?) {
-    class Success(query: String, val data: Data) : SpotifySearchResult(query)
-    class Failure(query: String?, val cause: Throwable) : SpotifySearchResult(query)
+sealed class SpotifyResult {
+    class Success(val data: Data) : SpotifyResult()
+    class Failure(val cause: Throwable) : SpotifyResult()
 
     @Serializable
     data class Data(

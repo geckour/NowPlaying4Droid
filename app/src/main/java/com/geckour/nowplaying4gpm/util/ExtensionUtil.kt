@@ -273,7 +273,7 @@ inline fun <reified T : Any> Json.parseListOrNull(
     onError: Throwable.() -> Unit = {}
 ): List<T>? = this.parseOrNull(json, ListSerializer(T::class.serializer()), onError)
 
-fun String.foldBreak(): String = this.replace(Regex("[\r\n]"), " ")
+fun String.foldBreaks(): String = this.replace(Regex("[\r\n]"), " ")
 
 fun String.getAppName(context: Context): String? = withCatching {
     context.packageManager.let {

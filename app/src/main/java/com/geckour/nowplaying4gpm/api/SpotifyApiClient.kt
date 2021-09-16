@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
-import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
+import com.geckour.nowplaying4gpm.domain.model.SpotifyResult
 import com.geckour.nowplaying4gpm.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.util.getSpotifyUserInfo
@@ -14,7 +14,6 @@ import com.geckour.nowplaying4gpm.util.withCatching
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import timber.log.Timber
@@ -27,7 +26,7 @@ class SpotifyApiClient(context: Context) {
         const val SPOTIFY_CALLBACK = "np4gpm://spotify.callback"
         private const val SPOTIFY_CALLBACK_ENCODED = "np4gpm%3A%2F%2Fspotify.callback"
         const val OAUTH_URL =
-            "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_CALLBACK_ENCODED&scope=user-read-private"
+            "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_CALLBACK_ENCODED&scope=user-read-private,user-read-playback-state"
     }
 
     private val authService = Retrofit.Builder()
@@ -46,7 +45,7 @@ class SpotifyApiClient(context: Context) {
 
     private val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-    private var currentQueryAndResult: Pair<String, SpotifySearchResult>? = null
+    private var currentQueryAndResult: Pair<String, SpotifyResult>? = null
 
     suspend fun storeSpotifyUserInfo(code: String): SpotifyUserInfo? = withContext(Dispatchers.IO) {
         val token = withCatching { authService.getToken(code) }
@@ -87,12 +86,49 @@ class SpotifyApiClient(context: Context) {
     private suspend fun getUser(token: String): SpotifyUser? =
         withCatching { getService(token.apply { Timber.d("np4d spotify token: $this") }).getUser() }
 
-    suspend fun getSpotifyData(trackCoreElement: TrackInfo.TrackCoreElement): SpotifySearchResult {
+    suspend fun getSpotifyData(
+        trackCoreElement: TrackInfo.TrackCoreElement,
+        playerPackageName: String
+    ): SpotifyResult {
+        val nowPlayingResult =
+            if (playerPackageName.lowercase().contains("spotify")) getSpotifyNowPlaying()
+            else null
+
+        return nowPlayingResult?.let { if (it is SpotifyResult.Success) it else null }
+            ?: searchSpotify(trackCoreElement)
+    }
+
+    private suspend fun getSpotifyNowPlaying(): SpotifyResult {
+        return withCatching({ return SpotifyResult.Failure(it) }) {
+            val token =
+                (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
+                    ?: throw IllegalStateException("Init token first.")
+            val countryCode =
+                if (token.scope == "user-read-private") "from_token"
+                else Locale.getDefault().country
+            getService(token.accessToken).getCurrentPlayback(marketCountryCode = countryCode)
+                ?.item
+                ?.let {
+                    Timber.d("np4d track: $it")
+                    SpotifyResult.Success(
+                        SpotifyResult.Data(
+                            it.urls["spotify"] ?: return@let null,
+                            it.album.images.firstOrNull()?.url,
+                            it.name,
+                            it.artistString,
+                            it.album.name
+                        )
+                    )
+                } ?: SpotifyResult.Failure(IllegalStateException("No current playing track"))
+        } ?: SpotifyResult.Failure(IllegalStateException("Unknown error"))
+    }
+
+    private suspend fun searchSpotify(trackCoreElement: TrackInfo.TrackCoreElement): SpotifyResult {
         val query = trackCoreElement.spotifySearchQuery
         currentQueryAndResult?.let {
-            if (it.second !is SpotifySearchResult.Failure && query == it.first) return it.second
+            if (it.second !is SpotifyResult.Failure && query == it.first) return it.second
         }
-        return (withCatching({ return SpotifySearchResult.Failure(query, it) }) {
+        return (withCatching({ return SpotifyResult.Failure(it) }) {
             val token =
                 (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
                     ?: throw IllegalStateException("Init token first.")
@@ -105,9 +141,8 @@ class SpotifyApiClient(context: Context) {
                 ?.firstOrNull()
                 ?.let {
                     Timber.d("np4d track: $it")
-                    SpotifySearchResult.Success(
-                        query,
-                        SpotifySearchResult.Data(
+                    SpotifyResult.Success(
+                        SpotifyResult.Data(
                             it.urls["spotify"] ?: return@let null,
                             it.album.images.firstOrNull()?.url,
                             it.name,
@@ -115,8 +150,8 @@ class SpotifyApiClient(context: Context) {
                             it.album.name
                         )
                     )
-                } ?: SpotifySearchResult.Failure(query, IllegalStateException("No search result"))
-        } ?: SpotifySearchResult.Failure(null, IllegalStateException("Unknown error"))).apply {
+                } ?: SpotifyResult.Failure(IllegalStateException("No search result"))
+        } ?: SpotifyResult.Failure(IllegalStateException("Unknown error"))).apply {
             currentQueryAndResult = query to this
         }
     }
