@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4gpm.api
 
+import com.geckour.nowplaying4gpm.api.model.SpotifyNowPlayingResult
 import com.geckour.nowplaying4gpm.api.model.SpotifySearchResult
 import com.geckour.nowplaying4gpm.api.model.SpotifyUser
 import retrofit2.http.GET
@@ -24,4 +25,10 @@ interface SpotifyApiService {
         @Query("limit")
         limit: Int = 1
     ): SpotifySearchResult
+
+    @GET("/v1/me/player")
+    suspend fun getCurrentPlayback(
+        @Query("market")
+        marketCountryCode: String = "from_token"
+    ): SpotifyNowPlayingResult?
 }

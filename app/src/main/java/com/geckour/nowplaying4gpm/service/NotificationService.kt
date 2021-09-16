@@ -29,7 +29,7 @@ import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.OkHttpProvider
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
-import com.geckour.nowplaying4gpm.domain.model.SpotifySearchResult
+import com.geckour.nowplaying4gpm.domain.model.SpotifyResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.ui.sharing.SharingActivity
@@ -379,11 +379,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     playerPackageName
                 ))
             ) {
-                spotifyApiClient.getSpotifyData(coreElement)
+                spotifyApiClient.getSpotifyData(coreElement, playerPackageName)
             } else null
 
-        val artworkUri = metadata.storeArtworkUri(coreElement, notification?.getArtworkBitmap())
-        val spotifyData = (spotifyResult as? SpotifySearchResult.Success)?.data
+        val artworkUri = metadata.storeArtworkUri(
+            coreElement,
+            playerPackageName,
+            notification?.getArtworkBitmap()
+        )
+        val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
 
         val trackInfo = TrackInfo(
             if (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)) {
@@ -419,7 +423,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         TrackInfo.TrackCoreElement(track, artist, album, composer)
     }
 
-    private fun TrackInfo.TrackCoreElement.withSpotifyData(data: SpotifySearchResult.Data?): TrackInfo.TrackCoreElement =
+    private fun TrackInfo.TrackCoreElement.withSpotifyData(data: SpotifyResult.Data?): TrackInfo.TrackCoreElement =
         TrackInfo.TrackCoreElement(
             data?.trackName ?: title,
             data?.artistName ?: artist,
@@ -621,6 +625,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private suspend fun MediaMetadata.storeArtworkUri(
         coreElement: TrackInfo.TrackCoreElement,
+        playerPackageName: String,
         notificationBitmap: Bitmap?
     ): Uri? {
         // Check whether arg metadata and current metadata are the same or not
@@ -666,7 +671,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     refreshArtworkUriFromSpotify(
                         this@NotificationService,
                         spotifyApiClient,
-                        coreElement
+                        coreElement,
+                        playerPackageName
                     )?.let { return it }
                 }
             }

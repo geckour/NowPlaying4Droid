@@ -10,7 +10,7 @@ data class TrackInfo(
     val artworkUriString: String?,
     val playerPackageName: String?,
     val playerAppName: String?,
-    val spotifyData: SpotifySearchResult.Data?
+    val spotifyData: SpotifyResult.Data?
 ) : Serializable {
 
     fun isSatisfiedSpecifier(sharingFormatText: String): Boolean =
