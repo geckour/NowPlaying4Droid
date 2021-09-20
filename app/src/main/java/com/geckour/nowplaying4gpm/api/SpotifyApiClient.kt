@@ -14,6 +14,7 @@ import com.geckour.nowplaying4gpm.util.withCatching
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import timber.log.Timber
@@ -29,6 +30,7 @@ class SpotifyApiClient(context: Context) {
             "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_CALLBACK_ENCODED&scope=user-read-private,user-read-playback-state"
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private val authService = Retrofit.Builder()
         .client(OkHttpProvider.spotifyAuthClient)
         .baseUrl("https://accounts.spotify.com/")
@@ -36,6 +38,7 @@ class SpotifyApiClient(context: Context) {
         .build()
         .create(SpotifyAuthService::class.java)
 
+    @OptIn(ExperimentalSerializationApi::class)
     private fun getService(token: String): SpotifyApiService = Retrofit.Builder()
         .client(OkHttpProvider.getSpotifyApiClient(token))
         .baseUrl("https://api.spotify.com/")
@@ -109,7 +112,6 @@ class SpotifyApiClient(context: Context) {
             getService(token.accessToken).getCurrentPlayback(marketCountryCode = countryCode)
                 ?.item
                 ?.let {
-                    Timber.d("np4d track: $it")
                     SpotifyResult.Success(
                         SpotifyResult.Data(
                             it.urls["spotify"] ?: return@let null,

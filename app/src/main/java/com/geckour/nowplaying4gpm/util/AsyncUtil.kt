@@ -12,13 +12,10 @@ import coil.Coil
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
-import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
-import com.geckour.nowplaying4gpm.domain.model.SpotifyResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
-import timber.log.Timber
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
     noinline onCatch: ((Throwable) -> Unit)? = null
@@ -45,25 +42,10 @@ suspend fun refreshArtworkUriFromLastFmApi(
     return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
 }
 
-suspend fun refreshArtworkUriFromSpotify(
-    context: Context,
-    client: SpotifyApiClient,
-    trackCoreElement: TrackInfo.TrackCoreElement,
-    playerPackageName: String
-): Uri? {
-    val url = (client.getSpotifyData(trackCoreElement, playerPackageName) as? SpotifyResult.Success)
-        ?.data
-        ?.artworkUrl
-        ?: return null
-
-    return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
-}
-
 suspend fun Context.getBitmapFromUriString(
     uriString: String,
     maxSize: Int? = null
 ): Bitmap? = withCatching {
-    Timber.d("np4d uriString: $uriString")
     val drawable = Coil.execute(
         ImageRequest.Builder(this)
             .data(uriString)

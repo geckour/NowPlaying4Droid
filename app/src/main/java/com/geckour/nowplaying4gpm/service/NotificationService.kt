@@ -67,7 +67,6 @@ import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.refreshArtworkUri
 import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromLastFmApi
-import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromSpotify
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.refreshTempArtwork
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
@@ -87,9 +86,16 @@ import com.sys1yagi.mastodon4j.api.method.Media
 import com.sys1yagi.mastodon4j.api.method.Statuses
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -216,6 +222,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
 
+    private val sbnChannel = Channel<StatusBarNotification>(CONFLATED)
+
+    @OptIn(FlowPreview::class)
+    private val sbnFlow = sbnChannel.receiveAsFlow().debounce(200)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -228,6 +239,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(receiver, intentFilter)
+
+        sbnFlow.onEach { it.process() }.launchIn(this)
     }
 
     override fun onDestroy() {
@@ -275,15 +288,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         sbn ?: return
-        checkStoragePermission {
-            if (sbn.packageName != packageName) {
-                (sbn.notification.mediaMetadata ?: digMetadata(sbn.packageName))?.let {
-                    currentSbn = sbn
-                    sharedPreferences.storePackageStatePostMastodon(sbn.packageName)
-                    onMetadataChanged(it, sbn.packageName, sbn.notification)
-                }
-            }
-        }
+
+        sbnChannel.trySend(sbn)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -295,6 +301,18 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private fun requestRebind() {
         requestRebind(getComponentName(applicationContext))
+    }
+
+    private fun StatusBarNotification.process() {
+        checkStoragePermission {
+            if (this.packageName != this@NotificationService.packageName) {
+                (notification.mediaMetadata ?: digMetadata(this.packageName))?.let {
+                    currentSbn = this
+                    sharedPreferences.storePackageStatePostMastodon(this.packageName)
+                    onMetadataChanged(it, this.packageName, this.notification)
+                }
+            }
+        }
     }
 
     private val Notification.mediaController: MediaController?
@@ -375,19 +393,21 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 .filter { it.state }
                 .map { it.packageName }
         val spotifyResult =
-            if (containsSpotifyPattern || (useSpotifyData && useSpotifyDataPackageState.contains(
-                    playerPackageName
-                ))
+            if (containsSpotifyPattern
+                || sharedPreferences.getArtworkResolveOrder()
+                    .first { it.key == ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY }
+                    .enabled
+                || (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName))
             ) {
                 spotifyApiClient.getSpotifyData(coreElement, playerPackageName)
             } else null
+        val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
 
         val artworkUri = metadata.storeArtworkUri(
             coreElement,
-            playerPackageName,
-            notification?.getArtworkBitmap()
+            notification?.getArtworkBitmap(),
+            spotifyData
         )
-        val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
 
         val trackInfo = TrackInfo(
             if (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)) {
@@ -625,8 +645,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private suspend fun MediaMetadata.storeArtworkUri(
         coreElement: TrackInfo.TrackCoreElement,
-        playerPackageName: String,
-        notificationBitmap: Bitmap?
+        notificationBitmap: Bitmap?,
+        spotifyData: SpotifyResult.Data?
     ): Uri? {
         // Check whether arg metadata and current metadata are the same or not
         val cacheInfo = sharedPreferences.getCurrentTrackInfo()
@@ -635,7 +655,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
 
         sharedPreferences.getArtworkResolveOrder().filter { it.enabled }.forEach { method ->
-            Timber.d("np4d artwork resolve method: $method")
             when (method.key) {
                 ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
                     this@NotificationService.getArtworkUriFromDevice(coreElement)?.apply {
@@ -668,12 +687,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     )?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
-                    refreshArtworkUriFromSpotify(
-                        this@NotificationService,
-                        spotifyApiClient,
-                        coreElement,
-                        playerPackageName
-                    )?.let { return it }
+                    spotifyData?.artworkUrl
                 }
             }
         }
