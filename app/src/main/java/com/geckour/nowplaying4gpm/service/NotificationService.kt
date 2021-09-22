@@ -67,6 +67,7 @@ import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
 import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.refreshArtworkUri
 import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromLastFmApi
+import com.geckour.nowplaying4gpm.util.refreshArtworkUriFromSpotify
 import com.geckour.nowplaying4gpm.util.refreshCurrentTrackInfo
 import com.geckour.nowplaying4gpm.util.refreshTempArtwork
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
@@ -687,7 +688,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     )?.let { return it }
                 }
                 ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
-                    spotifyData?.artworkUrl
+                    refreshArtworkUriFromSpotify(this@NotificationService, spotifyData)
+                        ?.let { return it }
                 }
             }
         }

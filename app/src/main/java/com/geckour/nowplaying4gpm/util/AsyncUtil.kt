@@ -13,6 +13,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.model.Image
+import com.geckour.nowplaying4gpm.domain.model.SpotifyResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.sys1yagi.mastodon4j.MastodonRequest
@@ -38,6 +39,15 @@ suspend fun refreshArtworkUriFromLastFmApi(
     trackCoreElement: TrackInfo.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
+
+    return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
+}
+
+suspend fun refreshArtworkUriFromSpotify(
+    context: Context,
+    spotifyData: SpotifyResult.Data?
+): Uri? {
+    val url = spotifyData?.artworkUrl ?: return null
 
     return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
 }
