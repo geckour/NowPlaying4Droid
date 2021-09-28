@@ -1,6 +1,8 @@
 package com.geckour.nowplaying4gpm.util
 
 import android.Manifest
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -9,9 +11,14 @@ import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.media.MediaMetadata
 import android.media.MediaMetadataRetriever
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
+import android.text.Html
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -21,8 +28,10 @@ import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.domain.model.MediaIdInfo
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.service.NotificationService
 import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.sys1yagi.mastodon4j.api.entity.Status
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
@@ -364,6 +373,14 @@ fun Serializable.asString(): String =
         json.encodeToString(ByteArray::class.serializer(), byteArrayStream.toByteArray())
     }
 
+fun Context.digMediaController(playerPackageName: String? = null): MediaController? =
+    getSystemService(MediaSessionManager::class.java)
+        ?.getActiveSessions(NotificationService.getComponentName(applicationContext))
+        ?.let {  sessions ->
+            if (playerPackageName == null) sessions.firstOrNull()
+            else sessions.firstOrNull { it.packageName == playerPackageName }
+        }
+
 @OptIn(InternalSerializationApi::class)
 inline fun <reified T : Serializable> String.toSerializableObject(): T? =
     withCatching {
@@ -371,3 +388,65 @@ inline fun <reified T : Serializable> String.toSerializableObject(): T? =
             ByteArrayInputStream(byteArray).use { ObjectInputStream(it).readObject() as T }
         }
     }
+
+fun MediaMetadata.getTrackCoreElement(): TrackInfo.TrackCoreElement = this.let {
+    val track: String? =
+        if (it.containsKey(MediaMetadata.METADATA_KEY_TITLE)) it.getString(MediaMetadata.METADATA_KEY_TITLE)
+        else null
+    val artist: String? = when {
+        it.containsKey(MediaMetadata.METADATA_KEY_ARTIST) -> it.getString(MediaMetadata.METADATA_KEY_ARTIST)
+        it.containsKey(MediaMetadata.METADATA_KEY_ALBUM_ARTIST) -> it.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
+        else -> null
+    }
+    val album: String? =
+        if (it.containsKey(MediaMetadata.METADATA_KEY_ALBUM)) it.getString(MediaMetadata.METADATA_KEY_ALBUM)
+        else null
+    val composer: String? =
+        if (it.containsKey(MediaMetadata.METADATA_KEY_COMPOSER)) it.getString(MediaMetadata.METADATA_KEY_COMPOSER)
+        else null
+
+    TrackInfo.TrackCoreElement(track, artist, album, composer)
+}
+
+fun NotificationManager.destroyNotification(service: NotificationService) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        service.stopForeground(true)
+    } else {
+        this.cancel(NotificationService.NotificationType.SHARE.id)
+    }
+    this.cancel(NotificationService.NotificationType.NOTIFY_SUCCESS_MASTODON.id)
+    this.cancel(NotificationService.NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id)
+}
+
+private suspend fun Status.getNotification(context: Context): Notification {
+    val notificationBuilder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
+        else Notification.Builder(context)
+
+    return notificationBuilder.apply {
+        val notificationText =
+            Html.fromHtml(this@getNotification.content, Html.FROM_HTML_MODE_COMPACT).toString()
+
+        val thumb = this@getNotification.mediaAttachments
+            .firstOrNull()
+            ?.url
+            ?.let { context.getBitmapFromUriString(it) }
+
+        setSmallIcon(R.drawable.ic_notification_notify)
+        setLargeIcon(thumb)
+        setContentTitle(context.getString(R.string.notification_title_notify_success_mastodon))
+        setContentText(notificationText)
+        style = Notification.DecoratedMediaCustomViewStyle()
+        thumb?.apply {
+            val color = Palette.from(this)
+                .maximumColorCount(24)
+                .generate()
+                .getOptimizedColor(context)
+            setColor(color)
+        }
+    }.build()
+}

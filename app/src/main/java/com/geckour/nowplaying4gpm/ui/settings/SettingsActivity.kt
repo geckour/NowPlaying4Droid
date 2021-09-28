@@ -94,6 +94,7 @@ import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
@@ -130,7 +131,6 @@ import com.geckour.nowplaying4gpm.util.getPackageStateListPostMastodon
 import com.geckour.nowplaying4gpm.util.getPackageStateListSpotify
 import com.geckour.nowplaying4gpm.util.getSwitchState
 import com.geckour.nowplaying4gpm.util.getVisibilityMastodon
-import com.geckour.nowplaying4gpm.util.readyForShare
 import com.geckour.nowplaying4gpm.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.setArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.setFormatPatternModifiers
@@ -139,6 +139,7 @@ import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.storePackageStateSpotify
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
+import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.Gson
@@ -171,8 +172,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var billingApiClient: BillingApiClient
 
-    private val twitterApiClient =
-        TwitterApiClient(BuildConfig.TWITTER_CONSUMER_KEY, BuildConfig.TWITTER_CONSUMER_SECRET)
+    private val lastFmApiClient: LastFmApiClient = get()
+    private val spotifyApiClient: SpotifyApiClient = get()
+    private val twitterApiClient: TwitterApiClient = get()
 
     private val mastodonScope = Scope(Scope.Name.ALL)
     private var mastodonRegistrationInfo: AppRegistration? = null
@@ -418,16 +420,20 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onClickFab() {
-        if (sharedPreferences.readyForShare(this).not()) {
+    private fun onClickFab() = lifecycleScope.launch {
+        forceUpdateTrackInfoIfNeeded(
+            this@SettingsActivity,
+            sharedPreferences,
+            spotifyApiClient,
+            lastFmApiClient
+        ) {
             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                 R.string.dialog_title_alert_no_metadata,
                 R.string.dialog_message_alert_no_metadata
             )
-            return
         }
 
-        startActivity(SharingActivity.getIntent(this))
+        startActivity(SharingActivity.getIntent(this@SettingsActivity))
     }
 
     private fun onAuthSpotifyCallback(
@@ -527,7 +533,7 @@ class SettingsActivity : AppCompatActivity() {
                     userInfo.userName,
                     userInfo.instanceName
                 )
-                requestUpdate.launch()
+                withContext(Dispatchers.Main) { requestUpdate.launch() }
                 viewModel.snackbarHostState.value
                     .showSnackbar(getString(R.string.snackbar_text_success_auth_mastodon))
             }
