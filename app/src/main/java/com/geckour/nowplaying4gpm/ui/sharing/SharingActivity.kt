@@ -6,10 +6,17 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
+import com.geckour.nowplaying4gpm.api.SpotifyApiClient
+import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.getCurrentTrackInfo
+import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class SharingActivity : AppCompatActivity() {
+class SharingActivity : AppCompatActivity(), KoinComponent {
 
     enum class IntentRequestCode {
         SHARE
@@ -27,12 +34,22 @@ class SharingActivity : AppCompatActivity() {
     private val sharedPreferences: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(this)
     }
+    private val spotifyApiClient: SpotifyApiClient by inject()
+    private val lastFmApiClient: LastFmApiClient by inject()
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
-        val trackInfo = sharedPreferences.getCurrentTrackInfo()
-        viewModel.startShare(this, sharedPreferences, trackInfo)
+        lifecycleScope.launch {
+            val trackInfo = sharedPreferences.getCurrentTrackInfo()
+                ?: forceUpdateTrackInfoIfNeeded(
+                    this@SharingActivity,
+                    sharedPreferences,
+                    spotifyApiClient,
+                    lastFmApiClient
+                )
+            viewModel.startShare(this@SharingActivity, sharedPreferences, trackInfo)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
