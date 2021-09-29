@@ -19,7 +19,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
@@ -74,6 +76,7 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
@@ -567,7 +570,11 @@ class SettingsActivity : AppCompatActivity() {
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
+                val scale by transition.animateFloat(label = "FAB size animation") { state ->
+                    if (state == EnterExitState.Visible) 1f else 0f
+                }
                 FloatingActionButton(
+                    modifier = Modifier.scale(scale),
                     onClick = { onClickFab() },
                     backgroundColor = if (isSystemInDarkTheme()) DarkRed else LightRed,
                     contentColor = Color.White
