@@ -18,6 +18,10 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -120,6 +124,7 @@ import com.geckour.nowplaying4gpm.util.Visibility
 import com.geckour.nowplaying4gpm.util.checkStoragePermission
 import com.geckour.nowplaying4gpm.util.clearSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
+import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
@@ -139,7 +144,6 @@ import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.storePackageStateSpotify
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
-import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.Gson
@@ -540,6 +544,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    @OptIn(ExperimentalAnimationApi::class)
     @Composable
     fun Content(
         settingsVisible: MutableState<Boolean>,
@@ -553,12 +558,17 @@ class SettingsActivity : AppCompatActivity() {
                 Settings(Modifier.weight(1f), lazyListState)
             }
 
-            if (lazyListState.isScrollInProgress || lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index != lazyListState.layoutInfo.totalItemsCount - 1) {
+            AnimatedVisibility(
+                modifier = Modifier
+                    .align(BottomEnd)
+                    .padding(16.dp),
+                visible = lazyListState.isScrollInProgress
+                        || lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index != lazyListState.layoutInfo.totalItemsCount - 1,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 FloatingActionButton(
                     onClick = { onClickFab() },
-                    modifier = Modifier
-                        .align(BottomEnd)
-                        .padding(16.dp),
                     backgroundColor = if (isSystemInDarkTheme()) DarkRed else LightRed,
                     contentColor = Color.White
                 ) {
