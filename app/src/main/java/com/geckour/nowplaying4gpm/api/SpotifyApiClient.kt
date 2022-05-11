@@ -137,10 +137,30 @@ class SpotifyApiClient(context: Context) {
             val countryCode =
                 if (token.scope == "user-read-private") "from_token"
                 else Locale.getDefault().country
-            getService(token.accessToken).searchSpotifyItem(query, marketCountryCode = countryCode)
+            val results = getService(token.accessToken).searchSpotifyItem(
+                query,
+                marketCountryCode = countryCode
+            )
                 .tracks
                 ?.items
-                ?.firstOrNull()
+            (results?.firstOrNull { spotifyTrack ->
+                val titleValid = trackCoreElement.title?.let { title ->
+                    title.filterNot { it.isWhitespace() }
+                        .lowercase() == spotifyTrack.name.filterNot { it.isWhitespace() }
+                        .lowercase()
+                } != false
+                val albumValid = trackCoreElement.album?.let { album ->
+                    album.filterNot { it.isWhitespace() }
+                        .lowercase() == spotifyTrack.album.name.filterNot { it.isWhitespace() }
+                        .lowercase()
+                } != false
+                val artistValid = trackCoreElement.artist?.let { artist ->
+                    spotifyTrack.artists.map { it.name.filterNot { it.isWhitespace() }.lowercase() }
+                        .contains(artist.filterNot { it.isWhitespace() }.lowercase())
+                } != false
+
+                return@firstOrNull titleValid && albumValid && artistValid
+            } ?: results?.firstOrNull())
                 ?.let {
                     Timber.d("np4d track: $it")
                     SpotifyResult.Success(

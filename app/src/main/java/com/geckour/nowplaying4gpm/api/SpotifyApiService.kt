@@ -23,7 +23,7 @@ interface SpotifyApiService {
         marketCountryCode: String = "from_token",
 
         @Query("limit")
-        limit: Int = 1
+        limit: Int = 20
     ): SpotifySearchResult
 
     @GET("/v1/me/player")

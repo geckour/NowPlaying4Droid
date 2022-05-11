@@ -18,6 +18,12 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,6 +50,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Card
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.Divider
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
@@ -70,6 +77,7 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
@@ -120,6 +128,7 @@ import com.geckour.nowplaying4gpm.util.Visibility
 import com.geckour.nowplaying4gpm.util.checkStoragePermission
 import com.geckour.nowplaying4gpm.util.clearSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
+import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
@@ -139,7 +148,6 @@ import com.geckour.nowplaying4gpm.util.storeMastodonUserInfo
 import com.geckour.nowplaying4gpm.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4gpm.util.storePackageStateSpotify
 import com.geckour.nowplaying4gpm.util.storeTwitterAccessToken
-import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.withCatching
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.Gson
@@ -540,6 +548,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    @OptIn(ExperimentalAnimationApi::class)
     @Composable
     fun Content(
         settingsVisible: MutableState<Boolean>,
@@ -553,12 +562,21 @@ class SettingsActivity : AppCompatActivity() {
                 Settings(Modifier.weight(1f), lazyListState)
             }
 
-            if (lazyListState.isScrollInProgress || lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index != lazyListState.layoutInfo.totalItemsCount - 1) {
+            AnimatedVisibility(
+                modifier = Modifier
+                    .align(BottomEnd)
+                    .padding(16.dp),
+                visible = lazyListState.isScrollInProgress
+                        || lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index != lazyListState.layoutInfo.totalItemsCount - 1,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                val scale by transition.animateFloat(label = "FAB size animation") { state ->
+                    if (state == EnterExitState.Visible) 1f else 0f
+                }
                 FloatingActionButton(
+                    modifier = Modifier.scale(scale),
                     onClick = { onClickFab() },
-                    modifier = Modifier
-                        .align(BottomEnd)
-                        .padding(16.dp),
                     backgroundColor = if (isSystemInDarkTheme()) DarkRed else LightRed,
                     contentColor = Color.White
                 ) {
@@ -1279,57 +1297,65 @@ class SettingsActivity : AppCompatActivity() {
             },
             text = {
                 Column {
-                    Text(text = stringResource(id = R.string.dialog_message_player_package_mastodon))
-                    packageStates.forEachIndexed { index, packageState ->
-                        val appName = packageManager?.let {
-                            withCatching {
-                                it.getApplicationLabel(
-                                    it.getApplicationInfo(
-                                        packageState.packageName,
-                                        PackageManager.GET_META_DATA
+                    Text(
+                        text = stringResource(id = R.string.dialog_message_player_package_mastodon)
+                    )
+                    LazyColumn {
+                        packageStates.forEachIndexed { index, packageState ->
+                            val appName = packageManager?.let {
+                                withCatching {
+                                    it.getApplicationLabel(
+                                        it.getApplicationInfo(
+                                            packageState.packageName,
+                                            PackageManager.GET_META_DATA
+                                        )
                                     )
-                                )
-                            }
-                        }?.toString() ?: return@forEachIndexed
-                        Row(
-                            modifier = Modifier
-                                .clickable {
-                                    packageStates = packageStates
-                                        .toMutableList()
-                                        .apply {
-                                            this[index] = this[index].let {
-                                                it.copy(state = it.state.not())
+                                }
+                            }?.toString() ?: return@forEachIndexed
+                            item {
+                                Column {
+                                    Row(
+                                        modifier = Modifier
+                                            .clickable {
+                                                packageStates = packageStates
+                                                    .toMutableList()
+                                                    .apply {
+                                                        this[index] = this[index].let {
+                                                            it.copy(state = it.state.not())
+                                                        }
+                                                    }
                                             }
-                                        }
-                                }
-                                .padding(vertical = 4.dp, horizontal = 16.dp),
-                            verticalAlignment = CenterVertically
-                        ) {
-                            Text(
-                                text = appName,
-                                modifier = Modifier
-                                    .padding(end = 4.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                color = MaterialTheme.colors.secondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Switch(
-                                checked = packageState.state,
-                                onCheckedChange = { checked ->
-                                    packageStates = packageStates.toMutableList().apply {
-                                        this[index] = this[index].copy(state = checked)
+                                            .padding(vertical = 4.dp, horizontal = 16.dp),
+                                        verticalAlignment = CenterVertically
+                                    ) {
+                                        Text(
+                                            text = appName,
+                                            modifier = Modifier
+                                                .padding(end = 4.dp)
+                                                .fillMaxWidth()
+                                                .weight(1f),
+                                            color = MaterialTheme.colors.secondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Switch(
+                                            checked = packageState.state,
+                                            onCheckedChange = { checked ->
+                                                packageStates =
+                                                    packageStates.toMutableList().apply {
+                                                        this[index] =
+                                                            this[index].copy(state = checked)
+                                                    }
+                                            }
+                                        )
                                     }
+                                    Divider(
+                                        color = MaterialTheme.colors.secondary,
+                                        thickness = 0.75.dp
+                                    )
                                 }
-                            )
+                            }
                         }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.75.dp)
-                                .background(MaterialTheme.colors.secondary)
-                        )
                     }
                 }
             },

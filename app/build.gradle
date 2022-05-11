@@ -2,8 +2,6 @@ apply plugin: "com.android.application"
 
 apply plugin: "kotlin-android"
 
-apply plugin: "kotlin-android-extensions"
-
 apply plugin: "kotlin-kapt"
 
 apply plugin: 'kotlinx-serialization'
@@ -17,8 +15,8 @@ android {
         applicationId "com.geckour.nowplaying4gpm"
         targetSdkVersion 31
         minSdkVersion 24
-        versionCode 122
-        versionName "2.17.0"
+        versionCode 123
+        versionName "2.18.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -79,11 +77,11 @@ android {
         checkReleaseBuilds false
     }
     buildFeatures {
+        viewBinding true
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.1.0-alpha02"
-        kotlinCompilerVersion kotlin_version
+        kotlinCompilerExtensionVersion "1.1.1"
     }
 }
 
@@ -98,13 +96,13 @@ dependencies {
 
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "com.google.android.material:material:1.5.0-alpha02"
-    implementation "androidx.appcompat:appcompat:1.3.1"
+    implementation "com.google.android.material:material:1.7.0-alpha01"
+    implementation "androidx.appcompat:appcompat:1.4.1"
     implementation "androidx.legacy:legacy-support-v4:1.0.0"
     implementation "androidx.legacy:legacy-support-v13:1.0.0"
     implementation "androidx.recyclerview:recyclerview:1.2.1"
-    implementation "androidx.browser:browser:1.3.0"
-    implementation "androidx.constraintlayout:constraintlayout:2.1.0"
+    implementation "androidx.browser:browser:1.4.0"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.3"
     implementation platform('com.google.firebase:firebase-bom:26.3.0')
     implementation 'com.google.firebase:firebase-crashlytics-ktx'
     implementation 'com.google.firebase:firebase-analytics-ktx'
@@ -123,7 +121,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
 
     // DI
-    def koin_version = "3.1.2"
+    def koin_version = "3.1.3"
     implementation "io.insert-koin:koin-android:$koin_version"
     implementation "io.insert-koin:koin-androidx-compose:$koin_version"
     testImplementation "io.insert-koin:koin-test:$koin_version"
@@ -132,26 +130,26 @@ dependencies {
     implementation "com.jakewharton.timber:timber:5.0.1"
 
     // KTX
-    implementation "androidx.core:core-ktx:1.6.0"
-    implementation 'androidx.activity:activity-ktx:1.3.1'
-    implementation 'androidx.fragment:fragment-ktx:1.3.6'
+    implementation "androidx.core:core-ktx:1.7.0"
+    implementation 'androidx.activity:activity-ktx:1.4.0'
+    implementation 'androidx.fragment:fragment-ktx:1.4.1'
 
     // JSON
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2"
 
     // Permission
-    implementation "com.github.permissions-dispatcher:ktx:1.1.2"
+    implementation "com.github.permissions-dispatcher:ktx:1.1.3"
 
     // ViewModel
-    def lifecycle_version = "2.3.1"
+    def lifecycle_version = "2.4.1"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
 
     // Billing
-    implementation "com.android.billingclient:billing:4.0.0"
+    implementation "com.android.billingclient:billing:4.1.0"
 
     // Preference
-    implementation "androidx.preference:preference-ktx:1.1.1"
+    implementation "androidx.preference:preference-ktx:1.2.0"
 
     // Palette API
     implementation "androidx.palette:palette-ktx:1.0.0"
@@ -174,11 +172,11 @@ dependencies {
     implementation "com.github.sys1yagi.mastodon4j:mastodon4j:1.7.0"
 
     // Compose
-    def compose_version = "1.1.0-alpha02"
+    def compose_version = "1.1.1"
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation "androidx.activity:activity-compose:1.3.1"
+    implementation "androidx.activity:activity-compose:1.4.0"
 }
 
 // Billing
