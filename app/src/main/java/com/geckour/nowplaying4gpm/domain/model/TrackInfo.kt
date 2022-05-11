@@ -42,7 +42,7 @@ data class TrackInfo(
                 title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
                 artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
                 album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
-            ).joinToString(" ")
+            ).joinToString("+")
 
         private val String.isAscii: Boolean get() = all { it.code in 0x20..0x7E }
     }
