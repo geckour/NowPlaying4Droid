@@ -1301,7 +1301,7 @@ class SettingsActivity : AppCompatActivity() {
                         text = stringResource(id = R.string.dialog_message_player_package_mastodon)
                     )
                     LazyColumn {
-                        (packageStates + packageStates + packageStates + packageStates + packageStates + packageStates + packageStates + packageStates).forEachIndexed { index, packageState ->
+                        packageStates.forEachIndexed { index, packageState ->
                             val appName = packageManager?.let {
                                 withCatching {
                                     it.getApplicationLabel(
