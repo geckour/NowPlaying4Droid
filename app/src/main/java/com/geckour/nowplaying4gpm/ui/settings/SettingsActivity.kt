@@ -50,6 +50,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Card
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.Divider
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
@@ -1296,57 +1297,65 @@ class SettingsActivity : AppCompatActivity() {
             },
             text = {
                 Column {
-                    Text(text = stringResource(id = R.string.dialog_message_player_package_mastodon))
-                    packageStates.forEachIndexed { index, packageState ->
-                        val appName = packageManager?.let {
-                            withCatching {
-                                it.getApplicationLabel(
-                                    it.getApplicationInfo(
-                                        packageState.packageName,
-                                        PackageManager.GET_META_DATA
+                    Text(
+                        text = stringResource(id = R.string.dialog_message_player_package_mastodon)
+                    )
+                    LazyColumn {
+                        (packageStates + packageStates + packageStates + packageStates + packageStates + packageStates + packageStates + packageStates).forEachIndexed { index, packageState ->
+                            val appName = packageManager?.let {
+                                withCatching {
+                                    it.getApplicationLabel(
+                                        it.getApplicationInfo(
+                                            packageState.packageName,
+                                            PackageManager.GET_META_DATA
+                                        )
                                     )
-                                )
-                            }
-                        }?.toString() ?: return@forEachIndexed
-                        Row(
-                            modifier = Modifier
-                                .clickable {
-                                    packageStates = packageStates
-                                        .toMutableList()
-                                        .apply {
-                                            this[index] = this[index].let {
-                                                it.copy(state = it.state.not())
+                                }
+                            }?.toString() ?: return@forEachIndexed
+                            item {
+                                Column {
+                                    Row(
+                                        modifier = Modifier
+                                            .clickable {
+                                                packageStates = packageStates
+                                                    .toMutableList()
+                                                    .apply {
+                                                        this[index] = this[index].let {
+                                                            it.copy(state = it.state.not())
+                                                        }
+                                                    }
                                             }
-                                        }
-                                }
-                                .padding(vertical = 4.dp, horizontal = 16.dp),
-                            verticalAlignment = CenterVertically
-                        ) {
-                            Text(
-                                text = appName,
-                                modifier = Modifier
-                                    .padding(end = 4.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                color = MaterialTheme.colors.secondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Switch(
-                                checked = packageState.state,
-                                onCheckedChange = { checked ->
-                                    packageStates = packageStates.toMutableList().apply {
-                                        this[index] = this[index].copy(state = checked)
+                                            .padding(vertical = 4.dp, horizontal = 16.dp),
+                                        verticalAlignment = CenterVertically
+                                    ) {
+                                        Text(
+                                            text = appName,
+                                            modifier = Modifier
+                                                .padding(end = 4.dp)
+                                                .fillMaxWidth()
+                                                .weight(1f),
+                                            color = MaterialTheme.colors.secondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Switch(
+                                            checked = packageState.state,
+                                            onCheckedChange = { checked ->
+                                                packageStates =
+                                                    packageStates.toMutableList().apply {
+                                                        this[index] =
+                                                            this[index].copy(state = checked)
+                                                    }
+                                            }
+                                        )
                                     }
+                                    Divider(
+                                        color = MaterialTheme.colors.secondary,
+                                        thickness = 0.75.dp
+                                    )
                                 }
-                            )
+                            }
                         }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.75.dp)
-                                .background(MaterialTheme.colors.secondary)
-                        )
                     }
                 }
             },
