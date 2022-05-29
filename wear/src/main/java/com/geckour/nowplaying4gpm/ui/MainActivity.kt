@@ -1,7 +1,6 @@
 package com.geckour.nowplaying4gpm.ui
 
 import android.content.res.ColorStateList
-import androidx.databinding.DataBindingUtil
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -9,18 +8,20 @@ import android.view.animation.AccelerateInterpolator
 import android.view.animation.AlphaAnimation
 import android.view.animation.AnimationSet
 import android.view.animation.DecelerateInterpolator
+import androidx.activity.ComponentActivity
+import androidx.databinding.DataBindingUtil
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.databinding.ActivityMainBinding
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
-import com.google.android.gms.tasks.Tasks
-import com.google.android.gms.wearable.*
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.DataEvent
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.Wearable
 import timber.log.Timber
 
-class MainActivity : ScopedWearableActivity() {
+class MainActivity : ComponentActivity() {
 
     companion object {
         private const val PATH_TRACK_INFO_POST = "/track_info/post"
@@ -44,20 +45,18 @@ class MainActivity : ScopedWearableActivity() {
                     if (it.dataItem.uri.path?.compareTo(PATH_TRACK_INFO_POST) == 0) {
                         val dataMap = DataMapItem.fromDataItem(it.dataItem).dataMap
 
-                        launch {
-                            val subject = dataMap.getString(KEY_SUBJECT)
-                            onUpdateTrackInfo(TrackInfo(subject, null))
+                        val subject = dataMap.getString(KEY_SUBJECT)
+                        updateTrackInfo(TrackInfo(subject, null))
 
-                            val artwork =
-                                    if (dataMap.containsKey(KEY_ARTWORK))
-                                        dataMap.getAsset(KEY_ARTWORK).loadBitmap().await()
-                                    else null
-                            onUpdateTrackInfo(TrackInfo(subject, artwork))
+                        if (dataMap.containsKey(KEY_ARTWORK)) {
+                            dataMap.getAsset(KEY_ARTWORK)?.loadBitmap {
+                                updateTrackInfo(TrackInfo(subject, it))
+                            }
                         }
                     }
                 }
 
-                DataEvent.TYPE_DELETED -> onUpdateTrackInfo(null)
+                DataEvent.TYPE_DELETED -> updateTrackInfo(null)
             }
         }
     }
@@ -112,46 +111,44 @@ class MainActivity : ScopedWearableActivity() {
         Wearable.getMessageClient(this).removeListener(onMessageReceived)
     }
 
-    private fun Asset.loadBitmap(): Deferred<Bitmap?> =
-            async(Dispatchers.IO) {
-                Tasks.await(Wearable.getDataClient(this@MainActivity)
-                        .getFdForAsset(this@loadBitmap)
-                ).inputStream?.let {
-                    BitmapFactory.decodeStream(it)
-                }
+    private fun Asset.loadBitmap(onComplete: (bitmap: Bitmap) -> Unit) =
+        Wearable.getDataClient(this@MainActivity)
+            .getFdForAsset(this@loadBitmap)
+            .addOnCompleteListener { task ->
+                onComplete(BitmapFactory.decodeStream(task.result.inputStream))
             }
 
-    private fun onUpdateTrackInfo(trackInfo: TrackInfo?) {
+    private fun updateTrackInfo(trackInfo: TrackInfo?) {
         binding.info = trackInfo
     }
 
     private fun requestTrackInfo() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
             val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
-                    ?: return@addOnCompleteListener
+                ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(node.id, PATH_TRACK_INFO_GET, null)
+                .sendMessage(node.id, PATH_TRACK_INFO_GET, null)
         }
     }
 
     private fun invokeShare() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
             val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
-                    ?: return@addOnCompleteListener
+                ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(node.id, PATH_POST_TWITTER, null)
+                .sendMessage(node.id, PATH_POST_TWITTER, null)
         }
     }
 
     private fun invokeShareOnHost(): Boolean {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener {
             val node = it.result?.let { it.firstOrNull { it.isNearby } ?: it.lastOrNull() }
-                    ?: return@addOnCompleteListener
+                ?: return@addOnCompleteListener
 
             Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(node.id, PATH_SHARE_DELEGATE, null)
+                .sendMessage(node.id, PATH_SHARE_DELEGATE, null)
         }
 
         return true

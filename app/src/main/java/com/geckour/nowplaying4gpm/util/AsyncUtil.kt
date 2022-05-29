@@ -192,12 +192,13 @@ suspend fun updateTrackInfo(
         sharedPreferences.getPackageStateListSpotify()
             .filter { it.state }
             .map { it.packageName }
+    val needSpotifyDataForPlayer = useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)
     val spotifyResult =
         if (containsSpotifyPattern
             || sharedPreferences.getArtworkResolveOrder()
                 .first { it.key == ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY }
                 .enabled
-            || (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName))
+            || needSpotifyDataForPlayer
         ) {
             spotifyApiClient.getSpotifyData(coreElement, playerPackageName)
         } else null
@@ -209,11 +210,11 @@ suspend fun updateTrackInfo(
         lastFmApiClient,
         coreElement,
         notification?.getArtworkBitmap(context),
-        spotifyData
+        if (needSpotifyDataForPlayer) spotifyData else null
     )
 
     val trackInfo = TrackInfo(
-        if (useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)) {
+        if (needSpotifyDataForPlayer) {
             coreElement.withSpotifyData(spotifyData)
         } else coreElement,
         artworkUri?.toString(),
