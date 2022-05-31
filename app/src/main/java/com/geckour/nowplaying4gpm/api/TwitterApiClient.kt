@@ -6,11 +6,11 @@ import com.geckour.nowplaying4gpm.util.getUri
 import com.geckour.nowplaying4gpm.util.withCatching
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import twitter4j.StatusUpdate
 import twitter4j.Twitter
 import twitter4j.TwitterFactory
 import twitter4j.auth.AccessToken
 import twitter4j.auth.RequestToken
+import twitter4j.createTweet
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
@@ -42,17 +42,17 @@ class TwitterApiClient(consumerKey: String, consumerSecret: String) : TwitterApi
     ) = withContext(Dispatchers.IO) {
         withCatching {
             twitter.oAuthAccessToken = accessToken
-            val status = StatusUpdate(subject)
-                .apply {
-                    if (artwork != null) {
-                        val bytes =
-                            ByteArrayOutputStream().apply {
-                                artwork.compress(Bitmap.CompressFormat.JPEG, 100, this)
-                            }.toByteArray()
-                        setMedia(artworkTitle, ByteArrayInputStream(bytes))
-                    }
+            twitter.createTweet(
+                text = subject,
+                mediaIds = artwork?.let {
+                    val bytes =
+                        ByteArrayOutputStream().apply {
+                            it.compress(Bitmap.CompressFormat.JPEG, 100, this)
+                        }.toByteArray()
+                    val media = twitter.uploadMedia(artworkTitle, ByteArrayInputStream(bytes))
+                    arrayOf(media.mediaId)
                 }
-            twitter.updateStatus(status)
+            )
         }
     }
 }
