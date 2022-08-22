@@ -91,14 +91,15 @@ class SpotifyApiClient(context: Context) {
 
     suspend fun getSpotifyData(
         trackCoreElement: TrackInfo.TrackCoreElement,
-        playerPackageName: String
+        playerPackageName: String,
+        isStrictMode: Boolean
     ): SpotifyResult {
         val nowPlayingResult =
             if (playerPackageName.lowercase().contains("spotify")) getSpotifyNowPlaying()
             else null
 
         return nowPlayingResult?.let { if (it is SpotifyResult.Success) it else null }
-            ?: searchSpotify(trackCoreElement)
+            ?: searchSpotify(trackCoreElement, isStrictMode)
     }
 
     private suspend fun getSpotifyNowPlaying(): SpotifyResult {
@@ -125,7 +126,10 @@ class SpotifyApiClient(context: Context) {
         } ?: SpotifyResult.Failure(IllegalStateException("Unknown error"))
     }
 
-    private suspend fun searchSpotify(trackCoreElement: TrackInfo.TrackCoreElement): SpotifyResult {
+    private suspend fun searchSpotify(
+        trackCoreElement: TrackInfo.TrackCoreElement,
+        isStrictMode: Boolean
+    ): SpotifyResult {
         val query = trackCoreElement.spotifySearchQuery
         currentQueryAndResult?.let {
             if (it.second !is SpotifyResult.Failure && query == it.first) return it.second
@@ -160,7 +164,7 @@ class SpotifyApiClient(context: Context) {
                 } != false
 
                 return@firstOrNull titleValid && albumValid && artistValid
-            } ?: results?.firstOrNull())
+            } ?: (if (isStrictMode) null else results?.firstOrNull()))
                 ?.let {
                     Timber.d("np4d track: $it")
                     SpotifyResult.Success(

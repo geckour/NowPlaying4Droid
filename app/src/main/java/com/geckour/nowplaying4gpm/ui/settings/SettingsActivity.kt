@@ -1556,6 +1556,23 @@ class SettingsActivity : AppCompatActivity() {
                     derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences,
+                            R.string.pref_item_title_search_spotify_strictly,
+                            R.string.pref_item_desc_search_spotify_strictly,
+                            PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY,
+                            enabled = viewModel.spotifyDataEnabledState,
+                            onSwitchCheckedChanged = {
+                                viewModel.spotifySearchStrictlyState.value = it
+                            }
+                        )
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
                             R.string.pref_item_title_player_package_spotify,
                             R.string.pref_item_desc_player_package_spotify,
                             enabled = viewModel.spotifyDataEnabledState

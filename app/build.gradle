@@ -73,15 +73,15 @@ android {
         useIR = true
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
-    lintOptions {
-        checkReleaseBuilds false
-    }
     buildFeatures {
         viewBinding true
         compose true
     }
     composeOptions {
         kotlinCompilerExtensionVersion "1.1.1"
+    }
+    lint {
+        checkReleaseBuilds false
     }
 }
 

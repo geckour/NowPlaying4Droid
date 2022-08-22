@@ -39,6 +39,9 @@ class SettingsViewModel(
     internal val spotifyDataEnabledState =
         mutableStateOf(sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA))
 
+    internal val spotifySearchStrictlyState =
+        mutableStateOf(sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY))
+
     internal val errorDialogData = mutableStateOf<ErrorDialogData?>(null)
 
     internal val patternFormatSummary =
@@ -48,7 +51,8 @@ class SettingsViewModel(
             (getApplication() as Context).getString(
                 R.string.pref_item_summary_delay_mastodon,
                 sharedPreferences.getDelayDurationPostMastodon()
-            ))
+            )
+        )
     internal val postMastodonVisibilitySummary =
         mutableStateOf<String?>(
             (getApplication() as Context).getString(

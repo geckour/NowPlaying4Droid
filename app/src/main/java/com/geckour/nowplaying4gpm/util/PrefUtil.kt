@@ -48,6 +48,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION(false),
     PREF_KEY_WHETHER_USE_SIMPLE_SHARE(false),
     PREF_KEY_WHETHER_USE_SPOTIFY_DATA(false),
+    PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY(false),
 }
 
 @Serializable
