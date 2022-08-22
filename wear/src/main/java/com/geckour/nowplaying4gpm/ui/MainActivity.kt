@@ -120,26 +120,26 @@ class MainActivity : ComponentActivity() {
         artworkGestureDetector = GestureDetectorCompat(
             this,
             object : GestureDetector.OnGestureListener {
-                override fun onDown(event: MotionEvent?): Boolean = true
+                override fun onDown(event: MotionEvent): Boolean = true
 
-                override fun onShowPress(event: MotionEvent?) = Unit
+                override fun onShowPress(event: MotionEvent) = Unit
 
-                override fun onSingleTapUp(event: MotionEvent?): Boolean = true
+                override fun onSingleTapUp(event: MotionEvent): Boolean = true
 
                 override fun onScroll(
-                    event1: MotionEvent?,
-                    event2: MotionEvent?,
+                    event1: MotionEvent,
+                    event2: MotionEvent,
                     distanceX: Float,
                     distanceY: Float
                 ): Boolean = true
 
-                override fun onLongPress(p0: MotionEvent?) {
+                override fun onLongPress(event: MotionEvent) {
                     invokeShareOnHost()
                 }
 
                 override fun onFling(
-                    event1: MotionEvent?,
-                    event2: MotionEvent?,
+                    event1: MotionEvent,
+                    event2: MotionEvent,
                     velocityX: Float,
                     velocityY: Float
                 ): Boolean = true
