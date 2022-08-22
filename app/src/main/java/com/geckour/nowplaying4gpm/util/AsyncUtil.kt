@@ -192,7 +192,8 @@ suspend fun updateTrackInfo(
         sharedPreferences.getPackageStateListSpotify()
             .filter { it.state }
             .map { it.packageName }
-    val needSpotifyDataForPlayer = useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)
+    val needSpotifyDataForPlayer =
+        useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)
     val spotifyResult =
         if (containsSpotifyPattern
             || sharedPreferences.getArtworkResolveOrder()
@@ -200,7 +201,11 @@ suspend fun updateTrackInfo(
                 .enabled
             || needSpotifyDataForPlayer
         ) {
-            spotifyApiClient.getSpotifyData(coreElement, playerPackageName)
+            spotifyApiClient.getSpotifyData(
+                coreElement,
+                playerPackageName,
+                sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY)
+            )
         } else null
     val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
 
