@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.ui
+package com.geckour.nowplaying4gpm.wear.ui
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -44,7 +44,7 @@ import androidx.core.view.GestureDetectorCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.wear.compose.material.Text
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.wear.domain.model.TrackInfo
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer

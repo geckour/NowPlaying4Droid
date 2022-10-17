@@ -1,4 +1,4 @@
-package com.geckour.nowplaying4gpm.domain.model
+package com.geckour.nowplaying4gpm.wear.domain.model
 
 import android.graphics.Bitmap
 

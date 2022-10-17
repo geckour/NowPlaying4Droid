@@ -1,6 +1,7 @@
-package com.geckour.nowplaying4gpm
+package com.geckour.nowplaying4gpm.wear
 
 import android.app.Application
+import com.geckour.nowplaying4gpm.BuildConfig
 import timber.log.Timber
 
 class App : Application() {
