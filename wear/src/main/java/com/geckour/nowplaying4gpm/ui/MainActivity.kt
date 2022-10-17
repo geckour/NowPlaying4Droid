@@ -52,7 +52,6 @@ import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
-import timber.log.Timber
 
 class MainActivity : ComponentActivity() {
 
@@ -93,7 +92,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
-        Timber.d("message event: $it")
         lifecycleScope.launchWhenResumed {
             when (it.path) {
                 PATH_POST_SUCCESS -> onPostToTwitterSuccess()
@@ -169,7 +167,8 @@ class MainActivity : ComponentActivity() {
                         .background(color = colorResource(id = R.color.colorMaskArtwork))
                         .padding(vertical = 4.dp, horizontal = 8.dp)
                         .align(Alignment.Center),
-                    text = info.subject ?: stringResource(id = R.string.subject_placeholder),
+                    text = info.subject?.foldBreaks()
+                        ?: stringResource(id = R.string.subject_placeholder),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -182,7 +181,9 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.Bottom
                     ) {
                         Box(
-                            modifier = Modifier.fillMaxHeight(0.5f).fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxHeight(0.5f)
+                                .fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
                             IconButton(
@@ -219,21 +220,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        Wearable.getDataClient(this).addListener(onDataChanged)
+        Wearable.getMessageClient(this).addListener(onMessageReceived)
     }
 
     override fun onResume() {
         super.onResume()
 
-        Wearable.getDataClient(this).addListener(onDataChanged)
-        Wearable.getMessageClient(this).addListener(onMessageReceived)
         requestTrackInfo()
     }
 
-    override fun onPause() {
-        super.onPause()
-
+    override fun onDestroy() {
         Wearable.getDataClient(this).removeListener(onDataChanged)
         Wearable.getMessageClient(this).removeListener(onMessageReceived)
+
+        super.onDestroy()
     }
 
     private fun Asset.loadBitmap(onComplete: (bitmap: Bitmap) -> Unit) =
@@ -249,34 +251,30 @@ class MainActivity : ComponentActivity() {
 
     private fun requestTrackInfo() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener { task ->
-            val node = task.result?.let { result ->
-                result.firstOrNull { it.isNearby } ?: result.lastOrNull()
-            } ?: return@addOnCompleteListener
-
-            Wearable.getMessageClient(this@MainActivity)
-                .sendMessage(node.id, PATH_TRACK_INFO_GET, null)
+            task.result
+                ?.filter { it.isNearby }
+                ?.forEach {
+                    Wearable.getMessageClient(this@MainActivity)
+                        .sendMessage(it.id, PATH_TRACK_INFO_GET, null)
+                }
         }
     }
 
     private fun invokeShare() {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener { task ->
-            val node = task.result?.let { result ->
-                result.firstOrNull { it.isNearby } ?: result.lastOrNull()
-            } ?: return@addOnCompleteListener
-
-            Wearable.getMessageClient(this@MainActivity)
-                .sendMessage(node.id, PATH_POST_TWITTER, null)
+            task.result?.filter { it.isNearby }?.forEach {
+                Wearable.getMessageClient(this@MainActivity)
+                    .sendMessage(it.id, PATH_POST_TWITTER, null)
+            }
         }
     }
 
     private fun invokeShareOnHost(): Boolean {
         Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener { task ->
-            val node = task.result?.let { result ->
-                result.firstOrNull { it.isNearby } ?: result.lastOrNull()
-            } ?: return@addOnCompleteListener
-
-            Wearable.getMessageClient(this@MainActivity)
-                .sendMessage(node.id, PATH_SHARE_DELEGATE, null)
+            task.result?.filter { it.isNearby }?.forEach {
+                Wearable.getMessageClient(this@MainActivity)
+                    .sendMessage(it.id, PATH_SHARE_DELEGATE, null)
+            }
         }
 
         return true
@@ -302,4 +300,6 @@ class MainActivity : ComponentActivity() {
         delay(650)
         indicatorDrawableResource.value = null
     }
+
+    private fun String.foldBreaks(): String = this.replace(Regex("[\r\n]"), " ")
 }

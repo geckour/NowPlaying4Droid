@@ -123,7 +123,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
 
                     ACTION_DESTROY_NOTIFICATION -> {
-                        notificationManager.destroyNotification(this@NotificationService)
+                        notificationManager.destroyNotification()
                     }
 
                     ACTION_INVOKE_UPDATE -> {
@@ -190,7 +190,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
-            WEAR_PATH_TRACK_INFO_GET -> onPulledFromWear()
+            WEAR_PATH_TRACK_INFO_GET -> {
+                onPulledFromWear()
+            }
 
             WEAR_PATH_POST_TWITTER -> {
                 launch { onRequestPostToTwitterFromWear(it.sourceNodeId) }
@@ -228,7 +230,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
         withCatching { unregisterReceiver(receiver) }
 
-        notificationManager.destroyNotification(this)
+        notificationManager.destroyNotification()
         job.cancel()
     }
 
@@ -319,7 +321,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             )
         }
 
-        notificationManager.destroyNotification(this)
+        notificationManager.destroyNotification()
     }
 
     private fun onMetadataChanged(
@@ -428,11 +430,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private fun onPulledFromWear() {
-        val trackInfo = sharedPreferences.getCurrentTrackInfo()
-        if (trackInfo != null) {
-            deleteWearTrackInfo {
-                launch { updateWear(this@NotificationService, sharedPreferences, trackInfo) }
-            }
+        sharedPreferences.getCurrentTrackInfo()?.let {
+            updateWear(this@NotificationService, sharedPreferences, it)
         }
     }
 

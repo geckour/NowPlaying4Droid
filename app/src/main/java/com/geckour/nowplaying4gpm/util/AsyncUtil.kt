@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -31,7 +30,6 @@ import com.geckour.nowplaying4gpm.domain.model.SpotifyResult
 import com.geckour.nowplaying4gpm.domain.model.TrackInfo
 import com.geckour.nowplaying4gpm.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4gpm.service.NotificationService
-import com.geckour.nowplaying4gpm.ui.settings.SettingsActivity
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -85,7 +83,7 @@ suspend fun Context.getBitmapFromUriString(
     uriString: String,
     maxSize: Int? = null
 ): Bitmap? = withCatching {
-    val drawable = Coil.execute(
+    val drawable = Coil.imageLoader(this).execute(
         ImageRequest.Builder(this)
             .data(uriString)
             .allowHardware(false)
@@ -101,20 +99,18 @@ suspend fun Context.getBitmapFromUriString(
 suspend fun Context.checkStoragePermissionAsync(
     onNotGranted: (suspend (Context) -> Unit)? = null, onGranted: suspend (Context) -> Unit = {}
 ) {
-    if (ContextCompat.checkSelfPermission(
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || ContextCompat.checkSelfPermission(
             this, Manifest.permission.READ_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED
     ) {
         onGranted(this)
     } else {
-        onNotGranted?.invoke(this) ?: startActivity(SettingsActivity.getIntent(this).apply {
-            flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
-        })
+        onNotGranted?.invoke(this)
     }
 }
 
 suspend fun updateTrackInfo(
-    notificationService: NotificationService,
+    context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
     lastFmApiClient: LastFmApiClient,
@@ -124,19 +120,19 @@ suspend fun updateTrackInfo(
     coreElement: TrackInfo.TrackCoreElement = metadata.getTrackCoreElement(),
     onClearMetadata: () -> Unit = {}
 ): TrackInfo? {
-    if (onQuickUpdate(
-            notificationService,
-            sharedPreferences,
-            coreElement,
-            playerPackageName
-        ).not()
-    ) {
+    val quickUpdateSucceeded = onQuickUpdate(
+        context,
+        sharedPreferences,
+        coreElement,
+        playerPackageName
+    )
+    if (quickUpdateSucceeded.not()) {
         onClearMetadata()
         return null
     }
 
     val trackInfo = updateTrackInfo(
-        notificationService as Context,
+        context,
         sharedPreferences,
         spotifyApiClient,
         lastFmApiClient,
@@ -148,7 +144,7 @@ suspend fun updateTrackInfo(
         onClearMetadata
     )
 
-    reflectTrackInfo(notificationService, sharedPreferences, trackInfo)
+    reflectTrackInfo(context, sharedPreferences, trackInfo)
 
     return trackInfo
 }
@@ -234,32 +230,6 @@ suspend fun updateTrackInfo(
 }
 
 suspend fun onQuickUpdate(
-    notificationService: NotificationService,
-    sharedPreferences: SharedPreferences,
-    coreElement: TrackInfo.TrackCoreElement,
-    packageName: String
-): Boolean {
-    val trackInfo = TrackInfo(
-        coreElement,
-        null,
-        packageName,
-        packageName.getAppName(notificationService),
-        null
-    )
-    val result = onQuickUpdate(
-        notificationService as Context,
-        sharedPreferences,
-        coreElement,
-        packageName,
-        true
-    )
-
-    reflectTrackInfo(notificationService, sharedPreferences, trackInfo, false)
-
-    return result
-}
-
-fun onQuickUpdate(
     context: Context,
     sharedPreferences: SharedPreferences,
     coreElement: TrackInfo.TrackCoreElement,
@@ -280,40 +250,35 @@ fun onQuickUpdate(
         return false
     }
 
-    if (viaService.not()) reflectTrackInfo(context, sharedPreferences, trackInfo, false)
+    if (viaService.not()) reflectTrackInfo(
+        context,
+        sharedPreferences,
+        trackInfo,
+        withArtwork = false
+    )
 
     return true
 }
 
 suspend fun reflectTrackInfo(
-    notificationService: NotificationService,
-    sharedPreferences: SharedPreferences,
-    info: TrackInfo?,
-    withArtwork: Boolean = true
-) {
-    reflectTrackInfo(notificationService as Context, sharedPreferences, info, withArtwork)
-
-    val notificationManager = notificationService.getSystemService(NotificationManager::class.java)
-    notificationManager.showNotification(
-        notificationService,
-        sharedPreferences,
-        notificationManager,
-        info
-    )
-}
-
-fun reflectTrackInfo(
     context: Context,
     sharedPreferences: SharedPreferences,
     info: TrackInfo?,
     withArtwork: Boolean = true
 ) {
-
     updateSharedPreference(sharedPreferences, info)
     updateWidget(context, info)
     if (withArtwork) {
         updateWear(context, sharedPreferences, info)
     }
+
+    val notificationManager = context.getSystemService(NotificationManager::class.java)
+    notificationManager.showNotification(
+        context,
+        sharedPreferences,
+        notificationManager,
+        info
+    )
 }
 
 private fun updateSharedPreference(sharedPreferences: SharedPreferences, trackInfo: TrackInfo?) {
@@ -345,24 +310,21 @@ fun updateWear(context: Context, sharedPreferences: SharedPreferences, trackInfo
 }
 
 private suspend fun NotificationManager.showNotification(
-    service: NotificationService,
+    context: Context,
     sharedPreferences: SharedPreferences,
     notificationManager: NotificationManager,
     trackInfo: TrackInfo?
 ) {
-    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
-        && sharedPreferences.readyForShare(service, trackInfo)
+    if (areNotificationsEnabled()
+        && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
+        && sharedPreferences.readyForShare(context, trackInfo)
     ) {
-        service.checkStoragePermissionAsync {
-            trackInfo?.getNotification(service)?.let {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    service.startForeground(NotificationService.NotificationType.SHARE.id, it)
-                } else {
-                    notify(NotificationService.NotificationType.SHARE.id, it)
-                }
+        trackInfo?.getNotification(context)?.let { notification ->
+            context.checkStoragePermissionAsync {
+                notify(NotificationService.NotificationType.SHARE.id, notification)
             }
         }
-    } else notificationManager.destroyNotification(service)
+    } else notificationManager.destroyNotification()
 }
 
 private suspend fun TrackInfo.getNotification(context: Context): Notification {

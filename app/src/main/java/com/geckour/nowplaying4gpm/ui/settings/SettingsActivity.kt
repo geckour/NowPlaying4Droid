@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
@@ -102,7 +103,6 @@ import com.geckour.nowplaying4gpm.App
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.api.BillingApiClient
-import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.api.TwitterApiClient
@@ -125,10 +125,8 @@ import com.geckour.nowplaying4gpm.ui.widget.adapter.ArtworkResolveMethodListAdap
 import com.geckour.nowplaying4gpm.util.PaletteColor
 import com.geckour.nowplaying4gpm.util.PrefKey
 import com.geckour.nowplaying4gpm.util.Visibility
-import com.geckour.nowplaying4gpm.util.checkStoragePermission
 import com.geckour.nowplaying4gpm.util.clearSpotifyUserInfoImmediately
 import com.geckour.nowplaying4gpm.util.executeCatching
-import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4gpm.util.getArtworkResolveOrder
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
@@ -180,8 +178,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var billingApiClient: BillingApiClient
 
-    private val lastFmApiClient: LastFmApiClient = get()
-    private val spotifyApiClient: SpotifyApiClient = get()
     private val twitterApiClient: TwitterApiClient = get()
 
     private val mastodonScope = Scope(Scope.Name.ALL)
@@ -189,9 +185,17 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var requestUpdate: PermissionsRequester
 
-    private val activityResultLauncher =
+    private val notificationListenerSettingsActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            requestNotificationListenerPermission { requestUpdate.launch() }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                postNotificationPermissionRequestLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                showIgnoreBatteryOptimizationDialog()
+            }
+        }
+    private val postNotificationPermissionRequestLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            showIgnoreBatteryOptimizationDialog()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -249,21 +253,12 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
         }
-
-        showIgnoreBatteryOptimizationDialog()
-
-        requestNotificationListenerPermission {
-            requestUpdate.launch()
-        }
     }
 
     override fun onResume() {
         super.onResume()
 
-        checkStoragePermission(
-            onNotGranted = { viewModel.settingsVisible.value = false },
-            onGranted = { invokeUpdate() }
-        )
+        requestNotificationListenerPermission()
 
         reflectDonation(viewModel.donated)
 
@@ -301,7 +296,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestNotificationListenerPermission(onGranted: () -> Unit = {}) {
+    private fun requestNotificationListenerPermission() {
         val notificationListenerNotEnabled =
             NotificationManagerCompat.getEnabledListenerPackages(this)
                 .contains(packageName)
@@ -314,12 +309,22 @@ class SettingsActivity : AppCompatActivity() {
                     .setMessage(R.string.dialog_message_alert_grant_notification_listener)
                     .setCancelable(false)
                     .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                        activityResultLauncher.launch(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                        notificationListenerSettingsActivityResultLauncher.launch(
+                            Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                        )
                         dialog.dismiss()
                         viewModel.showingNotificationServicePermissionDialog = false
                     }.show()
             }
-        } else onGranted()
+        } else invokeUpdateWithStoragePermissionsIfNeeded()
+    }
+
+    private fun invokeUpdateWithStoragePermissionsIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            invokeUpdate()
+        } else {
+            requestUpdate.launch()
+        }
     }
 
     private fun invokeUpdate() {
@@ -417,7 +422,8 @@ class SettingsActivity : AppCompatActivity() {
                 return@launchWhenResumed
             }
 
-            CustomTabsIntent.Builder().setShowTitle(true)
+            CustomTabsIntent.Builder()
+                .setShowTitle(true)
                 .setDefaultColorSchemeParams(
                     CustomTabColorSchemeParams.Builder()
                         .setToolbarColor(getColor(R.color.colorPrimary))
@@ -428,19 +434,8 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onClickFab() = lifecycleScope.launch {
-        forceUpdateTrackInfoIfNeeded(
-            this@SettingsActivity,
-            sharedPreferences,
-            spotifyApiClient,
-            lastFmApiClient
-        ) {
-            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                R.string.dialog_title_alert_no_metadata,
-                R.string.dialog_message_alert_no_metadata
-            )
-        }
-
+    private fun onClickFab() = lifecycleScope.launchWhenResumed {
+        viewModel.updateTrackInfo(this@SettingsActivity)
         startActivity(SharingActivity.getIntent(this@SettingsActivity))
     }
 
@@ -483,7 +478,7 @@ class SettingsActivity : AppCompatActivity() {
             sharedPreferences.storeTwitterAccessToken(accessToken)
 
             summary.value = accessToken.screenName
-            requestUpdate.launch()
+            invokeUpdateWithStoragePermissionsIfNeeded()
             viewModel.snackbarHostState.value
                 .showSnackbar(getString(R.string.snackbar_text_success_auth_twitter))
         }
@@ -541,7 +536,7 @@ class SettingsActivity : AppCompatActivity() {
                     userInfo.userName,
                     userInfo.instanceName
                 )
-                withContext(Dispatchers.Main) { requestUpdate.launch() }
+                withContext(Dispatchers.Main) { invokeUpdateWithStoragePermissionsIfNeeded() }
                 viewModel.snackbarHostState.value
                     .showSnackbar(getString(R.string.snackbar_text_success_auth_mastodon))
             }
@@ -556,6 +551,11 @@ class SettingsActivity : AppCompatActivity() {
     ) {
         val lazyListState = rememberLazyListState()
 
+        val visibleLastItemIndex by derivedStateOf {
+            lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        }
+        val lastItemIndex by derivedStateOf { lazyListState.layoutInfo.totalItemsCount - 1 }
+
         Box(modifier = Modifier.fillMaxSize()) {
             Column {
                 SettingTopBar(onEasterEggActivate)
@@ -566,8 +566,7 @@ class SettingsActivity : AppCompatActivity() {
                 modifier = Modifier
                     .align(BottomEnd)
                     .padding(16.dp),
-                visible = lazyListState.isScrollInProgress
-                        || lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index != lazyListState.layoutInfo.totalItemsCount - 1,
+                visible = lazyListState.isScrollInProgress || visibleLastItemIndex != lastItemIndex,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
@@ -694,7 +693,7 @@ class SettingsActivity : AppCompatActivity() {
                 TextButton(onClick = {
                     sharedPreferences.setArtworkResolveOrder(adapter.items)
                     viewModel.openChangeArtworkResolveOrderDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -752,7 +751,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     viewModel.patternFormatSummary.value = text
                     viewModel.openChangePatternFormatDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -800,7 +799,7 @@ class SettingsActivity : AppCompatActivity() {
                     sharedPreferences.edit {
                         sharedPreferences.setFormatPatternModifiers(items)
                         viewModel.openEditPatternModifierDialog.value = false
-                        requestUpdate.launch()
+                        invokeUpdateWithStoragePermissionsIfNeeded()
                     }
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
@@ -939,7 +938,7 @@ class SettingsActivity : AppCompatActivity() {
                         sharedPreferences.storePackageStateSpotify(it.packageName, it.state)
                     }
                     viewModel.openSelectPlayerSpotifyDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1076,7 +1075,7 @@ class SettingsActivity : AppCompatActivity() {
                         }
                     }
                     viewModel.openAuthMastodonDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1150,7 +1149,7 @@ class SettingsActivity : AppCompatActivity() {
                                 R.string.pref_item_summary_delay_mastodon,
                                 it
                             )
-                            requestUpdate.launch()
+                            invokeUpdateWithStoragePermissionsIfNeeded()
                         } else {
                             null
                         }
@@ -1210,7 +1209,7 @@ class SettingsActivity : AppCompatActivity() {
                     viewModel.postMastodonVisibilitySummary.value =
                         getString(visibility.getSummaryResId())
                     viewModel.openSetMastodonPostVisibilityDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1280,7 +1279,7 @@ class SettingsActivity : AppCompatActivity() {
                         sharedPreferences.storePackageStatePostMastodon(it.packageName, it.state)
                     }
                     viewModel.openSelectPlayerPostMastodonDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1377,7 +1376,7 @@ class SettingsActivity : AppCompatActivity() {
                     viewModel.chosePaletteColorSummary.value =
                         getString(paletteColor.getSummaryResId())
                     viewModel.openSelectNotificationColorDialog.value = false
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ok))
                 }
@@ -1933,7 +1932,7 @@ class SettingsActivity : AppCompatActivity() {
                     switchState.value = it
                     summary.value = it.switchSummary
                     onCheckedChanged?.invoke(it)
-                    requestUpdate.launch()
+                    invokeUpdateWithStoragePermissionsIfNeeded()
                 },
                 modifier = Modifier
                     .align(CenterVertically)

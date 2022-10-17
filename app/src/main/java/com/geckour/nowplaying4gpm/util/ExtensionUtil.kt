@@ -232,7 +232,7 @@ fun String.splitIncludeDelimiter(vararg delimiters: String) =
 fun Context.checkStoragePermission(
     onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}
 ) {
-    if (ContextCompat.checkSelfPermission(
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || ContextCompat.checkSelfPermission(
             this, Manifest.permission.READ_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED
     ) {
@@ -346,11 +346,11 @@ fun Bitmap.refreshArtworkUri(context: Context): Uri? {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     val dirName = "images"
     val fileName = "temp_artwork.png"
-    val dir = File(context.filesDir, dirName)
+    val dir = File(context.cacheDir, dirName)
     val file = File(dir, fileName)
 
     if (file.exists()) file.delete()
-    if (dir.exists().not()) dir.mkdir()
+    if (dir.exists().not()) dir.mkdirs()
 
     FileOutputStream(file).use {
         compress(Bitmap.CompressFormat.PNG, 100, it)
@@ -376,12 +376,11 @@ fun Serializable.asString(): String =
 fun Context.digMediaController(playerPackageName: String? = null): MediaController? =
     getSystemService(MediaSessionManager::class.java)
         ?.getActiveSessions(NotificationService.getComponentName(applicationContext))
-        ?.let {  sessions ->
+        ?.let { sessions ->
             if (playerPackageName == null) sessions.firstOrNull()
             else sessions.firstOrNull { it.packageName == playerPackageName }
         }
 
-@OptIn(InternalSerializationApi::class)
 inline fun <reified T : Serializable> String.toSerializableObject(): T? =
     withCatching {
         json.parseOrNull<ByteArray>(this).let { byteArray ->
@@ -408,12 +407,8 @@ fun MediaMetadata.getTrackCoreElement(): TrackInfo.TrackCoreElement = this.let {
     TrackInfo.TrackCoreElement(track, artist, album, composer)
 }
 
-fun NotificationManager.destroyNotification(service: NotificationService) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        service.stopForeground(true)
-    } else {
-        this.cancel(NotificationService.NotificationType.SHARE.id)
-    }
+fun NotificationManager.destroyNotification() {
+    this.cancel(NotificationService.NotificationType.SHARE.id)
     this.cancel(NotificationService.NotificationType.NOTIFY_SUCCESS_MASTODON.id)
     this.cancel(NotificationService.NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id)
 }

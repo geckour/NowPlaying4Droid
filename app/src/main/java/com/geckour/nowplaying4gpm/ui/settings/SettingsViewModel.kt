@@ -10,8 +10,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.api.LastFmApiClient
 import com.geckour.nowplaying4gpm.api.SpotifyApiClient
+import com.geckour.nowplaying4gpm.api.TwitterApiClient
 import com.geckour.nowplaying4gpm.util.PrefKey
+import com.geckour.nowplaying4gpm.util.forceUpdateTrackInfoIfNeeded
 import com.geckour.nowplaying4gpm.util.getChosePaletteColor
 import com.geckour.nowplaying4gpm.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4gpm.util.getFormatPattern
@@ -24,8 +27,9 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     application: Application,
+    private val lastFmApiClient: LastFmApiClient,
     private val spotifyApiClient: SpotifyApiClient,
-    sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences
 ) : AndroidViewModel(application) {
 
     internal var showingNotificationServicePermissionDialog = false
@@ -105,6 +109,19 @@ class SettingsViewModel(
             )
     }
 
+    internal suspend fun updateTrackInfo(context: Context) {
+        forceUpdateTrackInfoIfNeeded(
+            context,
+            sharedPreferences,
+            spotifyApiClient,
+            lastFmApiClient
+        ) {
+            errorDialogData.value = ErrorDialogData(
+                R.string.dialog_title_alert_no_metadata,
+                R.string.dialog_message_alert_no_metadata
+            )
+        }
+    }
 
     data class Item(
         val sharedPreferences: SharedPreferences,
