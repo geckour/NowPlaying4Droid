@@ -102,6 +102,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.geckour.nowplaying4gpm.app.App
 import com.geckour.nowplaying4gpm.BuildConfig
 import com.geckour.nowplaying4gpm.R
+import com.geckour.nowplaying4gpm.app.api.BillingApiClient
 import com.geckour.nowplaying4gpm.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4gpm.app.api.SpotifyApiClient
 import com.geckour.nowplaying4gpm.app.api.TwitterApiClient
@@ -175,7 +176,7 @@ class SettingsActivity : AppCompatActivity() {
     private val viewModel: SettingsViewModel by viewModel()
     private val sharedPreferences: SharedPreferences = get()
 
-    private lateinit var billingApiClient: com.geckour.nowplaying4gpm.app.api.BillingApiClient
+    private lateinit var billingApiClient: BillingApiClient
 
     private val twitterApiClient: TwitterApiClient = get()
 
@@ -219,7 +220,7 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        billingApiClient = com.geckour.nowplaying4gpm.app.api.BillingApiClient(this, onError = {
+        billingApiClient = BillingApiClient(this, onError = {
             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                 R.string.dialog_title_alert_failure_purchase,
                 R.string.dialog_message_alert_on_start_purchase
@@ -227,23 +228,23 @@ class SettingsActivity : AppCompatActivity() {
         }) {
             lifecycleScope.launchWhenResumed {
                 when (it) {
-                    com.geckour.nowplaying4gpm.app.api.BillingApiClient.BillingResult.SUCCESS -> {
+                    BillingApiClient.BillingResult.SUCCESS -> {
                         reflectDonation(viewModel.donated, true)
                     }
-                    com.geckour.nowplaying4gpm.app.api.BillingApiClient.BillingResult.DUPLICATED -> {
+                    BillingApiClient.BillingResult.DUPLICATED -> {
                         viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_already_purchase
                         )
                         reflectDonation(viewModel.donated, true)
                     }
-                    com.geckour.nowplaying4gpm.app.api.BillingApiClient.BillingResult.CANCELLED -> {
+                    BillingApiClient.BillingResult.CANCELLED -> {
                         viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_on_cancel_purchase
                         )
                     }
-                    com.geckour.nowplaying4gpm.app.api.BillingApiClient.BillingResult.FAILURE -> {
+                    BillingApiClient.BillingResult.FAILURE -> {
                         viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                             R.string.dialog_title_alert_failure_purchase,
                             R.string.dialog_message_alert_failure_purchase

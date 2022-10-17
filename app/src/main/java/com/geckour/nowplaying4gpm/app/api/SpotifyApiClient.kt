@@ -166,7 +166,6 @@ class SpotifyApiClient(context: Context) {
                 return@firstOrNull titleValid && albumValid && artistValid
             } ?: (if (isStrictMode) null else results?.firstOrNull()))
                 ?.let {
-                    Timber.d("np4d track: $it")
                     SpotifyResult.Success(
                         SpotifyResult.Data(
                             it.urls["spotify"] ?: return@let null,

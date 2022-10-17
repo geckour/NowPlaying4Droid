@@ -4,7 +4,6 @@ import com.geckour.nowplaying4gpm.app.api.model.MastodonInstance
 import com.geckour.nowplaying4gpm.app.util.json
 import com.geckour.nowplaying4gpm.app.util.withCatching
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 

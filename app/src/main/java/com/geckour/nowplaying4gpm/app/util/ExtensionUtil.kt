@@ -362,7 +362,7 @@ fun Bitmap.refreshArtworkUri(context: Context): Uri? {
     }
 }
 
-fun Bitmap.toByteArray(): ByteArray? = ByteArrayOutputStream().apply {
+fun Bitmap.toByteArray(): ByteArray = ByteArrayOutputStream().apply {
     compress(Bitmap.CompressFormat.PNG, 100, this)
 }.toByteArray()
 

@@ -44,6 +44,8 @@ import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import timber.log.Timber
+import kotlin.math.max
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
     noinline onCatch: ((Throwable) -> Unit)? = null
@@ -144,7 +146,7 @@ suspend fun updateTrackInfo(
         onClearMetadata
     )
 
-    reflectTrackInfo(context, sharedPreferences, trackInfo)
+    reflectTrackInfo(context, sharedPreferences, trackInfo, withArtwork = true)
 
     return trackInfo
 }
@@ -224,7 +226,12 @@ suspend fun updateTrackInfo(
         spotifyData
     )
 
-    if (viaService.not()) reflectTrackInfo(context, sharedPreferences, trackInfo)
+    if (viaService.not()) reflectTrackInfo(
+        context,
+        sharedPreferences,
+        trackInfo,
+        withArtwork = true
+    )
 
     return trackInfo
 }
@@ -264,7 +271,7 @@ suspend fun reflectTrackInfo(
     context: Context,
     sharedPreferences: SharedPreferences,
     info: TrackInfo?,
-    withArtwork: Boolean = true
+    withArtwork: Boolean
 ) {
     updateSharedPreference(sharedPreferences, info)
     updateWidget(context, info)
@@ -289,24 +296,40 @@ private fun updateWidget(context: Context, trackInfo: TrackInfo?) {
     context.sendBroadcast(ShareWidgetProvider.getUpdateIntent(context, trackInfo))
 }
 
-fun updateWear(context: Context, sharedPreferences: SharedPreferences, trackInfo: TrackInfo?) {
+suspend fun updateWear(
+    context: Context,
+    sharedPreferences: SharedPreferences,
+    trackInfo: TrackInfo? = sharedPreferences.getCurrentTrackInfo()
+) {
     val subject = sharedPreferences.getFormatPattern(context)
         .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-    val artwork = trackInfo?.artworkUriString?.getUri()
-
-    Wearable.getDataClient(context).putDataItem(
-        PutDataMapRequest.create(NotificationService.WEAR_PATH_TRACK_INFO_POST).apply {
-            dataMap.apply {
-                subject?.let { putString(NotificationService.WEAR_KEY_SUBJECT, it) }
-                artwork?.let {
-                    putAsset(
-                        NotificationService.WEAR_KEY_ARTWORK,
-                        Asset.createFromUri(it)
-                    )
+    val artwork = trackInfo?.artworkUriString?.let { uriString ->
+        context.getBitmapFromUriString(uriString)?.let {
+            val scale = 400f / max(it.width, it.height)
+            val scaled = Bitmap.createScaledBitmap(
+                it,
+                (it.width * scale).toInt(),
+                (it.height * scale).toInt(),
+                false
+            )
+            it.recycle()
+            scaled
+        }
+    }
+    Wearable.getDataClient(context)
+        .putDataItem(
+            PutDataMapRequest.create(NotificationService.WEAR_PATH_POST_SHARING_INFO).apply {
+                dataMap.apply {
+                    subject?.let { putString(NotificationService.WEAR_KEY_SUBJECT, it) }
+                    artwork?.let {
+                        putAsset(
+                            NotificationService.WEAR_KEY_ARTWORK,
+                            Asset.createFromBytes(artwork.toByteArray())
+                        )
+                    }
                 }
-            }
-        }.asPutDataRequest()
-    )
+            }.asPutDataRequest()
+        )
 }
 
 private suspend fun NotificationManager.showNotification(
@@ -334,7 +357,7 @@ private suspend fun TrackInfo.getNotification(context: Context): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             Notification.Builder(
                 context,
-                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                com.geckour.nowplaying4gpm.app.service.NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
             )
         else Notification.Builder(context)
 

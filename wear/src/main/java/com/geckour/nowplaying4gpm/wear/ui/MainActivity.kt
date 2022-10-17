@@ -44,7 +44,7 @@ import androidx.core.view.GestureDetectorCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.wear.compose.material.Text
 import com.geckour.nowplaying4gpm.R
-import com.geckour.nowplaying4gpm.wear.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.wear.domain.model.SharingInfo
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -56,8 +56,8 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
 
     companion object {
-        private const val PATH_TRACK_INFO_POST = "/track_info/post"
-        private const val PATH_TRACK_INFO_GET = "/track_info/get"
+        private const val PATH_POST_SHARING_INFO = "/post/sharing_info"
+        private const val PATH_GET_SHARING_INFO = "/get/sharing_info"
         private const val PATH_POST_TWITTER = "/post/twitter"
         private const val PATH_POST_SUCCESS = "/post/success"
         private const val PATH_POST_FAILURE = "/post/failure"
@@ -72,21 +72,26 @@ class MainActivity : ComponentActivity() {
         buffer.forEach { event ->
             when (event.type) {
                 DataEvent.TYPE_CHANGED -> {
-                    if (event.dataItem.uri.path?.compareTo(PATH_TRACK_INFO_POST) == 0) {
+                    if (event.dataItem.uri.path?.compareTo(PATH_POST_SHARING_INFO) == 0) {
                         val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
 
                         val subject = dataMap.getString(KEY_SUBJECT)
-                        updateTrackInfo(TrackInfo(subject, null))
+                        updateSharingInfo(SharingInfo(subject, null))
 
                         if (dataMap.containsKey(KEY_ARTWORK)) {
                             dataMap.getAsset(KEY_ARTWORK)?.loadBitmap {
-                                updateTrackInfo(TrackInfo(subject, it))
+                                updateSharingInfo(
+                                    SharingInfo(
+                                        subject,
+                                        it
+                                    )
+                                )
                             }
                         }
                     }
                 }
 
-                DataEvent.TYPE_DELETED -> updateTrackInfo(TrackInfo.empty)
+                DataEvent.TYPE_DELETED -> updateSharingInfo(SharingInfo.empty)
             }
         }
     }
@@ -105,7 +110,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val trackInfo = mutableStateOf(TrackInfo.empty)
+    private val sharingInfo = mutableStateOf(SharingInfo.empty)
     private val indicatorDrawableResource = mutableStateOf<Int?>(null)
     private val indicatorDrawableTint = mutableStateOf(R.color.colorPrimaryDark)
 
@@ -144,10 +149,14 @@ class MainActivity : ComponentActivity() {
             }
         )
 
+        Wearable.getDataClient(this).addListener(onDataChanged)
+        Wearable.getMessageClient(this).addListener(onMessageReceived)
+
         setContent {
-            val info by remember { trackInfo }
+            val info by remember { sharingInfo }
             val indicatorResource by remember { indicatorDrawableResource }
             val indicatorTint by remember { indicatorDrawableTint }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 info.artwork?.let {
                     Image(
@@ -220,15 +229,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        Wearable.getDataClient(this).addListener(onDataChanged)
-        Wearable.getMessageClient(this).addListener(onMessageReceived)
     }
 
     override fun onResume() {
         super.onResume()
 
-        requestTrackInfo()
+        requestSharingInfo()
     }
 
     override fun onDestroy() {
@@ -245,37 +251,44 @@ class MainActivity : ComponentActivity() {
                 onComplete(BitmapFactory.decodeStream(task.result.inputStream))
             }
 
-    private fun updateTrackInfo(trackInfo: TrackInfo) {
-        this.trackInfo.value = trackInfo
+    private fun updateSharingInfo(sharingInfo: SharingInfo) {
+        this.sharingInfo.value = sharingInfo
     }
 
-    private fun requestTrackInfo() {
-        Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener { task ->
-            task.result
-                ?.filter { it.isNearby }
-                ?.forEach {
-                    Wearable.getMessageClient(this@MainActivity)
-                        .sendMessage(it.id, PATH_TRACK_INFO_GET, null)
-                }
-        }
+    private fun requestSharingInfo() {
+        Wearable.getNodeClient(this@MainActivity)
+            .connectedNodes
+            .addOnSuccessListener { nodes ->
+                nodes?.filter { it.isNearby }
+                    ?.forEach {
+                        Wearable.getMessageClient(this@MainActivity)
+                            .sendMessage(it.id, PATH_GET_SHARING_INFO, null)
+                    }
+            }
     }
 
     private fun invokeShare() {
-        Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener { task ->
-            task.result?.filter { it.isNearby }?.forEach {
-                Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(it.id, PATH_POST_TWITTER, null)
+        Wearable.getNodeClient(this)
+            .connectedNodes
+            .addOnSuccessListener { nodes ->
+                nodes?.filter { it.isNearby }
+                    ?.forEach {
+                        Wearable.getMessageClient(this)
+                            .sendMessage(it.id, PATH_POST_TWITTER, null)
+                    }
             }
-        }
     }
 
     private fun invokeShareOnHost(): Boolean {
-        Wearable.getNodeClient(this@MainActivity).connectedNodes.addOnCompleteListener { task ->
-            task.result?.filter { it.isNearby }?.forEach {
-                Wearable.getMessageClient(this@MainActivity)
-                    .sendMessage(it.id, PATH_SHARE_DELEGATE, null)
+        Wearable.getNodeClient(this@MainActivity)
+            .connectedNodes
+            .addOnSuccessListener { nodes ->
+                nodes?.filter { it.isNearby }
+                    ?.forEach {
+                        Wearable.getMessageClient(this@MainActivity)
+                            .sendMessage(it.id, PATH_SHARE_DELEGATE, null)
+                    }
             }
-        }
 
         return true
     }

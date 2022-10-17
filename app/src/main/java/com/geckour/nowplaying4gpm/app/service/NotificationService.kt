@@ -13,7 +13,6 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
-import android.net.Uri
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -82,7 +81,8 @@ import kotlin.coroutines.CoroutineContext
 class NotificationService : NotificationListenerService(), CoroutineScope {
 
     enum class Channel {
-        NOTIFICATION_CHANNEL_SHARE, NOTIFICATION_CHANNEL_NOTIFY
+        NOTIFICATION_CHANNEL_SHARE,
+        NOTIFICATION_CHANNEL_NOTIFY
     }
 
     enum class NotificationType(val id: Int, val channel: Channel) {
@@ -95,8 +95,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         const val ACTION_CLEAR_TRACK_INFO = "com.geckour.nowplaying4gpm.cleartrackinfo"
         const val ACTION_DESTROY_NOTIFICATION = "com.geckour.nowplaying4gpm.destroynotification"
         const val ACTION_INVOKE_UPDATE = "com.geckour.nowplaying4gpm.invokeupdate"
-        const val WEAR_PATH_TRACK_INFO_POST = "/track_info/post"
-        private const val WEAR_PATH_TRACK_INFO_GET = "/track_info/get"
+        const val WEAR_PATH_POST_SHARING_INFO = "/post/sharing_info"
+        private const val WEAR_PATH_GET_SHARING_INFO = "/get/sharing_info"
         private const val WEAR_PATH_POST_TWITTER = "/post/twitter"
         private const val WEAR_PATH_POST_SUCCESS = "/post/success"
         private const val WEAR_PATH_POST_FAILURE = "/post/failure"
@@ -190,8 +190,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private val onMessageReceived: (MessageEvent) -> Unit = {
         when (it.path) {
-            WEAR_PATH_TRACK_INFO_GET -> {
-                onPulledFromWear()
+            WEAR_PATH_GET_SHARING_INFO -> {
+                launch {
+                    updateWear(this@NotificationService, sharedPreferences, null)
+                    updateWear(this@NotificationService, sharedPreferences)
+                }
             }
 
             WEAR_PATH_POST_TWITTER -> {
@@ -317,7 +320,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             reflectTrackInfo(
                 this@NotificationService,
                 sharedPreferences,
-                null
+                null,
+                withArtwork = true
             )
         }
 
@@ -418,20 +422,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 delay(2500)
                 cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
             }
-        }
-    }
-
-    private fun deleteWearTrackInfo(onComplete: () -> Unit = {}) {
-        Wearable.getDataClient(this).deleteDataItems(Uri.parse("wear://$WEAR_PATH_TRACK_INFO_POST"))
-            .addOnSuccessListener { onComplete() }.addOnFailureListener {
-                Timber.e(it)
-                onComplete()
-            }.addOnCompleteListener { onComplete() }
-    }
-
-    private fun onPulledFromWear() {
-        sharedPreferences.getCurrentTrackInfo()?.let {
-            updateWear(this@NotificationService, sharedPreferences, it)
         }
     }
 
