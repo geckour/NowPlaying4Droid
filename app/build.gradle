@@ -130,7 +130,7 @@ dependencies {
     implementation 'androidx.fragment:fragment-ktx:1.5.3'
 
     // JSON
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1"
 
     // Permission
     implementation "com.github.permissions-dispatcher:ktx:1.1.4"

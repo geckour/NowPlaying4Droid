@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
-        android:name=".App"
+        android:name=".app.App"
         android:allowBackup="true"
         android:fullBackupOnly="true"
         android:icon="@mipmap/ic_launcher"
@@ -34,7 +34,7 @@
             android:value="false" />
 
         <activity
-            android:name=".ui.settings.SettingsActivity"
+            android:name=".app.ui.settings.SettingsActivity"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
@@ -62,7 +62,7 @@
                 android:resource="@xml/shortcuts" />
         </activity>
         <activity
-            android:name=".ui.sharing.SharingActivity"
+            android:name=".app.ui.sharing.SharingActivity"
             android:excludeFromRecents="true"
             android:exported="true"
             android:launchMode="singleTask"
@@ -74,11 +74,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.license.LicensesActivity"
+            android:name=".app.ui.license.LicensesActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.mushroom.MushroomActivity"
+            android:name=".app.ui.mushroom.MushroomActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.NoDisplay">
@@ -90,12 +90,12 @@
         </activity>
 
         <activity
-            android:name=".ui.debug.DebugActivity"
+            android:name=".app.ui.debug.DebugActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme" />
 
         <service
-            android:name=".service.NotificationService"
+            android:name=".app.service.NotificationService"
             android:exported="true"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
@@ -104,7 +104,7 @@
         </service>
 
         <receiver
-            android:name=".receiver.ShareWidgetProvider"
+            android:name=".app.receiver.ShareWidgetProvider"
             android:exported="true">
             <meta-data
                 android:name="android.appwidget.provider"

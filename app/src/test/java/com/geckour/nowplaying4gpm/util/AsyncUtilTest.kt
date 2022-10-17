@@ -4,6 +4,8 @@ import androidx.preference.PreferenceManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.crashlytics.android.Crashlytics
+import com.geckour.nowplaying4gpm.app.util.PrefKey
+import com.geckour.nowplaying4gpm.app.util.withCatching
 import io.fabric.sdk.android.Fabric
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After

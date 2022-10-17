@@ -6,6 +6,6 @@
         <intent
                 android:action="android.intent.action.VIEW"
                 android:targetPackage="com.geckour.nowplaying4gpm"
-                android:targetClass="com.geckour.nowplaying4gpm.ui.sharing.SharingActivity"/>
+                android:targetClass="com.geckour.nowplaying4gpm.app.ui.sharing.SharingActivity"/>
     </shortcut>
 </shortcuts>

@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4gpm.domain.model
 
-import com.geckour.nowplaying4gpm.util.FormatPattern
+import com.geckour.nowplaying4gpm.app.domain.model.TrackInfo
+import com.geckour.nowplaying4gpm.app.util.FormatPattern
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -10,7 +11,8 @@ class TrackInfoTest {
 
     private val emptyInfo = TrackInfo.empty
     private val fullInfo =
-        TrackInfo(TrackInfo.TrackCoreElement("hoge", "fuga", "piyo", "nyan"),
+        TrackInfo(
+            TrackInfo.TrackCoreElement("hoge", "fuga", "piyo", "nyan"),
             "baw", "com.pao", "Pao", "pyon")
     private val emptyCoreElement = emptyInfo.coreElement
     private val fullCoreElement = fullInfo.coreElement
