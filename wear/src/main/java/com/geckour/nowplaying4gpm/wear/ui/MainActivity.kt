@@ -8,6 +8,7 @@ import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -158,17 +159,23 @@ class MainActivity : ComponentActivity() {
             val indicatorTint by remember { indicatorDrawableTint }
 
             Box(modifier = Modifier.fillMaxSize()) {
-                info.artwork?.let {
-                    Image(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInteropFilter { event ->
-                                artworkGestureDetector.onTouchEvent(event)
-                            },
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Inside
-                    )
+                Crossfade(
+                    modifier = Modifier.fillMaxSize(),
+                    targetState = info.artwork,
+                    animationSpec = tween(300)
+                ) {
+                    it?.let {
+                        Image(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInteropFilter { event ->
+                                    artworkGestureDetector.onTouchEvent(event)
+                                },
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Inside
+                        )
+                    }
                 }
                 Text(
                     modifier = Modifier
@@ -208,7 +215,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AnimatedVisibility(
-                    visible = indicatorDrawableResource.value != null,
+                    visible = indicatorResource != null,
                     enter = fadeIn(animationSpec = tween(400)),
                     exit = fadeOut(animationSpec = tween(400))
                 ) {
