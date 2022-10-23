@@ -2,4 +2,5 @@
     <string name="app_name" translatable="false">NowPlaying4Droid</string>
     <string name="button_share">Post to Twitter</string>
     <string name="subject_placeholder">Failure to get track information</string>
+    <string name="share_auto_twitter">Tap to share</string>
 </resources>

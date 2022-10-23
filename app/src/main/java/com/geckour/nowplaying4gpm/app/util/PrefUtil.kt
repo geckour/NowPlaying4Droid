@@ -213,7 +213,6 @@ fun SharedPreferences.getPackageStateListPostMastodon(): List<PackageState> =
             ?: emptyList()
     else emptyList()
 
-@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storePackageStatePostMastodon(packageName: String, state: Boolean? = null) {
     val toStore = getPackageStateListPostMastodon().let { stateList ->
         val index = stateList.indexOfFirst { it.packageName == packageName }

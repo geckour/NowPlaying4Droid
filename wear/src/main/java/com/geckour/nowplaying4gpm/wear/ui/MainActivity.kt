@@ -1,6 +1,6 @@
 package com.geckour.nowplaying4gpm.wear.ui
 
-import android.graphics.Bitmap
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.GestureDetector
@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.IconButton
+import androidx.compose.material.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.GestureDetectorCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.wear.compose.material.Text
 import com.geckour.nowplaying4gpm.R
 import com.geckour.nowplaying4gpm.wear.domain.model.SharingInfo
 import com.google.android.gms.wearable.Asset
@@ -53,11 +53,12 @@ import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
 
     companion object {
-        private const val PATH_POST_SHARING_INFO = "/post/sharing_info"
+        internal const val PATH_POST_SHARING_INFO = "/post/sharing_info"
         private const val PATH_GET_SHARING_INFO = "/get/sharing_info"
         private const val PATH_POST_TWITTER = "/post/twitter"
         private const val PATH_POST_SUCCESS = "/post/success"
@@ -65,8 +66,9 @@ class MainActivity : ComponentActivity() {
         private const val PATH_SHARE_DELEGATE = "/share/delegate"
         private const val PATH_SHARE_SUCCESS = "/share/success"
         private const val PATH_SHARE_FAILURE = "/share/failure"
-        private const val KEY_SUBJECT = "key_subject"
-        private const val KEY_ARTWORK = "key_artwork"
+        internal const val KEY_SUBJECT = "key_subject"
+        internal const val KEY_ARTWORK = "key_artwork"
+        internal const val ARG_AUTO_SHARE = "arg_auto_share"
     }
 
     private val onDataChanged: (DataEventBuffer) -> Unit = { buffer ->
@@ -80,7 +82,7 @@ class MainActivity : ComponentActivity() {
                         updateSharingInfo(SharingInfo(subject, null))
 
                         if (dataMap.containsKey(KEY_ARTWORK)) {
-                            dataMap.getAsset(KEY_ARTWORK)?.loadBitmap {
+                            dataMap.getAsset(KEY_ARTWORK)?.loadByteArray(this) {
                                 updateSharingInfo(
                                     SharingInfo(
                                         subject,
@@ -116,6 +118,8 @@ class MainActivity : ComponentActivity() {
     private val indicatorDrawableTint = mutableStateOf(R.color.colorPrimaryDark)
 
     private lateinit var artworkGestureDetector: GestureDetectorCompat
+
+    private val autoShare = MutableStateFlow(false)
 
     @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -171,7 +175,7 @@ class MainActivity : ComponentActivity() {
                                 .pointerInteropFilter { event ->
                                     artworkGestureDetector.onTouchEvent(event)
                                 },
-                            bitmap = it.asImageBitmap(),
+                            bitmap = BitmapFactory.decodeByteArray(it, 0, it.size).asImageBitmap(),
                             contentDescription = null,
                             contentScale = ContentScale.Inside
                         )
@@ -236,6 +240,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        if (intent.getBooleanExtra(ARG_AUTO_SHARE, false)) {
+            invokeShare()
+        }
     }
 
     override fun onResume() {
@@ -250,13 +258,6 @@ class MainActivity : ComponentActivity() {
 
         super.onDestroy()
     }
-
-    private fun Asset.loadBitmap(onComplete: (bitmap: Bitmap) -> Unit) =
-        Wearable.getDataClient(this@MainActivity)
-            .getFdForAsset(this@loadBitmap)
-            .addOnCompleteListener { task ->
-                onComplete(BitmapFactory.decodeStream(task.result.inputStream))
-            }
 
     private fun updateSharingInfo(sharingInfo: SharingInfo) {
         this.sharingInfo.value = sharingInfo
@@ -323,3 +324,10 @@ class MainActivity : ComponentActivity() {
 
     private fun String.foldBreaks(): String = this.replace(Regex("[\r\n]"), " ")
 }
+
+internal fun Asset.loadByteArray(context: Context, onSuccess: (byteArray: ByteArray) -> Unit) =
+    Wearable.getDataClient(context)
+        .getFdForAsset(this@loadByteArray)
+        .addOnSuccessListener { result ->
+            onSuccess(result.inputStream.readBytes())
+        }

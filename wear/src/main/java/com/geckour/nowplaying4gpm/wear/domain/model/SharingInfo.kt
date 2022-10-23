@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 
 data class SharingInfo(
     val subject: String?,
-    val artwork: Bitmap?
+    val artwork: ByteArray?
 ) {
     companion object {
         val empty = SharingInfo(null, null)

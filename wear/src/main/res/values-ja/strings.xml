@@ -1,4 +1,5 @@
 <resources>
     <string name="button_share">Twitterに投稿</string>
     <string name="subject_placeholder">曲情報を取得できませんでした</string>
+    <string name="share_auto_twitter">タップで共有</string>
 </resources>

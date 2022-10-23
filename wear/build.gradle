@@ -67,7 +67,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation 'com.google.android.support:wearable:2.9.0'
+    compileOnly 'com.google.android.support:wearable:2.9.0'
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.appcompat:appcompat:1.5.1'
@@ -88,4 +88,6 @@ dependencies {
     implementation "androidx.compose.material:material:1.2.1"
     implementation "androidx.wear.compose:compose-foundation:1.1.0-alpha07"
     implementation "androidx.wear.compose:compose-material:1.1.0-alpha07"
+    implementation "androidx.wear.tiles:tiles-material:1.1.0"
+    implementation "com.google.android.horologist:horologist-tiles:0.1.14"
 }
