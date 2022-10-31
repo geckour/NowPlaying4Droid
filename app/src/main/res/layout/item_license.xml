@@ -7,7 +7,7 @@
 
         <variable
             name="item"
-            type="com.geckour.nowplaying4gpm.app.ui.license.LicenseListAdapter.LicenseItem" />
+            type="com.geckour.nowplaying4droid.app.ui.license.LicenseListAdapter.LicenseItem" />
 
         <import type="android.view.View" />
     </data>

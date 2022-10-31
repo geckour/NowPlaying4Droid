@@ -5,7 +5,7 @@
             android:shortcutShortLabel="@string/shortcut_invoke_share">
         <intent
                 android:action="android.intent.action.VIEW"
-                android:targetPackage="com.geckour.nowplaying4gpm"
-                android:targetClass="com.geckour.nowplaying4gpm.app.ui.sharing.SharingActivity"/>
+                android:targetPackage="com.geckour.nowplaying4droid"
+                android:targetClass="com.geckour.nowplaying4droid.app.ui.sharing.SharingActivity"/>
     </shortcut>
 </shortcuts>

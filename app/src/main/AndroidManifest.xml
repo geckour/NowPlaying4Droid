@@ -48,7 +48,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="np4gpm" />
+                <data android:scheme="np4droid" />
                 <data android:host="spotify" />
                 <data android:host="spotify.callback" />
                 <data android:host="twitter" />

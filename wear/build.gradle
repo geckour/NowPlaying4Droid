@@ -8,7 +8,7 @@ android {
     compileSdkVersion 33
 
     defaultConfig {
-        applicationId "com.geckour.nowplaying4gpm"
+        applicationId "com.geckour.nowplaying4droid"
         targetSdkVersion 33
         minSdkVersion 25
         versionCode 330100104
@@ -61,7 +61,7 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion "1.3.2"
     }
-    namespace 'com.geckour.nowplaying4gpm'
+    namespace 'com.geckour.nowplaying4droid'
 }
 
 dependencies {

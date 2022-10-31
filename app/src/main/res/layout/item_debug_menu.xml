@@ -9,7 +9,7 @@
 
         <variable
             name="item"
-            type="com.geckour.nowplaying4gpm.app.ui.debug.DebugMenuListAdapter.DebugMenu" />
+            type="com.geckour.nowplaying4droid.app.ui.debug.DebugMenuListAdapter.DebugMenu" />
 
         <variable
             name="initialSummary"
