@@ -6,4 +6,5 @@
 
     <color name="colorBackground">#a0ffffff</color>
     <color name="colorMaskArtwork">#60000000</color>
+    <color name="colorMaskIcon">#e0000000</color>
 </resources>

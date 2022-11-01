@@ -274,7 +274,7 @@
                     app:title="@{@string/pref_item_title_switch_show_artwork_in_widget}" />
 
                 <include
-                    android:id="@+id/item_switch_launch_gpm_on_click_widget_artwork"
+                    android:id="@+id/item_switch_launch_player_on_click_widget_artwork"
                     layout="@layout/item_pref_item"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -7,7 +7,7 @@
 
         <variable
             name="item"
-            type="com.geckour.nowplaying4gpm.util.ArtworkResolveMethod" />
+            type="com.geckour.nowplaying4droid.app.util.ArtworkResolveMethod" />
 
         <import type="android.view.View" />
     </data>

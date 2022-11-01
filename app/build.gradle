@@ -1,10 +1,9 @@
-apply plugin: "com.android.application"
-
-apply plugin: "kotlin-android"
-
-apply plugin: "kotlin-kapt"
-
-apply plugin: 'kotlinx-serialization'
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "kotlin-kapt"
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.7.20'
+}
 
 kapt.mapDiagnosticLocations = true
 
@@ -12,11 +11,11 @@ android {
     compileSdkVersion 33
 
     defaultConfig {
-        applicationId "com.geckour.nowplaying4gpm"
+        applicationId "com.geckour.nowplaying4droid"
         targetSdkVersion 33
         minSdkVersion 24
-        versionCode 125
-        versionName "2.19.0"
+        versionCode 128
+        versionName "3.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -77,11 +76,12 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.3.0"
+        kotlinCompilerExtensionVersion "1.3.2"
     }
     lint {
         checkReleaseBuilds false
     }
+    namespace 'com.geckour.nowplaying4droid'
 }
 
 static def getKey(keyName) {
@@ -95,8 +95,8 @@ dependencies {
 
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "com.google.android.material:material:1.7.0-beta01"
-    implementation "androidx.appcompat:appcompat:1.5.0"
+    implementation "com.google.android.material:material:1.8.0-alpha02"
+    implementation "androidx.appcompat:appcompat:1.5.1"
     implementation "androidx.legacy:legacy-support-v4:1.0.0"
     implementation "androidx.legacy:legacy-support-v13:1.0.0"
     implementation "androidx.recyclerview:recyclerview:1.2.1"
@@ -108,11 +108,14 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
     testImplementation "androidx.test:runner:1.4.0"
     testImplementation "androidx.test.ext:junit:1.1.3"
-    testImplementation "org.robolectric:robolectric:4.6.1"
+    testImplementation "org.robolectric:robolectric:4.8.2"
     testImplementation "org.assertj:assertj-core:3.12.2"
     testImplementation "io.mockk:mockk:1.12.1"
     androidTestImplementation "androidx.test:runner:1.4.0"
     androidTestImplementation "androidx.test.espresso:espresso-core:3.4.0"
+
+    // Logging
+    implementation 'com.jakewharton.timber:timber:5.0.1'
 
     // DI
     def koin_version = "3.1.3"
@@ -124,12 +127,12 @@ dependencies {
     implementation "com.jakewharton.timber:timber:5.0.1"
 
     // KTX
-    implementation "androidx.core:core-ktx:1.8.0"
-    implementation 'androidx.activity:activity-ktx:1.5.1'
-    implementation 'androidx.fragment:fragment-ktx:1.5.2'
+    implementation "androidx.core:core-ktx:1.9.0"
+    implementation 'androidx.activity:activity-ktx:1.6.1'
+    implementation 'androidx.fragment:fragment-ktx:1.5.4'
 
     // JSON
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1"
 
     // Permission
     implementation "com.github.permissions-dispatcher:ktx:1.1.4"
@@ -140,7 +143,7 @@ dependencies {
     kapt "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
     // Billing
-    implementation "com.android.billingclient:billing:4.1.0"
+    implementation "com.android.billingclient:billing:5.0.0"
 
     // Preference
     implementation "androidx.preference:preference-ktx:1.2.0"
@@ -151,15 +154,15 @@ dependencies {
     // Networking
     implementation "com.squareup.retrofit2:retrofit:2.9.0"
     implementation "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.8.0"
-    def okhttp_version = "4.9.3"
+    def okhttp_version = "4.10.0"
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
 
     // Image processing
-    implementation "io.coil-kt:coil:1.4.0"
+    implementation "io.coil-kt:coil:2.2.2"
 
     // Wear
-    implementation "com.google.android.gms:play-services-wearable:17.1.0"
+    implementation "com.google.android.gms:play-services-wearable:18.0.0"
     implementation "org.twitter4j:twitter4j-core:4.0.7"
     implementation "io.github.takke:jp.takke.twitter4j-v2:1.2.0"
 
@@ -167,11 +170,12 @@ dependencies {
     implementation "com.github.sys1yagi.mastodon4j:mastodon4j:1.7.0"
 
     // Compose
-    def compose_version = "1.2.1"
+    def compose_version = "1.3.0"
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation "androidx.activity:activity-compose:1.5.1"
+    implementation "androidx.activity:activity-compose:1.6.1"
+    implementation "androidx.compose.material:material-icons-extended:$compose_version"
 }
 
 // Billing
