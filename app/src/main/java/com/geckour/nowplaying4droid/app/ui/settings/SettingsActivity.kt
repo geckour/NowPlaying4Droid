@@ -6,10 +6,11 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.FrameLayout
@@ -53,6 +54,8 @@ import androidx.compose.material.Card
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Divider
 import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
@@ -63,6 +66,8 @@ import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -99,9 +104,9 @@ import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.geckour.nowplaying4droid.app.App
 import com.geckour.nowplaying4droid.BuildConfig
 import com.geckour.nowplaying4droid.R
+import com.geckour.nowplaying4droid.app.App
 import com.geckour.nowplaying4droid.app.api.BillingApiClient
 import com.geckour.nowplaying4droid.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
@@ -213,9 +218,32 @@ class SettingsActivity : AppCompatActivity() {
             SettingsTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    Content(viewModel.settingsVisible) {
-                        startActivity(LicensesActivity.getIntent(this@SettingsActivity))
-                    }
+                    Content(
+                        viewModel.settingsVisible,
+                        onEasterEggActivate = {
+                            startActivity(LicensesActivity.getIntent(this@SettingsActivity))
+                        },
+                        onOpenPlayer = { playerPackageName ->
+                            packageManager?.let {
+                                if (Build.VERSION.SDK_INT >= 33) {
+                                    it.getLaunchIntentSenderForPackage(playerPackageName)
+                                        .sendIntent(
+                                            this,
+                                            0,
+                                            it.getLaunchIntentForPackage(playerPackageName),
+                                            { _, _, _, _, _ -> },
+                                            Handler(Looper.getMainLooper())
+                                        )
+                                } else {
+                                    runCatching {
+                                        startActivity(
+                                            it.getLaunchIntentForPackage(playerPackageName)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -547,14 +575,19 @@ class SettingsActivity : AppCompatActivity() {
     @Composable
     fun Content(
         settingsVisible: MutableState<Boolean>,
-        onEasterEggActivate: () -> Unit
+        onEasterEggActivate: () -> Unit,
+        onOpenPlayer: (playerPackageName: String) -> Unit
     ) {
         val lazyListState = rememberLazyListState()
 
-        val visibleLastItemIndex by derivedStateOf {
-            lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        val visibleLastItemIndex by remember {
+            derivedStateOf {
+                lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            }
         }
-        val lastItemIndex by derivedStateOf { lazyListState.layoutInfo.totalItemsCount - 1 }
+        val lastItemIndex by remember {
+            derivedStateOf { lazyListState.layoutInfo.totalItemsCount - 1 }
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Column {
@@ -603,7 +636,7 @@ class SettingsActivity : AppCompatActivity() {
 
             SettingsSnackbar(this)
 
-            Dialogs()
+            Dialogs(onOpenPlayer = onOpenPlayer)
         }
     }
 
@@ -624,7 +657,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun Dialogs() {
+    fun Dialogs(onOpenPlayer: (playerPackageName: String) -> Unit) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (viewModel.openChangeArtworkResolveOrderDialog.value) {
                 ChangeArtworkResolveOrderDialog()
@@ -633,7 +666,7 @@ class SettingsActivity : AppCompatActivity() {
                 ChangePatternFormatDialog()
             }
             if (viewModel.openSelectPlayerSpotifyDialog.value) {
-                SelectPlayerSpotifyDialog()
+                SelectPlayerSpotifyDialog(onOpenPlayer = onOpenPlayer)
             }
             if (viewModel.openAuthMastodonDialog.value) {
                 AuthMastodonDialog()
@@ -648,7 +681,7 @@ class SettingsActivity : AppCompatActivity() {
                 SetMastodonPostVisibilityDialog()
             }
             if (viewModel.openSelectPlayerPostMastodonDialog.value) {
-                SelectPlayerPostMastodonDialog()
+                SelectPlayerPostMastodonDialog(onOpenPlayer = onOpenPlayer)
             }
             if (viewModel.openSelectNotificationColorDialog.value) {
                 SelectNotificationColorDialog()
@@ -926,7 +959,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun SelectPlayerSpotifyDialog() {
+    fun SelectPlayerSpotifyDialog(onOpenPlayer: (playerPackageName: String) -> Unit) {
         var packageStates by remember {
             mutableStateOf(sharedPreferences.getPackageStateListSpotify())
         }
@@ -957,16 +990,6 @@ class SettingsActivity : AppCompatActivity() {
                 Column {
                     Text(text = stringResource(id = R.string.dialog_message_player_package_spotify))
                     packageStates.forEachIndexed { index, packageState ->
-                        val appName = packageManager?.let {
-                            withCatching {
-                                it.getApplicationLabel(
-                                    it.getApplicationInfo(
-                                        packageState.packageName,
-                                        PackageManager.GET_META_DATA
-                                    )
-                                )
-                            }
-                        }?.toString() ?: return@forEachIndexed
                         Row(
                             modifier = Modifier
                                 .clickable {
@@ -978,13 +1001,23 @@ class SettingsActivity : AppCompatActivity() {
                                             }
                                         }
                                 }
-                                .padding(vertical = 4.dp, horizontal = 16.dp),
+                                .padding(vertical = 4.dp),
                             verticalAlignment = CenterVertically
                         ) {
+                            IconButton(
+                                onClick = { onOpenPlayer(packageState.packageName) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.OpenInNew,
+                                    contentDescription = stringResource(
+                                        id = R.string.dialog_content_desctiption_open_player
+                                    )
+                                )
+                            }
                             Text(
-                                text = appName,
+                                text = packageState.packageName,
                                 modifier = Modifier
-                                    .padding(end = 4.dp)
+                                    .padding(horizontal = 4.dp)
                                     .fillMaxWidth()
                                     .weight(1f),
                                 color = MaterialTheme.colors.secondary,
@@ -1267,7 +1300,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun SelectPlayerPostMastodonDialog() {
+    fun SelectPlayerPostMastodonDialog(onOpenPlayer: (playerPackageName: String) -> Unit) {
         var packageStates by remember {
             mutableStateOf(sharedPreferences.getPackageStateListPostMastodon())
         }
@@ -1301,16 +1334,6 @@ class SettingsActivity : AppCompatActivity() {
                     )
                     LazyColumn {
                         packageStates.forEachIndexed { index, packageState ->
-                            val appName = packageManager?.let {
-                                withCatching {
-                                    it.getApplicationLabel(
-                                        it.getApplicationInfo(
-                                            packageState.packageName,
-                                            PackageManager.GET_META_DATA
-                                        )
-                                    )
-                                }
-                            }?.toString() ?: return@forEachIndexed
                             item {
                                 Column {
                                     Row(
@@ -1324,11 +1347,21 @@ class SettingsActivity : AppCompatActivity() {
                                                         }
                                                     }
                                             }
-                                            .padding(vertical = 4.dp, horizontal = 16.dp),
+                                            .padding(vertical = 4.dp),
                                         verticalAlignment = CenterVertically
                                     ) {
+                                        IconButton(
+                                            onClick = { onOpenPlayer(packageState.packageName) }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.OpenInNew,
+                                                contentDescription = stringResource(
+                                                    id = R.string.dialog_content_desctiption_open_player
+                                                )
+                                            )
+                                        }
                                         Text(
-                                            text = appName,
+                                            text = packageState.packageName,
                                             modifier = Modifier
                                                 .padding(end = 4.dp)
                                                 .fillMaxWidth()

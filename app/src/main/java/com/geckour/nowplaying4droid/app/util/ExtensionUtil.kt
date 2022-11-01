@@ -113,7 +113,6 @@ enum class FormatPattern(val value: String) {
     ARTIST("AR"),
     ALBUM("AL"),
     COMPOSER("CO"),
-    PLAYER_NAME("PN"),
     SPOTIFY_URL("SU"),
     NEW_LINE("\\n");
 
@@ -155,9 +154,6 @@ fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternMo
                     FormatPattern.COMPOSER.value -> info.coreElement.composer?.getReplacerWithModifier(
                         modifiers, it
                     ) ?: ""
-                    FormatPattern.PLAYER_NAME.value -> info.playerAppName?.getReplacerWithModifier(
-                        modifiers, it
-                    ) ?: ""
                     FormatPattern.SPOTIFY_URL.value -> info.spotifyData?.sharingUrl?.getReplacerWithModifier(
                         modifiers, it
                     ) ?: ""
@@ -193,7 +189,6 @@ private fun String.splitConsideringEscape(): List<String> = this.splitIncludeDel
     FormatPattern.ARTIST.value,
     FormatPattern.ALBUM.value,
     FormatPattern.COMPOSER.value,
-    FormatPattern.PLAYER_NAME.value,
     FormatPattern.SPOTIFY_URL.value,
     "\\\\n"
 ).let { splitList ->
@@ -283,12 +278,6 @@ inline fun <reified T : Any> Json.parseListOrNull(
 ): List<T>? = this.parseOrNull(json, ListSerializer(T::class.serializer()), onError)
 
 fun String.foldBreaks(): String = this.replace(Regex("[\r\n]"), " ")
-
-fun String.getAppName(context: Context): String? = withCatching {
-    context.packageManager.let {
-        it.getApplicationLabel(it.getApplicationInfo(this, 0)).toString()
-    }
-}
 
 fun <T> MutableList<T>.swap(from: Int, to: Int) {
     val tmp = this[to]

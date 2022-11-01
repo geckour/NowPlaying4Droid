@@ -221,7 +221,6 @@ suspend fun updateTrackInfo(
         } else coreElement,
         artworkUri?.toString(),
         playerPackageName,
-        playerPackageName.getAppName(context),
         spotifyData
     )
 
@@ -248,7 +247,6 @@ suspend fun onQuickUpdate(
         coreElement,
         null,
         packageName,
-        packageName.getAppName(context),
         null
     )
 
@@ -356,7 +354,7 @@ private suspend fun TrackInfo.getNotification(context: Context): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             Notification.Builder(
                 context,
-                com.geckour.nowplaying4droid.app.service.NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
             )
         else Notification.Builder(context)
 

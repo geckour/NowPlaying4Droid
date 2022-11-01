@@ -120,7 +120,7 @@
     <string name="dialog_title_artwork_resolve_order">Specify resolving order of artwork</string>
     <string name="dialog_message_artwork_resolve_order">Reorder by D\'n\'D, toggle enabled by switch</string>
     <string name="dialog_title_pattern_format">Specify formatting pattern of a sentence to post</string>
-    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name: CO\nPlayer name: PN\nSpotify URL: SU *Authentication required\nescape sequence: Wrap by \' \'\nline break: \\n</string>
+    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name: CO\nSpotify URL: SU *Authentication required\nescape sequence: Wrap by \' \'\nline break: \\n</string>
     <string name="dialog_title_mastodon_instance">Select Mastodon instance</string>
     <string name="dialog_title_mastodon_delay">Input delay duration</string>
     <string name="dialog_title_mastodon_visibility">Visibility of Mastodon</string>
@@ -161,6 +161,7 @@
     <string name="dialog_list_item_notification_bitmap">Notification Bitmap (provided by notification)</string>
     <string name="dialog_list_item_last_fm">Last.fm (over network service)</string>
     <string name="dialog_list_item_spotify">Spotify (over network service)</string>
+    <string name="dialog_content_desctiption_open_player">Open player app</string>
 
 
     <string name="snackbar_text_success_auth_spotify">Succeeded to authenticate the Spotify account.</string>

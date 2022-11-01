@@ -9,7 +9,6 @@ data class TrackInfo(
     val coreElement: TrackCoreElement,
     val artworkUriString: String?,
     val playerPackageName: String?,
-    val playerAppName: String?,
     val spotifyData: SpotifyResult.Data?
 ) : Serializable {
 
@@ -20,7 +19,6 @@ data class TrackInfo(
                 FormatPattern.ARTIST -> this.coreElement.artist != null
                 FormatPattern.ALBUM -> this.coreElement.album != null
                 FormatPattern.COMPOSER -> this.coreElement.composer != null
-                FormatPattern.PLAYER_NAME -> this.playerAppName != null
                 FormatPattern.SPOTIFY_URL -> this.spotifyData != null
                 else -> true
             }
