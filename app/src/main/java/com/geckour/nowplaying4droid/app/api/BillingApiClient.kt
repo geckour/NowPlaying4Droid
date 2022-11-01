@@ -4,18 +4,24 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClient.ProductType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.SkuDetailsParams
+import com.android.billingclient.api.QueryProductDetailsParams
+import com.android.billingclient.api.QueryProductDetailsParams.Product
+import com.android.billingclient.api.QueryPurchasesParams
+import com.android.billingclient.api.queryProductDetails
 import com.geckour.nowplaying4droid.app.util.withCatching
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class BillingApiClient(
     context: Context,
     private val onError: () -> Unit,
-    private val onDonateCompleted: (result: com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult) -> Unit
-) : PurchasesUpdatedListener {
+    private val onDonateCompleted: (result: BillingResult) -> Unit
+) {
 
     enum class BillingResult {
         SUCCESS,
@@ -24,8 +30,33 @@ class BillingApiClient(
         FAILURE
     }
 
+    private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
+        val result = when (billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                if (purchases?.isEmpty() == false) {
+                    if (purchases.none { it.purchaseState == Purchase.PurchaseState.PURCHASED }) {
+                        BillingResult.SUCCESS
+                    } else BillingResult.DUPLICATED
+                } else BillingResult.FAILURE
+            }
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+                BillingResult.CANCELLED
+            }
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                BillingResult.DUPLICATED
+            }
+            else -> {
+                BillingResult.FAILURE
+            }
+        }
+        onDonateCompleted(result)
+    }
+
     private val client: BillingClient =
-        BillingClient.newBuilder(context).setListener(this).enablePendingPurchases().build()
+        BillingClient.newBuilder(context)
+            .setListener(purchasesUpdatedListener)
+            .enablePendingPurchases()
+            .build()
 
     init {
         client.startConnection(object : BillingClientStateListener {
@@ -37,67 +68,56 @@ class BillingApiClient(
         })
     }
 
-    override fun onPurchasesUpdated(
-        result: com.android.billingclient.api.BillingResult,
-        purchases: MutableList<Purchase>?
-    ) {
-        val billingResult = when (result.responseCode) {
-            BillingClient.BillingResponseCode.OK -> {
-                if (purchases?.isEmpty() == false) {
-                    if (purchases.none { it.purchaseState == Purchase.PurchaseState.PURCHASED }) {
-                        com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult.SUCCESS
-                    } else com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult.DUPLICATED
-                } else com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult.FAILURE
-            }
-            BillingClient.BillingResponseCode.USER_CANCELED -> {
-                com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult.CANCELLED
-            }
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult.DUPLICATED
-            }
-            else -> {
-                com.geckour.nowplaying4droid.app.api.BillingApiClient.BillingResult.FAILURE
-            }
-        }
-        onDonateCompleted(billingResult)
-    }
-
-    fun startBilling(activity: AppCompatActivity, skus: List<String>) {
+    suspend fun startBilling(activity: AppCompatActivity, skus: List<String>) {
         withCatching {
-            val params = SkuDetailsParams.newBuilder()
-                .setType(BillingClient.SkuType.INAPP)
-                .setSkusList(skus)
-                .build()
-            client.querySkuDetailsAsync(params) { result, skuDetailsList ->
-                if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-                    onError()
-                    return@querySkuDetailsAsync
-                }
+            val params = QueryProductDetailsParams.newBuilder()
+                .setProductList(
+                    skus.map {
+                        Product.newBuilder()
+                            .setProductId(it)
+                            .setProductType(ProductType.INAPP)
+                            .build()
+                    }
+                ).build()
+            val (billingResult, productDetailsList) = withContext(Dispatchers.IO) {
+                client.queryProductDetails(params)
+            }
+            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                onError()
+                return
+            }
 
-                skuDetailsList?.firstOrNull()?.let {
-                    val flowParams = BillingFlowParams.newBuilder()
-                        .setSkuDetails(skuDetailsList.first())
+            productDetailsList?.firstOrNull()?.let {
+                val productDetailParamsList = listOf(
+                    BillingFlowParams.ProductDetailsParams.newBuilder()
+                        .setProductDetails(it)
                         .build()
-                    client.launchBillingFlow(activity, flowParams)
-                } ?: run {
-                    onError()
-                }
+                )
+                val billingFlowParams = BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailParamsList)
+                    .build()
+                client.launchBillingFlow(activity, billingFlowParams)
+            } ?: run {
+                onError()
             }
         }
     }
 
     fun requestUpdate() {
         withCatching {
-            client.queryPurchasesAsync(BillingClient.SkuType.INAPP) { result, purchases ->
+            val queryPurchasesParams = QueryPurchasesParams.newBuilder()
+                .setProductType(ProductType.INAPP)
+                .build()
+            client.queryPurchasesAsync(queryPurchasesParams) { result, purchases ->
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                     purchases.forEach {
                         if (it.purchaseState != Purchase.PurchaseState.PURCHASED) return@forEach
                         if (it.isAcknowledged) return@forEach
 
-                        val params = AcknowledgePurchaseParams.newBuilder()
+                        val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                             .setPurchaseToken(it.purchaseToken)
                             .build()
-                        client.acknowledgePurchase(params) {}
+                        client.acknowledgePurchase(acknowledgePurchaseParams) {}
                     }
                 }
             }

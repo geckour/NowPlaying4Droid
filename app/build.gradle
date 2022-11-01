@@ -143,7 +143,7 @@ dependencies {
     kapt "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
     // Billing
-    implementation "com.android.billingclient:billing:5.0.0"
+    implementation "com.android.billingclient:billing-ktx:5.0.0"
 
     // Preference
     implementation "androidx.preference:preference-ktx:1.2.0"
