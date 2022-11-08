@@ -11,8 +11,8 @@ android {
         applicationId "com.geckour.nowplaying4droid"
         targetSdkVersion 33
         minSdkVersion 25
-        versionCode 330100104
-        versionName "1.1.4"
+        versionCode 330100105
+        versionName "1.1.5"
         dataBinding.enabled = true
 
         def filesAuthorityValue = applicationId + ".files"
