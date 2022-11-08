@@ -309,7 +309,7 @@ suspend fun updateWear(
                 (it.height * scale).toInt(),
                 false
             )
-            it.recycle()
+            if (scaled.hashCode() != it.hashCode()) it.recycle()
             scaled
         }
     }
