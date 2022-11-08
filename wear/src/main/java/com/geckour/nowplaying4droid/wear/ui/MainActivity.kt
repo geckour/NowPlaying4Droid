@@ -53,7 +53,6 @@ import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
 
@@ -118,8 +117,6 @@ class MainActivity : ComponentActivity() {
     private val indicatorDrawableTint = mutableStateOf(R.color.colorPrimaryDark)
 
     private lateinit var artworkGestureDetector: GestureDetectorCompat
-
-    private val autoShare = MutableStateFlow(false)
 
     @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -279,7 +276,7 @@ class MainActivity : ComponentActivity() {
         Wearable.getNodeClient(this)
             .connectedNodes
             .addOnSuccessListener { nodes ->
-                nodes?.filter { it.isNearby }
+                (if (nodes?.any { it.isNearby } == true) nodes.filter { it.isNearby } else nodes)
                     ?.forEach {
                         Wearable.getMessageClient(this)
                             .sendMessage(it.id, PATH_POST_TWITTER, null)
@@ -291,7 +288,7 @@ class MainActivity : ComponentActivity() {
         Wearable.getNodeClient(this@MainActivity)
             .connectedNodes
             .addOnSuccessListener { nodes ->
-                nodes?.filter { it.isNearby }
+                (if (nodes?.any { it.isNearby } == true) nodes.filter { it.isNearby } else nodes)
                     ?.forEach {
                         Wearable.getMessageClient(this@MainActivity)
                             .sendMessage(it.id, PATH_SHARE_DELEGATE, null)
