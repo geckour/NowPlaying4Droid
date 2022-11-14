@@ -7,6 +7,9 @@ plugins {
 
 kapt.mapDiagnosticLocations = true
 
+def githubProperties = new Properties()
+githubProperties.load(new FileInputStream(rootProject.file("github.properties")))
+
 android {
     compileSdkVersion 33
 
@@ -82,6 +85,17 @@ android {
         checkReleaseBuilds false
     }
     namespace 'com.geckour.nowplaying4droid'
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/geckour/NowPlayingSubjectBuilder")
+
+            credentials {
+                username = githubProperties['gpr.usr']
+                password = githubProperties['gpr.key']
+            }
+        }
+    }
 }
 
 static def getKey(keyName) {
@@ -143,7 +157,7 @@ dependencies {
     kapt "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
     // Billing
-    implementation "com.android.billingclient:billing-ktx:5.0.0"
+    implementation "com.android.billingclient:billing-ktx:5.1.0"
 
     // Preference
     implementation "androidx.preference:preference-ktx:1.2.0"
@@ -176,6 +190,9 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation "androidx.activity:activity-compose:1.6.1"
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
+
+    // Subject
+    implementation "com.geckour.libraries.android:now-playing-subject-builder:1.0.1"
 }
 
 // Billing

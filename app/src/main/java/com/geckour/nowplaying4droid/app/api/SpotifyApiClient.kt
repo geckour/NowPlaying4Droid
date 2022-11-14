@@ -6,7 +6,7 @@ import com.geckour.nowplaying4droid.BuildConfig
 import com.geckour.nowplaying4droid.app.api.model.SpotifyUser
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyResult
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.util.getSpotifyUserInfo
 import com.geckour.nowplaying4droid.app.util.json
 import com.geckour.nowplaying4droid.app.util.storeSpotifyUserInfoImmediately
@@ -90,7 +90,7 @@ class SpotifyApiClient(context: Context) {
         withCatching { getService(token.apply { Timber.d("np4d spotify token: $this") }).getUser() }
 
     suspend fun getSpotifyData(
-        trackCoreElement: TrackInfo.TrackCoreElement,
+        trackCoreElement: TrackDetail.TrackCoreElement,
         playerPackageName: String,
         isStrictMode: Boolean
     ): SpotifyResult {
@@ -127,7 +127,7 @@ class SpotifyApiClient(context: Context) {
     }
 
     private suspend fun searchSpotify(
-        trackCoreElement: TrackInfo.TrackCoreElement,
+        trackCoreElement: TrackDetail.TrackCoreElement,
         isStrictMode: Boolean
     ): SpotifyResult {
         val query = trackCoreElement.spotifySearchQuery

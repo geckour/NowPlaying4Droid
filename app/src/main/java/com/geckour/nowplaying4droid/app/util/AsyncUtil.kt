@@ -27,9 +27,10 @@ import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.model.Image
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyResult
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.receiver.ShareWidgetProvider
 import com.geckour.nowplaying4droid.app.service.NotificationService
+import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -52,7 +53,7 @@ inline fun <reified T> MastodonRequest<T>.executeCatching(
 
 private suspend fun getArtworkUrlFromLastFmApi(
     client: LastFmApiClient,
-    trackCoreElement: TrackInfo.TrackCoreElement,
+    trackCoreElement: TrackDetail.TrackCoreElement,
     size: Image.Size = Image.Size.MEGA
 ): String? = if (trackCoreElement.album == null && trackCoreElement.artist == null) null
 else client.searchAlbum(
@@ -64,7 +65,7 @@ else client.searchAlbum(
 suspend fun refreshArtworkUriFromLastFmApi(
     context: Context,
     client: LastFmApiClient,
-    trackCoreElement: TrackInfo.TrackCoreElement
+    trackCoreElement: TrackDetail.TrackCoreElement
 ): Uri? {
     val url = getArtworkUrlFromLastFmApi(client, trackCoreElement) ?: return null
 
@@ -110,7 +111,7 @@ suspend fun Context.checkStoragePermissionAsync(
     }
 }
 
-suspend fun updateTrackInfo(
+suspend fun updateTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
@@ -118,9 +119,9 @@ suspend fun updateTrackInfo(
     metadata: MediaMetadata,
     playerPackageName: String,
     notification: Notification?,
-    coreElement: TrackInfo.TrackCoreElement = metadata.getTrackCoreElement(),
+    coreElement: TrackDetail.TrackCoreElement = metadata.getTrackCoreElement(),
     onClearMetadata: () -> Unit = {}
-): TrackInfo? {
+): TrackDetail? {
     val quickUpdateSucceeded = onQuickUpdate(
         context,
         sharedPreferences,
@@ -132,7 +133,7 @@ suspend fun updateTrackInfo(
         return null
     }
 
-    val trackInfo = updateTrackInfo(
+    val trackInfo = updateTrackDetail(
         context,
         sharedPreferences,
         spotifyApiClient,
@@ -145,12 +146,12 @@ suspend fun updateTrackInfo(
         onClearMetadata
     )
 
-    reflectTrackInfo(context, sharedPreferences, trackInfo, withArtwork = true)
+    reflectTrackDetail(context, sharedPreferences, trackInfo, true)
 
     return trackInfo
 }
 
-suspend fun updateTrackInfo(
+suspend fun updateTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
@@ -158,10 +159,10 @@ suspend fun updateTrackInfo(
     metadata: MediaMetadata,
     playerPackageName: String,
     notification: Notification?,
-    coreElement: TrackInfo.TrackCoreElement = metadata.getTrackCoreElement(),
+    coreElement: TrackDetail.TrackCoreElement = metadata.getTrackCoreElement(),
     viaService: Boolean = false,
     onClearMetadata: () -> Unit = {}
-): TrackInfo? {
+): TrackDetail? {
     if (viaService.not() && onQuickUpdate(
             context,
             sharedPreferences,
@@ -215,7 +216,7 @@ suspend fun updateTrackInfo(
         if (needSpotifyDataForPlayer) spotifyData else null
     )
 
-    val trackInfo = TrackInfo(
+    val trackDetail = TrackDetail(
         if (needSpotifyDataForPlayer) {
             coreElement.withSpotifyData(spotifyData)
         } else coreElement,
@@ -224,50 +225,50 @@ suspend fun updateTrackInfo(
         spotifyData
     )
 
-    if (viaService.not()) reflectTrackInfo(
+    if (viaService.not()) reflectTrackDetail(
         context,
         sharedPreferences,
-        trackInfo,
-        withArtwork = true
+        trackDetail,
+        true
     )
 
-    return trackInfo
+    return trackDetail
 }
 
 suspend fun onQuickUpdate(
     context: Context,
     sharedPreferences: SharedPreferences,
-    coreElement: TrackInfo.TrackCoreElement,
+    coreElement: TrackDetail.TrackCoreElement,
     packageName: String,
     viaService: Boolean = false
 ): Boolean {
     sharedPreferences.refreshTempArtwork(null)
 
-    val trackInfo = TrackInfo(
+    val trackDetail = TrackDetail(
         coreElement,
         null,
         packageName,
         null
     )
 
-    if (sharedPreferences.readyForShare(context, trackInfo).not()) {
+    if (sharedPreferences.readyForShare(context, trackDetail).not()) {
         return false
     }
 
-    if (viaService.not()) reflectTrackInfo(
+    if (viaService.not()) reflectTrackDetail(
         context,
         sharedPreferences,
-        trackInfo,
-        withArtwork = false
+        trackDetail,
+        false
     )
 
     return true
 }
 
-suspend fun reflectTrackInfo(
+suspend fun reflectTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
-    info: TrackInfo?,
+    info: TrackDetail?,
     withArtwork: Boolean
 ) {
     updateSharedPreference(sharedPreferences, info)
@@ -285,22 +286,24 @@ suspend fun reflectTrackInfo(
     )
 }
 
-private fun updateSharedPreference(sharedPreferences: SharedPreferences, trackInfo: TrackInfo?) {
-    sharedPreferences.refreshCurrentTrackInfo(trackInfo)
+private fun updateSharedPreference(
+    sharedPreferences: SharedPreferences,
+    trackDetail: TrackDetail?
+) {
+    sharedPreferences.refreshCurrentTrackDetail(trackDetail)
 }
 
-private fun updateWidget(context: Context, trackInfo: TrackInfo?) {
-    context.sendBroadcast(ShareWidgetProvider.getUpdateIntent(context, trackInfo))
+private fun updateWidget(context: Context, trackDetail: TrackDetail?) {
+    context.sendBroadcast(ShareWidgetProvider.getUpdateIntent(context, trackDetail))
 }
 
 suspend fun updateWear(
     context: Context,
     sharedPreferences: SharedPreferences,
-    trackInfo: TrackInfo? = sharedPreferences.getCurrentTrackInfo()
+    trackDetail: TrackDetail? = sharedPreferences.getCurrentTrackDetail()
 ) {
-    val subject = sharedPreferences.getFormatPattern(context)
-        .getSharingText(trackInfo, sharedPreferences.getFormatPatternModifiers())
-    val artwork = trackInfo?.artworkUriString?.let { uriString ->
+    val subject = sharedPreferences.getSharingText(context, trackDetail)
+    val artwork = trackDetail?.artworkUriString?.let { uriString ->
         context.getBitmapFromUriString(uriString)?.let {
             val scale = 400f / max(it.width, it.height)
             val scaled = Bitmap.createScaledBitmap(
@@ -333,13 +336,13 @@ private suspend fun NotificationManager.showNotification(
     context: Context,
     sharedPreferences: SharedPreferences,
     notificationManager: NotificationManager,
-    trackInfo: TrackInfo?
+    trackDetail: TrackDetail?
 ) {
     if (areNotificationsEnabled()
         && sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_RESIDE)
-        && sharedPreferences.readyForShare(context, trackInfo)
+        && sharedPreferences.readyForShare(context, trackDetail)
     ) {
-        trackInfo?.getNotification(context)?.let { notification ->
+        trackDetail?.getNotification(context)?.let { notification ->
             context.checkStoragePermissionAsync {
                 notify(NotificationService.NotificationType.SHARE.id, notification)
             }
@@ -347,7 +350,7 @@ private suspend fun NotificationManager.showNotification(
     } else notificationManager.destroyNotification()
 }
 
-private suspend fun TrackInfo.getNotification(context: Context): Notification {
+private suspend fun TrackDetail.getNotification(context: Context): Notification {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     val notificationBuilder =
@@ -367,11 +370,12 @@ private suspend fun TrackInfo.getNotification(context: Context): Notification {
         val actionClear = Notification.Action.Builder(
             Icon.createWithResource(context, R.drawable.ic_clear),
             context.getString(R.string.action_clear_notification),
-            getClearTrackInfoPendingIntent(context)
+            getClearTrackDetailPendingIntent(context)
         ).build()
-        val notificationText = sharedPreferences.getFormatPattern(context)
-            .getSharingText(this@getNotification, sharedPreferences.getFormatPatternModifiers())
-            ?.foldBreaks()
+        val notificationText = sharedPreferences.getSharingText(
+            context,
+            this@getNotification,
+        )?.foldBreaks()
 
         val thumb = this@getNotification.artworkUriString?.let {
             context.getBitmapFromUriString(it)
@@ -385,7 +389,7 @@ private suspend fun TrackInfo.getNotification(context: Context): Notification {
         setContentText(notificationText)
         setContentIntent(getShareIntent(context))
         setOngoing(true)
-        style = Notification.DecoratedMediaCustomViewStyle()
+        style = Notification.BigPictureStyle()
         addAction(actionOpenSetting)
         addAction(actionClear)
         thumb?.apply {
@@ -409,12 +413,12 @@ private suspend fun MediaMetadata.storeArtworkUri(
     context: Context,
     sharedPreferences: SharedPreferences,
     lastFmApiClient: LastFmApiClient,
-    coreElement: TrackInfo.TrackCoreElement,
+    coreElement: TrackDetail.TrackCoreElement,
     notificationBitmap: Bitmap?,
     spotifyData: SpotifyResult.Data?
 ): Uri? {
     // Check whether arg metadata and current metadata are the same or not
-    val cacheInfo = sharedPreferences.getCurrentTrackInfo()
+    val cacheInfo = sharedPreferences.getCurrentTrackDetail()
     if (coreElement.isAllNonNull && cacheInfo?.artworkUriString != null && coreElement == cacheInfo.coreElement) {
         return sharedPreferences.getTempArtworkUri(context)
     }
@@ -466,10 +470,10 @@ private fun Notification.getArtworkBitmap(context: Context): Bitmap? =
         withCatching { it.copy(it.config, false) }
     }
 
-private fun TrackInfo.TrackCoreElement.withSpotifyData(
+private fun TrackDetail.TrackCoreElement.withSpotifyData(
     data: SpotifyResult.Data?
-): TrackInfo.TrackCoreElement =
-    TrackInfo.TrackCoreElement(
+): TrackDetail.TrackCoreElement =
+    TrackDetail.TrackCoreElement(
         data?.trackName ?: title,
         data?.artistName ?: artist,
         data?.albumName ?: album,
@@ -479,13 +483,13 @@ private fun TrackInfo.TrackCoreElement.withSpotifyData(
 suspend fun postMastodon(
     context: Context,
     sharedPreferences: SharedPreferences,
-    trackInfo: TrackInfo
+    trackDetail: TrackDetail
 ) {
     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
         delay(sharedPreferences.getDelayDurationPostMastodon())
 
         val subject =
-            sharedPreferences.getSharingText(context, trackInfo) ?: return
+            sharedPreferences.getSharingText(context, trackDetail) ?: return
 
         FirebaseAnalytics.getInstance(context.applicationContext)
             .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
@@ -496,7 +500,7 @@ suspend fun postMastodon(
                 PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
             )
         ) {
-            trackInfo.artworkUriString?.let {
+            trackDetail.artworkUriString?.let {
                 return@let withCatching {
                     context.getBitmapFromUriString(it)?.toByteArray()
                 }
@@ -597,13 +601,13 @@ private suspend fun Status.getNotification(context: Context): Notification {
     }.build()
 }
 
-suspend fun forceUpdateTrackInfoIfNeeded(
+suspend fun forceUpdateTrackDetailIfNeeded(
     context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
     lastFmApiClient: LastFmApiClient,
     onError: () -> Unit = {}
-): TrackInfo? {
+): TrackDetail? {
     if (sharedPreferences.readyForShare(context).not()) {
         val isNotificationServiceRunning =
             context.getSystemService(ActivityManager::class.java)
@@ -624,7 +628,7 @@ suspend fun forceUpdateTrackInfoIfNeeded(
                 return null
             }
             sharedPreferences.storePackageStatePostMastodon(mediaController.packageName)
-            val trackInfo = updateTrackInfo(
+            val trackDetail = updateTrackDetail(
                 context,
                 sharedPreferences,
                 spotifyApiClient,
@@ -641,11 +645,11 @@ suspend fun forceUpdateTrackInfoIfNeeded(
                 .firstOrNull { it.packageName == mediaController.packageName }
                 ?.state == true
             if (allowedPostMastodon)
-                postMastodon(context, sharedPreferences, trackInfo)
+                postMastodon(context, sharedPreferences, trackDetail)
 
-            return trackInfo
+            return trackDetail
         }
     }
 
-    return sharedPreferences.getCurrentTrackInfo()
+    return sharedPreferences.getCurrentTrackDetail()
 }

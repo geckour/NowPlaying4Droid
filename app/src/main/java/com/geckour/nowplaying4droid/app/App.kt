@@ -12,7 +12,7 @@ import com.geckour.nowplaying4droid.app.api.di.clientModule
 import com.geckour.nowplaying4droid.app.service.NotificationService
 import com.geckour.nowplaying4droid.app.ui.di.dataModule
 import com.geckour.nowplaying4droid.app.ui.di.settingsViewModelModule
-import com.geckour.nowplaying4droid.app.util.refreshCurrentTrackInfo
+import com.geckour.nowplaying4droid.app.util.refreshCurrentTrackDetail
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.google.firebase.FirebaseApp
 import org.koin.android.ext.koin.androidContext
@@ -46,7 +46,7 @@ class App : Application() {
         }
 
         PreferenceManager.getDefaultSharedPreferences(this).apply {
-            refreshCurrentTrackInfo(null)
+            refreshCurrentTrackDetail(null)
             refreshTempArtwork(null)
         }
     }

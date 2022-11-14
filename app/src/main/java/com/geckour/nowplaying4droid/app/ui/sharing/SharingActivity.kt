@@ -10,8 +10,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
-import com.geckour.nowplaying4droid.app.util.forceUpdateTrackInfoIfNeeded
-import com.geckour.nowplaying4droid.app.util.getCurrentTrackInfo
+import com.geckour.nowplaying4droid.app.util.forceUpdateTrackDetailIfNeeded
+import com.geckour.nowplaying4droid.app.util.getCurrentTrackDetail
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -41,14 +41,14 @@ class SharingActivity : AppCompatActivity(), KoinComponent {
         super.onNewIntent(intent)
 
         lifecycleScope.launch {
-            val trackInfo = sharedPreferences.getCurrentTrackInfo()
-                ?: forceUpdateTrackInfoIfNeeded(
+            val trackDetail = sharedPreferences.getCurrentTrackDetail()
+                ?: forceUpdateTrackDetailIfNeeded(
                     this@SharingActivity,
                     sharedPreferences,
                     spotifyApiClient,
                     lastFmApiClient
                 )
-            viewModel.startShare(this@SharingActivity, sharedPreferences, trackInfo)
+            viewModel.startShare(this@SharingActivity, sharedPreferences, trackDetail)
         }
     }
 

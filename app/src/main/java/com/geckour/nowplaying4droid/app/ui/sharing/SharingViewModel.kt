@@ -9,7 +9,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.lifecycle.ViewModel
 import com.geckour.nowplaying4droid.R
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.getSharingText
 import com.geckour.nowplaying4droid.app.util.getSwitchState
@@ -23,9 +23,9 @@ class SharingViewModel : ViewModel() {
     fun startShare(
         context: Context,
         sharedPreferences: SharedPreferences,
-        trackInfo: TrackInfo?
+        trackDetail: TrackDetail?
     ) {
-        if (sharedPreferences.readyForShare(context, trackInfo).not()) return
+        if (sharedPreferences.readyForShare(context, trackDetail).not()) return
 
         FirebaseAnalytics.getInstance(context.applicationContext)
             .logEvent(
@@ -36,7 +36,7 @@ class SharingViewModel : ViewModel() {
             )
 
         val sharingText: String =
-            sharedPreferences.getSharingText(context, trackInfo) ?: return
+            sharedPreferences.getSharingText(context, trackDetail) ?: return
         val artworkUri =
             if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
                 sharedPreferences.getTempArtworkUri(context)

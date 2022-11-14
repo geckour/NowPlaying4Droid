@@ -11,13 +11,12 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.R
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.foldBreaks
 import com.geckour.nowplaying4droid.app.util.getBitmapFromUriString
-import com.geckour.nowplaying4droid.app.util.getClearTrackInfoPendingIntent
-import com.geckour.nowplaying4droid.app.util.getCurrentTrackInfo
-import com.geckour.nowplaying4droid.app.util.getFormatPattern
+import com.geckour.nowplaying4droid.app.util.getClearTrackDetailPendingIntent
+import com.geckour.nowplaying4droid.app.util.getCurrentTrackDetail
 import com.geckour.nowplaying4droid.app.util.getFormatPatternModifiers
 import com.geckour.nowplaying4droid.app.util.getSettingsIntent
 import com.geckour.nowplaying4droid.app.util.getShareIntent
@@ -37,10 +36,10 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         private const val ACTION_UPDATE_WIDGET = "action_update_widget"
         private const val KEY_TRACK_INFO = "key_track_info"
 
-        fun getUpdateIntent(context: Context, trackInfo: TrackInfo?): Intent =
+        fun getUpdateIntent(context: Context, trackDetail: TrackDetail?): Intent =
             Intent(context, ShareWidgetProvider::class.java)
                 .setAction(ACTION_UPDATE_WIDGET)
-                .putExtra(KEY_TRACK_INFO, trackInfo)
+                .putExtra(KEY_TRACK_INFO, trackDetail)
 
         fun blockCount(widgetOptions: Bundle?): Int {
             if (widgetOptions == null) return 0
@@ -80,11 +79,11 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         if (intent?.action == ACTION_UPDATE_WIDGET) {
             val manager = AppWidgetManager.getInstance(context)
-            val trackInfo = intent.getSerializableExtra(KEY_TRACK_INFO) as TrackInfo?
+            val trackDetail = intent.getSerializableExtra(KEY_TRACK_INFO) as TrackDetail?
             val ids = manager.getAppWidgetIds(
                 ComponentName(context, ShareWidgetProvider::class.java)
             )
-            updateWidget(context, manager, null, *ids, trackInfo = trackInfo)
+            updateWidget(context, manager, null, *ids, trackDetail = trackDetail)
         }
     }
 
@@ -105,14 +104,14 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         appWidgetManager: AppWidgetManager,
         newOptions: Bundle? = null,
         vararg ids: Int,
-        trackInfo: TrackInfo? = PreferenceManager.getDefaultSharedPreferences(context)
-            .getCurrentTrackInfo()
+        trackDetail: TrackDetail? = PreferenceManager.getDefaultSharedPreferences(context)
+            .getCurrentTrackDetail()
     ) = launch {
         if (ids.isEmpty()) return@launch
 
         ids.forEach { id ->
             val widgetOptions = newOptions ?: appWidgetManager.getAppWidgetOptions(id)
-            val widget = getShareWidgetViews(context, blockCount(widgetOptions), trackInfo)
+            val widget = getShareWidgetViews(context, blockCount(widgetOptions), trackDetail)
             withContext(Dispatchers.Main) { appWidgetManager.updateAppWidget(id, widget) }
         }
     }
@@ -120,14 +119,18 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
     private suspend fun getShareWidgetViews(
         context: Context,
         blockCount: Int = 0,
-        trackInfo: TrackInfo? = null
+        trackDetail: TrackDetail? = null
     ): RemoteViews = RemoteViews(context.packageName, R.layout.widget_share).apply {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
-        val info = trackInfo ?: sharedPreferences.getCurrentTrackInfo()
+        val detail = trackDetail ?: sharedPreferences.getCurrentTrackDetail()
         val summary =
-            sharedPreferences.getFormatPattern(context)
-                .getSharingText(info, sharedPreferences.getFormatPatternModifiers())
+            sharedPreferences.getSharingText(context, detail)
+                ?.getSharingText(
+                    detail?.toTrackInfo(),
+                    sharedPreferences.getFormatPatternModifiers(),
+                    sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
+                )
                 ?.foldBreaks()
 
         setTextViewText(
@@ -138,7 +141,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET)
             && blockCount > 1
         ) {
-            val artwork = info?.artworkUriString
+            val artwork = detail?.artworkUriString
                 ?.let { context.getBitmapFromUriString(it, 500) }
             if (summary != null && artwork != null) {
                 setImageViewBitmap(R.id.artwork, artwork)
@@ -165,7 +168,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         val packageName =
             if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_LAUNCH_PLAYER_WITH_WIDGET_ARTWORK))
-                info?.playerPackageName
+                detail?.playerPackageName
             else null
         val launchIntent =
             packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
@@ -190,7 +193,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
 
         setOnClickPendingIntent(
             R.id.widget_button_clear,
-            getClearTrackInfoPendingIntent(context)
+            getClearTrackDetailPendingIntent(context)
         )
     }
 }
