@@ -13,7 +13,7 @@ import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.util.PrefKey
-import com.geckour.nowplaying4droid.app.util.forceUpdateTrackInfoIfNeeded
+import com.geckour.nowplaying4droid.app.util.forceUpdateTrackDetailIfNeeded
 import com.geckour.nowplaying4droid.app.util.getChosePaletteColor
 import com.geckour.nowplaying4droid.app.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4droid.app.util.getFormatPattern
@@ -108,8 +108,8 @@ class SettingsViewModel(
             )
     }
 
-    internal suspend fun updateTrackInfo(context: Context) {
-        forceUpdateTrackInfoIfNeeded(
+    internal suspend fun updateTrackDetail(context: Context) {
+        forceUpdateTrackDetailIfNeeded(
             context,
             sharedPreferences,
             spotifyApiClient,

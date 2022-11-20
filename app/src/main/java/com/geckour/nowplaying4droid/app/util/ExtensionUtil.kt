@@ -27,9 +27,13 @@ import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.BuildConfig
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.domain.model.MediaIdInfo
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.service.NotificationService
 import com.geckour.nowplaying4droid.app.ui.settings.SettingsActivity
+import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
+import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
+import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
+import com.geckour.nowplayingsubjectbuilder.lib.util.splitConsideringEscape
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.sys1yagi.mastodon4j.api.entity.Status
 import kotlinx.serialization.DeserializationStrategy
@@ -106,23 +110,6 @@ enum class Visibility {
     }
 }
 
-enum class FormatPattern(val value: String) {
-    S_QUOTE("'"),
-    S_QUOTE_DOUBLE("''"),
-    TITLE("TI"),
-    ARTIST("AR"),
-    ALBUM("AL"),
-    COMPOSER("CO"),
-    SPOTIFY_URL("SU"),
-    NEW_LINE("\\n");
-
-    companion object {
-        val replaceablePatterns: List<FormatPattern> = values().filter {
-            it !in listOf(S_QUOTE, S_QUOTE_DOUBLE, NEW_LINE)
-        }
-    }
-}
-
 inline fun <reified T> withCatching(
     onError: (Throwable) -> Unit = {},
     block: () -> T
@@ -134,95 +121,15 @@ inline fun <reified T> withCatching(
     onError(it)
 }.getOrNull()
 
-fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>): String? =
-    trackInfo?.let { info ->
-        this.splitConsideringEscape().joinToString("") {
-            return@joinToString Regex("^'(.+)'$").let { regex ->
-                if (it.matches(regex)) it.replace(regex, "$1")
-                else when (it) {
-                    FormatPattern.S_QUOTE.value -> ""
-                    FormatPattern.S_QUOTE_DOUBLE.value -> "'"
-                    FormatPattern.TITLE.value -> info.coreElement.title?.getReplacerWithModifier(
-                        modifiers, it
-                    ) ?: ""
-                    FormatPattern.ARTIST.value -> info.coreElement.artist?.getReplacerWithModifier(
-                        modifiers, it
-                    ) ?: ""
-                    FormatPattern.ALBUM.value -> info.coreElement.album?.getReplacerWithModifier(
-                        modifiers, it
-                    ) ?: ""
-                    FormatPattern.COMPOSER.value -> info.coreElement.composer?.getReplacerWithModifier(
-                        modifiers, it
-                    ) ?: ""
-                    FormatPattern.SPOTIFY_URL.value -> info.spotifyData?.sharingUrl?.getReplacerWithModifier(
-                        modifiers, it
-                    ) ?: ""
-                    FormatPattern.NEW_LINE.value -> "\n"
-                    else -> it
-                }
-            }
-        }
-    }
-
-fun String.getReplacerWithModifier(
-    modifiers: List<FormatPatternModifier>, identifier: String
-): String = "${modifiers.getPrefix(identifier)}$this${modifiers.getSuffix(identifier)}"
-
-fun List<FormatPatternModifier>.getPrefix(value: String): String =
-    this.firstOrNull { m -> m.key.value == value }?.prefix ?: ""
-
-fun List<FormatPatternModifier>.getSuffix(value: String): String =
-    this.firstOrNull { m -> m.key.value == value }?.suffix ?: ""
+fun String.getSharingText(
+    trackInfo: TrackInfo?,
+    modifiers: List<FormatPatternModifier>,
+    requireMatchAllPattern: Boolean
+): String? =
+    trackInfo?.getSharingSubject(this, modifiers, requireMatchAllPattern)
 
 fun String.containsPattern(pattern: FormatPattern): Boolean =
     this.splitConsideringEscape().contains(pattern.value)
-
-val String.containedPatterns: List<FormatPattern>
-    get() = this.splitConsideringEscape().mapNotNull { delimiter ->
-        FormatPattern.values().firstOrNull { it.value == delimiter }
-    }
-
-private fun String.splitConsideringEscape(): List<String> = this.splitIncludeDelimiter(
-    FormatPattern.S_QUOTE_DOUBLE.value,
-    FormatPattern.S_QUOTE.value,
-    FormatPattern.TITLE.value,
-    FormatPattern.ARTIST.value,
-    FormatPattern.ALBUM.value,
-    FormatPattern.COMPOSER.value,
-    FormatPattern.SPOTIFY_URL.value,
-    "\\\\n"
-).let { splitList ->
-    val escapes = splitList.mapIndexed { i, s -> Pair(i, s) }.filter { it.second == "'" }
-        .apply { if (lastIndex < 0) return@let splitList }
-
-    return@let ArrayList<String>().apply {
-        for (i in 0 until escapes.lastIndex step 2) {
-            this.addAll(
-                splitList.subList(
-                    if (i == 0) 0 else escapes[i - 1].first + 1, escapes[i].first
-                )
-            )
-
-            this.add(
-                splitList.subList(
-                    escapes[i].first, escapes[i + 1].first + 1
-                ).joinToString("")
-            )
-        }
-
-        this.addAll(
-            splitList.subList(
-                if (escapes[escapes.lastIndex].first + 1 < splitList.lastIndex) escapes[escapes.lastIndex].first + 1
-                else splitList.lastIndex, splitList.size
-            )
-        )
-    }
-}
-
-fun String.splitIncludeDelimiter(vararg delimiters: String) =
-    delimiters.joinToString("|").let { pattern ->
-        this.split(Regex("(?<=$pattern)|(?=$pattern)"))
-    }
 
 fun Context.checkStoragePermission(
     onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}
@@ -285,7 +192,7 @@ fun <T> MutableList<T>.swap(from: Int, to: Int) {
     this[from] = tmp
 }
 
-fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement): Uri? =
+fun Context.getArtworkUriFromDevice(trackCoreElement: TrackDetail.TrackCoreElement): Uri? =
     getMediaIdInfoFromDevice(trackCoreElement)?.let {
         withCatching {
             val contentUri = ContentUris.withAppendedId(
@@ -305,7 +212,7 @@ fun Context.getArtworkUriFromDevice(trackCoreElement: TrackInfo.TrackCoreElement
     }
 
 private fun Context.getMediaIdInfoFromDevice(
-    trackCoreElement: TrackInfo.TrackCoreElement
+    trackCoreElement: TrackDetail.TrackCoreElement
 ): MediaIdInfo? {
     if (trackCoreElement.isAllNonNull.not()) return null
 
@@ -351,9 +258,13 @@ fun Bitmap.refreshArtworkUri(context: Context): Uri? {
     }
 }
 
-fun Bitmap.toByteArray(): ByteArray = ByteArrayOutputStream().apply {
-    compress(Bitmap.CompressFormat.PNG, 100, this)
-}.toByteArray()
+fun Bitmap.toByteArray(): ByteArray? =
+    if (isRecycled) null
+    else {
+        ByteArrayOutputStream().apply {
+            compress(Bitmap.CompressFormat.PNG, 100, this)
+        }.toByteArray()
+    }
 
 @OptIn(InternalSerializationApi::class)
 fun Serializable.asString(): String =
@@ -377,7 +288,7 @@ inline fun <reified T : Serializable> String.toSerializableObject(): T? =
         }
     }
 
-fun MediaMetadata.getTrackCoreElement(): TrackInfo.TrackCoreElement = this.let {
+fun MediaMetadata.getTrackCoreElement(): TrackDetail.TrackCoreElement = this.let {
     val track: String? =
         if (it.containsKey(MediaMetadata.METADATA_KEY_TITLE)) it.getString(MediaMetadata.METADATA_KEY_TITLE)
         else null
@@ -393,7 +304,7 @@ fun MediaMetadata.getTrackCoreElement(): TrackInfo.TrackCoreElement = this.let {
         if (it.containsKey(MediaMetadata.METADATA_KEY_COMPOSER)) it.getString(MediaMetadata.METADATA_KEY_COMPOSER)
         else null
 
-    TrackInfo.TrackCoreElement(track, artist, album, composer)
+    TrackDetail.TrackCoreElement(track, artist, album, composer)
 }
 
 fun NotificationManager.destroyNotification() {

@@ -463,7 +463,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun onClickFab() = lifecycleScope.launchWhenResumed {
-        viewModel.updateTrackInfo(this@SettingsActivity)
+        viewModel.updateTrackDetail(this@SettingsActivity)
         startActivity(SharingActivity.getIntent(this@SettingsActivity))
     }
 

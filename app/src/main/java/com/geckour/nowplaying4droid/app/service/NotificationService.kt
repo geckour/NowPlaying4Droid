@@ -21,7 +21,7 @@ import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.TwitterApiClient
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.ui.sharing.SharingActivity
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.Visibility
@@ -30,7 +30,7 @@ import com.geckour.nowplaying4droid.app.util.destroyNotification
 import com.geckour.nowplaying4droid.app.util.digMediaController
 import com.geckour.nowplaying4droid.app.util.executeCatching
 import com.geckour.nowplaying4droid.app.util.getBitmapFromUriString
-import com.geckour.nowplaying4droid.app.util.getCurrentTrackInfo
+import com.geckour.nowplaying4droid.app.util.getCurrentTrackDetail
 import com.geckour.nowplaying4droid.app.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4droid.app.util.getMastodonUserInfo
 import com.geckour.nowplaying4droid.app.util.getPackageStateListPostMastodon
@@ -40,14 +40,14 @@ import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
 import com.geckour.nowplaying4droid.app.util.getTwitterAccessToken
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
-import com.geckour.nowplaying4droid.app.util.reflectTrackInfo
+import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.geckour.nowplaying4droid.app.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.showNotification
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4droid.app.util.toByteArray
-import com.geckour.nowplaying4droid.app.util.updateTrackInfo
+import com.geckour.nowplaying4droid.app.util.updateTrackDetail
 import com.geckour.nowplaying4droid.app.util.updateWear
 import com.geckour.nowplaying4droid.app.util.withCatching
 import com.google.android.gms.wearable.MessageEvent
@@ -126,9 +126,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
 
                     ACTION_INVOKE_UPDATE -> {
-                        val trackInfo = sharedPreferences.getCurrentTrackInfo() ?: return@apply
+                        val trackDetail = sharedPreferences.getCurrentTrackDetail() ?: return@apply
                         launch {
-                            updateTrackInfo(
+                            updateTrackDetail(
                                 this@NotificationService,
                                 sharedPreferences,
                                 spotifyApiClient,
@@ -136,8 +136,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                 currentMetadata ?: return@launch,
                                 currentSbn?.packageName ?: return@launch,
                                 currentSbn?.notification,
-                                trackInfo.coreElement,
-                                this@NotificationService::onMetadataCleared
+                                trackDetail.coreElement,
+                                onClearMetadata = this@NotificationService::onMetadataCleared
                             )
                         }
                     }
@@ -316,7 +316,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sharedPreferences.refreshTempArtwork(null)
 
         currentTrackClearJob = launch {
-            reflectTrackInfo(
+            reflectTrackDetail(
                 this@NotificationService,
                 sharedPreferences,
                 null,
@@ -338,7 +338,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             refreshMetadataJob = launch {
                 currentTrackClearJob?.cancelAndJoin()
 
-                val trackInfo = updateTrackInfo(
+                val trackDetail = updateTrackDetail(
                     this@NotificationService,
                     sharedPreferences,
                     spotifyApiClient,
@@ -347,24 +347,24 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     playerPackageName,
                     notification,
                     metadata.getTrackCoreElement(),
-                    this@NotificationService::onMetadataCleared
+                    onClearMetadata = this@NotificationService::onMetadataCleared
                 ) ?: return@launch
                 val allowedPostMastodon = sharedPreferences.getPackageStateListPostMastodon()
                     .firstOrNull { it.packageName == playerPackageName }
                     ?.state == true
                 if (allowedPostMastodon) {
-                    postMastodon(trackInfo)
+                    postMastodon(trackDetail)
                 }
             }
         }
     }
 
-    private suspend fun postMastodon(trackInfo: TrackInfo) {
+    private suspend fun postMastodon(trackDetail: TrackDetail) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
             delay(sharedPreferences.getDelayDurationPostMastodon())
 
             val subject =
-                sharedPreferences.getSharingText(this@NotificationService, trackInfo) ?: return
+                sharedPreferences.getSharingText(this@NotificationService, trackDetail) ?: return
 
             FirebaseAnalytics.getInstance(application)
                 .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
@@ -375,7 +375,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
                 )
             ) {
-                trackInfo.artworkUriString?.let {
+                trackDetail.artworkUriString?.let {
                     return@let withCatching {
                         getBitmapFromUriString(it)?.toByteArray()
                     }
@@ -451,16 +451,16 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 )
             })
 
-        val trackInfo = sharedPreferences.getCurrentTrackInfo()
+        val trackDetail = sharedPreferences.getCurrentTrackDetail()
 
-        val subject = sharedPreferences.getSharingText(this, trackInfo) ?: run {
+        val subject = sharedPreferences.getSharingText(this, trackDetail) ?: run {
             onFailureShareToTwitter(sourceNodeId)
             return
         }
 
-        requireNotNull(trackInfo)
+        requireNotNull(trackDetail)
 
-        val artwork = trackInfo.artworkUriString?.let {
+        val artwork = trackDetail.artworkUriString?.let {
             getBitmapFromUriString(it)
         }
 
@@ -470,7 +470,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             return
         }
 
-        twitterApiClient.post(accessToken, subject, artwork, trackInfo.coreElement.title)
+        twitterApiClient.post(accessToken, subject, artwork, trackDetail.coreElement.title)
 
         Wearable.getMessageClient(this@NotificationService)
             .sendMessage(sourceNodeId, WEAR_PATH_POST_SUCCESS, null)

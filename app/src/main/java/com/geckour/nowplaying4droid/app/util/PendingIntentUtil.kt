@@ -23,7 +23,7 @@ fun getSettingsIntent(context: Context): PendingIntent =
         PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
 
-fun getClearTrackInfoPendingIntent(context: Context): PendingIntent =
+fun getClearTrackDetailPendingIntent(context: Context): PendingIntent =
     PendingIntent.getBroadcast(
         context,
         (3e+13.toLong() + System.currentTimeMillis()).hashCode(),

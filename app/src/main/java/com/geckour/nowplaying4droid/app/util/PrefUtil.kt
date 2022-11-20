@@ -9,7 +9,9 @@ import com.geckour.nowplaying4droid.app.domain.model.ArtworkInfo
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.PackageState
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
-import com.geckour.nowplaying4droid.app.domain.model.TrackInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
+import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
+import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -66,19 +68,12 @@ data class ArtworkResolveMethod(
     }
 }
 
-@Serializable
-data class FormatPatternModifier(
-    val key: FormatPattern,
-    val prefix: String = "",
-    val suffix: String = ""
-)
-
 @OptIn(ExperimentalSerializationApi::class)
-fun SharedPreferences.refreshCurrentTrackInfo(trackInfo: TrackInfo?) {
+fun SharedPreferences.refreshCurrentTrackDetail(trackDetail: TrackDetail?) {
     edit {
         putString(
             PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name,
-            trackInfo?.let { json.encodeToString(it) }
+            trackDetail?.let { json.encodeToString(it) }
         )
     }
 }
@@ -124,7 +119,6 @@ fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
         ?: context.getString(R.string.default_sharing_text_pattern)
 
-@OptIn(ExperimentalSerializationApi::class)
 private fun SharedPreferences.setTempArtworkInfo(artworkUri: Uri?) {
     edit {
         putString(
@@ -157,23 +151,24 @@ fun SharedPreferences.refreshTempArtwork(artworkUri: Uri?) {
 
 fun SharedPreferences.getSharingText(
     context: Context,
-    trackInfo: TrackInfo? = getCurrentTrackInfo()
+    trackDetail: TrackDetail? = getCurrentTrackDetail()
 ): String? =
-    if (readyForShare(context, trackInfo))
+    if (readyForShare(context, trackDetail))
         getFormatPattern(context).getSharingText(
-            requireNotNull(trackInfo),
-            getFormatPatternModifiers()
+            requireNotNull(trackDetail).toTrackInfo(),
+            getFormatPatternModifiers(),
+            getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
         )
     else null
 
-fun SharedPreferences.getCurrentTrackInfo(): TrackInfo? {
+fun SharedPreferences.getCurrentTrackDetail(): TrackDetail? {
     val jsonString =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
             getString(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name, null)
         else null
-    json.parseOrNull<TrackInfo>(jsonString)?.apply { return this }
+    json.parseOrNull<TrackDetail>(jsonString)?.apply { return this }
 
-    refreshCurrentTrackInfo(null)
+    refreshCurrentTrackDetail(null)
     return null
 }
 
@@ -358,7 +353,7 @@ fun SharedPreferences.getDebugSpotifySearchFlag(): Boolean =
 
 fun SharedPreferences.readyForShare(
     context: Context,
-    trackInfo: TrackInfo? = getCurrentTrackInfo()
-): Boolean = trackInfo != null &&
+    trackDetail: TrackDetail? = getCurrentTrackDetail()
+): Boolean = trackDetail != null &&
         (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
-                trackInfo.isSatisfiedSpecifier(getFormatPattern(context)))
+                trackDetail.toTrackInfo().isSatisfiedSpecifier(getFormatPattern(context)))
