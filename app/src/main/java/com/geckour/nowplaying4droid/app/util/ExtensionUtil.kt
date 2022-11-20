@@ -121,7 +121,11 @@ inline fun <reified T> withCatching(
     onError(it)
 }.getOrNull()
 
-fun String.getSharingText(trackInfo: TrackInfo?, modifiers: List<FormatPatternModifier>, requireMatchAllPattern: Boolean): String? =
+fun String.getSharingText(
+    trackInfo: TrackInfo?,
+    modifiers: List<FormatPatternModifier>,
+    requireMatchAllPattern: Boolean
+): String? =
     trackInfo?.getSharingSubject(this, modifiers, requireMatchAllPattern)
 
 fun String.containsPattern(pattern: FormatPattern): Boolean =
@@ -254,9 +258,13 @@ fun Bitmap.refreshArtworkUri(context: Context): Uri? {
     }
 }
 
-fun Bitmap.toByteArray(): ByteArray = ByteArrayOutputStream().apply {
-    compress(Bitmap.CompressFormat.PNG, 100, this)
-}.toByteArray()
+fun Bitmap.toByteArray(): ByteArray? =
+    if (isRecycled) null
+    else {
+        ByteArrayOutputStream().apply {
+            compress(Bitmap.CompressFormat.PNG, 100, this)
+        }.toByteArray()
+    }
 
 @OptIn(InternalSerializationApi::class)
 fun Serializable.asString(): String =

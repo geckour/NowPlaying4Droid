@@ -312,7 +312,7 @@ suspend fun updateWear(
                 (it.height * scale).toInt(),
                 false
             )
-            if (scaled.hashCode() != it.hashCode()) it.recycle()
+            if (scaled.width != it.width && scaled.height != it.height) it.recycle()
             scaled
         }
     }
@@ -321,10 +321,10 @@ suspend fun updateWear(
             PutDataMapRequest.create(NotificationService.WEAR_PATH_POST_SHARING_INFO).apply {
                 dataMap.apply {
                     subject?.let { putString(NotificationService.WEAR_KEY_SUBJECT, it) }
-                    artwork?.let {
+                    artwork?.toByteArray()?.let {
                         putAsset(
                             NotificationService.WEAR_KEY_ARTWORK,
-                            Asset.createFromBytes(artwork.toByteArray())
+                            Asset.createFromBytes(it)
                         )
                     }
                 }
