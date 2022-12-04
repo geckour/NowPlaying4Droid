@@ -37,7 +37,6 @@ data class TrackDetail(
         coreElement.artist,
         coreElement.album,
         coreElement.composer,
-        artworkUriString,
         spotifyData?.sharingUrl
     )
 }
