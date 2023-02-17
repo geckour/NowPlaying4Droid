@@ -20,7 +20,7 @@ import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
-import com.geckour.nowplaying4droid.app.api.TwitterApiClient
+import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.ui.sharing.SharingActivity
 import com.geckour.nowplaying4droid.app.util.PrefKey
@@ -38,11 +38,9 @@ import com.geckour.nowplaying4droid.app.util.getReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.getSharingText
 import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
-import com.geckour.nowplaying4droid.app.util.getTwitterAccessToken
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
-import com.geckour.nowplaying4droid.app.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.showNotification
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
@@ -132,6 +130,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                 this@NotificationService,
                                 sharedPreferences,
                                 spotifyApiClient,
+                                youTubeDataClient,
                                 lastFmApiClient,
                                 currentMetadata ?: return@launch,
                                 currentSbn?.packageName ?: return@launch,
@@ -163,7 +162,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
     private val lastFmApiClient: LastFmApiClient = get()
     private val spotifyApiClient: SpotifyApiClient = get()
-    private val twitterApiClient: TwitterApiClient = get()
+    private val youTubeDataClient: YouTubeDataClient = get()
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
@@ -196,9 +195,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 }
             }
 
-            WEAR_PATH_POST_TWITTER -> {
-                launch { onRequestPostToTwitterFromWear(it.sourceNodeId) }
-            }
+            WEAR_PATH_POST_TWITTER -> Unit
 
             WEAR_PATH_SHARE_DELEGATE -> {
                 onRequestDelegateShareFromWear(it.sourceNodeId)
@@ -342,6 +339,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     this@NotificationService,
                     sharedPreferences,
                     spotifyApiClient,
+                    youTubeDataClient,
                     lastFmApiClient,
                     metadata,
                     playerPackageName,
@@ -441,43 +439,5 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             .sendMessage(
                 sourceNodeId, WEAR_PATH_SHARE_SUCCESS, null
             )
-    }
-
-    private suspend fun onRequestPostToTwitterFromWear(sourceNodeId: String) {
-        FirebaseAnalytics.getInstance(application)
-            .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
-                putString(
-                    FirebaseAnalytics.Param.ITEM_NAME, "Invoked direct share to twitter"
-                )
-            })
-
-        val trackDetail = sharedPreferences.getCurrentTrackDetail()
-
-        val subject = sharedPreferences.getSharingText(this, trackDetail) ?: run {
-            onFailureShareToTwitter(sourceNodeId)
-            return
-        }
-
-        requireNotNull(trackDetail)
-
-        val artwork = trackDetail.artworkUriString?.let {
-            getBitmapFromUriString(it)
-        }
-
-        val accessToken = sharedPreferences.getTwitterAccessToken() ?: run {
-            sharedPreferences.setAlertTwitterAuthFlag(true)
-            onFailureShareToTwitter(sourceNodeId)
-            return
-        }
-
-        twitterApiClient.post(accessToken, subject, artwork, trackDetail.coreElement.title)
-
-        Wearable.getMessageClient(this@NotificationService)
-            .sendMessage(sourceNodeId, WEAR_PATH_POST_SUCCESS, null)
-    }
-
-    private fun onFailureShareToTwitter(sourceNodeId: String) {
-        Wearable.getMessageClient(this@NotificationService)
-            .sendMessage(sourceNodeId, WEAR_PATH_POST_FAILURE, null)
     }
 }

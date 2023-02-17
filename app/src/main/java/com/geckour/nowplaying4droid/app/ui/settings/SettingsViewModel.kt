@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
+import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.forceUpdateTrackDetailIfNeeded
 import com.geckour.nowplaying4droid.app.util.getChosePaletteColor
@@ -20,7 +21,6 @@ import com.geckour.nowplaying4droid.app.util.getFormatPattern
 import com.geckour.nowplaying4droid.app.util.getMastodonUserInfo
 import com.geckour.nowplaying4droid.app.util.getSpotifyUserInfo
 import com.geckour.nowplaying4droid.app.util.getSwitchState
-import com.geckour.nowplaying4droid.app.util.getTwitterAccessToken
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import kotlinx.coroutines.launch
 
@@ -28,6 +28,7 @@ class SettingsViewModel(
     application: Application,
     private val lastFmApiClient: LastFmApiClient,
     private val spotifyApiClient: SpotifyApiClient,
+    private val youTubeDataClient: YouTubeDataClient,
     private val sharedPreferences: SharedPreferences
 ) : AndroidViewModel(application) {
 
@@ -69,17 +70,17 @@ class SettingsViewModel(
             )
         )
     internal val authSpotifySummary =
-        mutableStateOf<String?>(sharedPreferences.getSpotifyUserInfo()?.userName ?: "")
+        mutableStateOf<String?>(sharedPreferences.getSpotifyUserInfo()?.userName.orEmpty())
     internal val authMastodonSummary =
-        mutableStateOf<String?>(sharedPreferences.getMastodonUserInfo()?.let {
-            application.getString(
-                R.string.pref_item_summary_auth_mastodon,
-                it.userName,
-                it.instanceName
-            )
-        } ?: "")
-    internal val authTwitterSummary =
-        mutableStateOf<String?>(sharedPreferences.getTwitterAccessToken()?.screenName ?: "")
+        mutableStateOf<String?>(
+            sharedPreferences.getMastodonUserInfo()?.let {
+                application.getString(
+                    R.string.pref_item_summary_auth_mastodon,
+                    it.userName,
+                    it.instanceName
+                )
+            }.orEmpty()
+        )
 
     internal val openChangeArtworkResolveOrderDialog = mutableStateOf(false)
     internal val openChangePatternFormatDialog = mutableStateOf(false)
@@ -113,6 +114,7 @@ class SettingsViewModel(
             context,
             sharedPreferences,
             spotifyApiClient,
+            youTubeDataClient,
             lastFmApiClient
         ) {
             errorDialogData.value = ErrorDialogData(

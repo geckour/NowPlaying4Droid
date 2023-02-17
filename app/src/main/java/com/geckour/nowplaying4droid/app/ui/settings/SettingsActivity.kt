@@ -110,7 +110,6 @@ import com.geckour.nowplaying4droid.app.App
 import com.geckour.nowplaying4droid.app.api.BillingApiClient
 import com.geckour.nowplaying4droid.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
-import com.geckour.nowplaying4droid.app.api.TwitterApiClient
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4droid.app.service.NotificationService
 import com.geckour.nowplaying4droid.app.ui.compose.CleanBlue
@@ -150,7 +149,6 @@ import com.geckour.nowplaying4droid.app.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4droid.app.util.storeMastodonUserInfo
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4droid.app.util.storePackageStateSpotify
-import com.geckour.nowplaying4droid.app.util.storeTwitterAccessToken
 import com.geckour.nowplaying4droid.app.util.withCatching
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.Gson
@@ -182,8 +180,6 @@ class SettingsActivity : AppCompatActivity() {
     private val sharedPreferences: SharedPreferences = get()
 
     private lateinit var billingApiClient: BillingApiClient
-
-    private val twitterApiClient: TwitterApiClient = get()
 
     private val mastodonScope = Scope(Scope.Name.ALL)
     private var mastodonRegistrationInfo: AppRegistration? = null
@@ -225,17 +221,17 @@ class SettingsActivity : AppCompatActivity() {
                         },
                         onOpenPlayer = { playerPackageName ->
                             packageManager?.let {
-                                if (Build.VERSION.SDK_INT >= 33) {
-                                    it.getLaunchIntentSenderForPackage(playerPackageName)
-                                        .sendIntent(
-                                            this,
-                                            0,
-                                            it.getLaunchIntentForPackage(playerPackageName),
-                                            { _, _, _, _, _ -> },
-                                            Handler(Looper.getMainLooper())
-                                        )
-                                } else {
-                                    runCatching {
+                                withCatching {
+                                    if (Build.VERSION.SDK_INT >= 33) {
+                                        it.getLaunchIntentSenderForPackage(playerPackageName)
+                                            .sendIntent(
+                                                this,
+                                                0,
+                                                it.getLaunchIntentForPackage(playerPackageName),
+                                                { _, _, _, _, _ -> },
+                                                Handler(Looper.getMainLooper())
+                                            )
+                                    } else {
                                         startActivity(
                                             it.getLaunchIntentForPackage(playerPackageName)
                                         )
@@ -248,39 +244,43 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        billingApiClient = BillingApiClient(this, onError = {
-            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                R.string.dialog_title_alert_failure_purchase,
-                R.string.dialog_message_alert_on_start_purchase
-            )
-        }) {
-            lifecycleScope.launchWhenResumed {
-                when (it) {
-                    BillingApiClient.BillingResult.SUCCESS -> {
-                        reflectDonation(viewModel.donated, true)
-                    }
-                    BillingApiClient.BillingResult.DUPLICATED -> {
-                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_already_purchase
-                        )
-                        reflectDonation(viewModel.donated, true)
-                    }
-                    BillingApiClient.BillingResult.CANCELLED -> {
-                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_on_cancel_purchase
-                        )
-                    }
-                    BillingApiClient.BillingResult.FAILURE -> {
-                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                            R.string.dialog_title_alert_failure_purchase,
-                            R.string.dialog_message_alert_failure_purchase
-                        )
+        billingApiClient = BillingApiClient(
+            this,
+            onError = {
+                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                    R.string.dialog_title_alert_failure_purchase,
+                    R.string.dialog_message_alert_on_start_purchase
+                )
+            },
+            onDonateCompleted = {
+                lifecycleScope.launchWhenResumed {
+                    when (it) {
+                        BillingApiClient.BillingResult.SUCCESS -> {
+                            reflectDonation(viewModel.donated, true)
+                        }
+                        BillingApiClient.BillingResult.DUPLICATED -> {
+                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_already_purchase
+                            )
+                            reflectDonation(viewModel.donated, true)
+                        }
+                        BillingApiClient.BillingResult.CANCELLED -> {
+                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_on_cancel_purchase
+                            )
+                        }
+                        BillingApiClient.BillingResult.FAILURE -> {
+                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                R.string.dialog_title_alert_failure_purchase,
+                                R.string.dialog_message_alert_failure_purchase
+                            )
+                        }
                     }
                 }
             }
-        }
+        )
     }
 
     override fun onResume() {
@@ -308,12 +308,6 @@ class SettingsActivity : AppCompatActivity() {
         when {
             uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
                 onAuthSpotifyCallback(intent)
-            }
-            uriString?.startsWith(TwitterApiClient.TWITTER_CALLBACK) == true -> {
-                onAuthTwitterCallback(
-                    intent,
-                    viewModel.authTwitterSummary
-                )
             }
             uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
                 onAuthMastodonCallback(
@@ -423,13 +417,6 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    private fun onAuthTwitterError() {
-        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-            R.string.dialog_title_alert_failure_auth_twitter,
-            R.string.dialog_message_alert_failure_auth_twitter
-        )
-    }
-
     private fun onClickAuthSpotify() {
         sharedPreferences.clearSpotifyUserInfoImmediately()
         CustomTabsIntent.Builder().setShowTitle(true)
@@ -440,26 +427,6 @@ class SettingsActivity : AppCompatActivity() {
             )
             .build()
             .launchUrl(this, Uri.parse(SpotifyApiClient.OAUTH_URL))
-    }
-
-    private fun onClickAuthTwitter() {
-        lifecycleScope.launchWhenResumed {
-            val uri = twitterApiClient.getRequestOAuthUri() ?: run {
-                viewModel.snackbarHostState.value
-                    .showSnackbar(message = getString(R.string.snackbar_text_failure_auth_twitter))
-                return@launchWhenResumed
-            }
-
-            CustomTabsIntent.Builder()
-                .setShowTitle(true)
-                .setDefaultColorSchemeParams(
-                    CustomTabColorSchemeParams.Builder()
-                        .setToolbarColor(getColor(R.color.colorPrimary))
-                        .build()
-                )
-                .build()
-                .launchUrl(this@SettingsActivity, uri)
-        }
     }
 
     private fun onClickFab() = lifecycleScope.launchWhenResumed {
@@ -479,37 +446,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         viewModel.storeSpotifyUserInfo(verifier)
-    }
-
-    private fun onAuthTwitterCallback(
-        intent: Intent,
-        summary: MutableState<String?>
-    ) {
-        sharedPreferences.setAlertTwitterAuthFlag(false)
-
-        val verifier = intent.data?.getQueryParameter("oauth_verifier")
-        if (verifier == null) {
-            lifecycleScope.launchWhenResumed {
-                onAuthTwitterError()
-            }
-            return
-        }
-
-        lifecycleScope.launchWhenResumed {
-            val accessToken = twitterApiClient.getAccessToken(verifier)
-
-            if (accessToken == null) {
-                onAuthTwitterError()
-                return@launchWhenResumed
-            }
-
-            sharedPreferences.storeTwitterAccessToken(accessToken)
-
-            summary.value = accessToken.screenName
-            invokeUpdateWithStoragePermissionsIfNeeded()
-            viewModel.snackbarHostState.value
-                .showSnackbar(getString(R.string.snackbar_text_success_auth_twitter))
-        }
     }
 
     private fun onAuthMastodonCallback(
@@ -1828,21 +1764,6 @@ class SettingsActivity : AppCompatActivity() {
                             R.string.pref_item_desc_switch_show_clear_button_in_widget,
                             PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET
                         )
-                    }
-                }
-                Item(item = item)
-            }
-
-            item { Category(titleRes = R.string.pref_category_wear) }
-            item {
-                val item by remember {
-                    derivedStateOf {
-                        SettingsViewModel.Item(
-                            sharedPreferences,
-                            R.string.pref_item_title_auth_twitter,
-                            R.string.pref_item_desc_auth_twitter,
-                            summary = viewModel.authTwitterSummary
-                        ) { onClickAuthTwitter() }
                     }
                 }
                 Item(item = item)
