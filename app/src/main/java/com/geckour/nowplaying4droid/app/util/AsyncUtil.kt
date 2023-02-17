@@ -25,6 +25,7 @@ import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
+import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.api.model.Image
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyResult
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
@@ -115,6 +116,7 @@ suspend fun updateTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
+    youTubeDataClient: YouTubeDataClient,
     lastFmApiClient: LastFmApiClient,
     metadata: MediaMetadata,
     playerPackageName: String,
@@ -137,6 +139,7 @@ suspend fun updateTrackDetail(
         context,
         sharedPreferences,
         spotifyApiClient,
+        youTubeDataClient,
         lastFmApiClient,
         metadata,
         playerPackageName,
@@ -155,6 +158,7 @@ suspend fun updateTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
+    youTubeDataClient: YouTubeDataClient,
     lastFmApiClient: LastFmApiClient,
     metadata: MediaMetadata,
     playerPackageName: String,
@@ -174,8 +178,8 @@ suspend fun updateTrackDetail(
         return null
     }
 
-    val containsSpotifyPattern = sharedPreferences.getFormatPattern(context)
-        .containsPattern(FormatPattern.SPOTIFY_URL)
+    val formatPattern = sharedPreferences.getFormatPattern(context)
+    val containsSpotifyPattern = formatPattern.containsPattern(FormatPattern.SPOTIFY_URL)
     FirebaseAnalytics.getInstance(context.applicationContext)
         .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
             putString(
@@ -207,6 +211,12 @@ suspend fun updateTrackDetail(
         } else null
     val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
 
+    val containsYTMPattern = formatPattern.containsPattern(FormatPattern.YOUTUBE_MUSIC_URL)
+    val youTubeMusicUrl =
+        if (containsYTMPattern && playerPackageName == "com.google.android.apps.youtube.music") {
+            youTubeDataClient.searchYouTube(coreElement)
+        } else null
+
     val artworkUri = metadata.storeArtworkUri(
         context,
         sharedPreferences,
@@ -222,7 +232,8 @@ suspend fun updateTrackDetail(
         } else coreElement,
         artworkUri?.toString(),
         playerPackageName,
-        spotifyData
+        spotifyData,
+        youTubeMusicUrl
     )
 
     if (viaService.not()) reflectTrackDetail(
@@ -248,6 +259,7 @@ suspend fun onQuickUpdate(
         coreElement,
         null,
         packageName,
+        null,
         null
     )
 
@@ -268,13 +280,13 @@ suspend fun onQuickUpdate(
 suspend fun reflectTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
-    info: TrackDetail?,
+    trackDetail: TrackDetail?,
     withArtwork: Boolean
 ) {
-    updateSharedPreference(sharedPreferences, info)
-    updateWidget(context, info)
+    updateSharedPreference(sharedPreferences, trackDetail)
+    updateWidget(context, trackDetail)
     if (withArtwork) {
-        updateWear(context, sharedPreferences, info)
+        updateWear(context, sharedPreferences, trackDetail)
     }
 
     val notificationManager = context.getSystemService(NotificationManager::class.java)
@@ -282,7 +294,7 @@ suspend fun reflectTrackDetail(
         context,
         sharedPreferences,
         notificationManager,
-        info
+        trackDetail
     )
 }
 
@@ -605,6 +617,7 @@ suspend fun forceUpdateTrackDetailIfNeeded(
     context: Context,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
+    youTubeDataClient: YouTubeDataClient,
     lastFmApiClient: LastFmApiClient,
     onError: () -> Unit = {}
 ): TrackDetail? {
@@ -632,6 +645,7 @@ suspend fun forceUpdateTrackDetailIfNeeded(
                 context,
                 sharedPreferences,
                 spotifyApiClient,
+                youTubeDataClient,
                 lastFmApiClient,
                 metadata,
                 mediaController.packageName,

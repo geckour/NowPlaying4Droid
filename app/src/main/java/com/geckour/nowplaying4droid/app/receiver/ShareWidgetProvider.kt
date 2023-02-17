@@ -124,14 +124,7 @@ class ShareWidgetProvider : AppWidgetProvider(), CoroutineScope {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
         val detail = trackDetail ?: sharedPreferences.getCurrentTrackDetail()
-        val summary =
-            sharedPreferences.getSharingText(context, detail)
-                ?.getSharingText(
-                    detail?.toTrackInfo(),
-                    sharedPreferences.getFormatPatternModifiers(),
-                    sharedPreferences.getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
-                )
-                ?.foldBreaks()
+        val summary = sharedPreferences.getSharingText(context, detail)?.foldBreaks()
 
         setTextViewText(
             R.id.widget_summary_share,

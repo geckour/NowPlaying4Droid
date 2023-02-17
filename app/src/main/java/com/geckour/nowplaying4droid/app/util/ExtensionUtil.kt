@@ -216,13 +216,15 @@ private fun Context.getMediaIdInfoFromDevice(
 ): MediaIdInfo? {
     if (trackCoreElement.isAllNonNull.not()) return null
 
-    return contentResolver.query(
-        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-        arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
-        contentQuerySelection,
-        trackCoreElement.contentQueryArgs,
-        null
-    )?.use { it.getMediaIdInfoFromDevice() }
+    return withCatching {
+        contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
+            contentQuerySelection,
+            trackCoreElement.contentQueryArgs,
+            null
+        )?.use { it.getMediaIdInfoFromDevice() }
+    }
 }
 
 private fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
@@ -274,12 +276,14 @@ fun Serializable.asString(): String =
     }
 
 fun Context.digMediaController(playerPackageName: String? = null): MediaController? =
-    getSystemService(MediaSessionManager::class.java)
-        ?.getActiveSessions(NotificationService.getComponentName(applicationContext))
-        ?.let { sessions ->
-            if (playerPackageName == null) sessions.firstOrNull()
-            else sessions.firstOrNull { it.packageName == playerPackageName }
-        }
+    withCatching {
+        getSystemService(MediaSessionManager::class.java)
+            ?.getActiveSessions(NotificationService.getComponentName(applicationContext))
+            ?.let { sessions ->
+                if (playerPackageName == null) sessions.firstOrNull()
+                else sessions.firstOrNull { it.packageName == playerPackageName }
+            }
+    }
 
 inline fun <reified T : Serializable> String.toSerializableObject(): T? =
     withCatching {

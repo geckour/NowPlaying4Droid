@@ -12,11 +12,9 @@ import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
-import twitter4j.auth.AccessToken
 
 enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_ARTWORK_RESOLVE_ORDER,
@@ -42,7 +40,6 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_TEMP_ARTWORK_INFO,
     PREF_KEY_BILLING_DONATE(false),
     PREF_KEY_SPOTIFY_USER_INFO,
-    PREF_KEY_TWITTER_ACCESS_TOKEN,
     PREF_KEY_MASTODON_USER_INFO,
     PREF_KEY_FLAG_ALERT_AUTH_TWITTER(false),
     PREF_KEY_NODE_ID_RECEIVE_REQUEST_DELEGATE_SHARE,
@@ -68,7 +65,6 @@ data class ArtworkResolveMethod(
     }
 }
 
-@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.refreshCurrentTrackDetail(trackDetail: TrackDetail?) {
     edit {
         putString(
@@ -78,7 +74,6 @@ fun SharedPreferences.refreshCurrentTrackDetail(trackDetail: TrackDetail?) {
     }
 }
 
-@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.setArtworkResolveOrder(order: List<ArtworkResolveMethod>) {
     edit { putString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, json.encodeToString(order)) }
 }
@@ -90,7 +85,7 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
         val origin = ArtworkResolveMethod.ArtworkResolveMethodKey
             .values()
             .toList()
-        stored + (origin - stored.map { it.key }).map { ArtworkResolveMethod(it, true) }
+        stored + (origin - stored.map { it.key }.toSet()).map { ArtworkResolveMethod(it, true) }
     }
 
 fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternModifier>) {
@@ -238,12 +233,11 @@ fun SharedPreferences.getPackageStateListSpotify(): List<PackageState> =
     } else {
         emptyList()
     }).let { states ->
-        if (states.isEmpty()) {
+        states.ifEmpty {
             getPackageStateListPostMastodon().map { it.copy(state = true) }
-        } else states
+        }
     }
 
-@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storePackageStateSpotify(packageName: String, state: Boolean? = null) {
     val toStore = getPackageStateListSpotify().let { stateList ->
         val index = stateList.indexOfFirst { it.packageName == packageName }
@@ -274,7 +268,6 @@ fun SharedPreferences.clearSpotifyUserInfoImmediately() {
     edit(true) { remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name) }
 }
 
-@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storeSpotifyUserInfoImmediately(spotifyUserInfo: SpotifyUserInfo) {
     edit(true) {
         remove(PrefKey.PREF_KEY_SPOTIFY_USER_INFO.name)
@@ -293,20 +286,6 @@ fun SharedPreferences.getSpotifyUserInfo(): SpotifyUserInfo? {
     else null
 }
 
-fun SharedPreferences.storeTwitterAccessToken(accessToken: AccessToken) {
-    edit { putString(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name, accessToken.asString()) }
-}
-
-fun SharedPreferences.getTwitterAccessToken(): AccessToken? {
-    return if (contains(PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name))
-        getString(
-            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.name,
-            PrefKey.PREF_KEY_TWITTER_ACCESS_TOKEN.defaultValue as? String
-        )?.toSerializableObject()
-    else null
-}
-
-@OptIn(ExperimentalSerializationApi::class)
 fun SharedPreferences.storeMastodonUserInfo(userInfo: MastodonUserInfo) {
     edit { putString(PrefKey.PREF_KEY_MASTODON_USER_INFO.name, json.encodeToString(userInfo)) }
 }

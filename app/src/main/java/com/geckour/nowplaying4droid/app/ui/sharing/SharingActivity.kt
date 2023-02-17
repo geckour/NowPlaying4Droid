@@ -10,8 +10,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
+import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.util.forceUpdateTrackDetailIfNeeded
 import com.geckour.nowplaying4droid.app.util.getCurrentTrackDetail
+import com.google.api.services.youtube.YouTube
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -36,6 +38,7 @@ class SharingActivity : AppCompatActivity(), KoinComponent {
     }
     private val spotifyApiClient: SpotifyApiClient by inject()
     private val lastFmApiClient: LastFmApiClient by inject()
+    private val youTubeDataClient: YouTubeDataClient by inject()
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
@@ -46,6 +49,7 @@ class SharingActivity : AppCompatActivity(), KoinComponent {
                     this@SharingActivity,
                     sharedPreferences,
                     spotifyApiClient,
+                    youTubeDataClient,
                     lastFmApiClient
                 )
             viewModel.startShare(this@SharingActivity, sharedPreferences, trackDetail)

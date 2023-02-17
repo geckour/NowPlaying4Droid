@@ -8,7 +8,8 @@ data class TrackDetail(
     val coreElement: TrackCoreElement,
     val artworkUriString: String?,
     val playerPackageName: String?,
-    val spotifyData: SpotifyResult.Data?
+    val spotifyData: SpotifyResult.Data?,
+    val youTubeMusicUrl: String?
 ) : Serializable {
 
     @kotlinx.serialization.Serializable
@@ -22,12 +23,14 @@ data class TrackDetail(
         val isAllNonNull: Boolean
             get() = title != null && artist != null && album != null
 
-        val spotifySearchQuery: String
-            get() = listOfNotNull(
+        val spotifySearchQuery = listOfNotNull(
                 title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
                 artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
                 album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
             ).joinToString("+")
+
+        val youTubeSearchQuery = "$title $artist"
+
 
         private val String.isAscii: Boolean get() = all { it.code in 0x20..0x7E }
     }
@@ -37,8 +40,8 @@ data class TrackDetail(
         coreElement.artist,
         coreElement.album,
         coreElement.composer,
-        artworkUriString,
-        spotifyData?.sharingUrl
+        spotifyData?.sharingUrl,
+        youTubeMusicUrl
     )
 }
 
