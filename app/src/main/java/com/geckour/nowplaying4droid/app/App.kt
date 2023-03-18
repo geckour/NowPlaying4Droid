@@ -57,7 +57,7 @@ class App : Application() {
             NotificationChannel(
                 NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name,
                 getString(R.string.notification_channel_name_share),
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_MIN
             ).apply {
                 this.description = getString(R.string.notification_channel_description_share)
             }
