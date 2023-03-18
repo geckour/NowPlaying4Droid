@@ -1,18 +1,14 @@
 package com.geckour.nowplaying4droid.app.util
 
 import com.sys1yagi.mastodon4j.api.entity.auth.AccessToken
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Serializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializer(AccessToken::class)
 object MastodonAccessTokenSerializer : KSerializer<AccessToken> {
 
     override val descriptor: SerialDescriptor =

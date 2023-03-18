@@ -13,7 +13,6 @@ import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.util.forceUpdateTrackDetailIfNeeded
 import com.geckour.nowplaying4droid.app.util.getCurrentTrackDetail
-import com.google.api.services.youtube.YouTube
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
