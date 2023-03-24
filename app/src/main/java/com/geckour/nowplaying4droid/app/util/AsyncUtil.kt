@@ -219,7 +219,9 @@ suspend fun updateTrackDetail(
 
     val artworkUri = metadata.storeArtworkUri(
         context,
+        playerPackageName,
         sharedPreferences,
+        spotifyApiClient,
         lastFmApiClient,
         coreElement,
         notification?.getArtworkBitmap(context),
@@ -423,7 +425,9 @@ private suspend fun TrackDetail.getNotification(context: Context): Notification 
 
 private suspend fun MediaMetadata.storeArtworkUri(
     context: Context,
+    playerPackageName: String,
     sharedPreferences: SharedPreferences,
+    spotifyApiClient: SpotifyApiClient,
     lastFmApiClient: LastFmApiClient,
     coreElement: TrackDetail.TrackCoreElement,
     notificationBitmap: Bitmap?,
@@ -438,38 +442,47 @@ private suspend fun MediaMetadata.storeArtworkUri(
     sharedPreferences.getArtworkResolveOrder().filter { it.enabled }.forEach { method ->
         when (method.key) {
             ArtworkResolveMethod.ArtworkResolveMethodKey.CONTENT_RESOLVER -> {
-                context.getArtworkUriFromDevice(coreElement)?.apply {
-                    sharedPreferences.refreshTempArtwork(this)
-                    return this
+                context.getArtworkUriFromDevice(coreElement)?.also {
+                    sharedPreferences.refreshTempArtwork(it)
+                    return it
                 }
             }
             ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
                 this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.let { uri ->
                     context.getBitmapFromUriString(uri)
                         ?.refreshArtworkUri(context)
-                        ?.let { return it }
+                        ?.also { return it }
                 }
             }
             ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_BITMAP -> {
                 this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)?.let { bitmap ->
                     bitmap.refreshArtworkUri(context)
-                        ?.let { return it }
+                        ?.also { return it }
                 }
             }
             ArtworkResolveMethod.ArtworkResolveMethodKey.NOTIFICATION_BITMAP -> {
                 notificationBitmap?.refreshArtworkUri(context)
-                    ?.let { return it }
+                    ?.also { return it }
             }
             ArtworkResolveMethod.ArtworkResolveMethodKey.LAST_FM -> {
                 refreshArtworkUriFromLastFmApi(
                     context,
                     lastFmApiClient,
                     coreElement
-                )?.let { return it }
+                )?.also { return it }
             }
             ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
-                refreshArtworkUriFromSpotify(context, spotifyData)
-                    ?.let { return it }
+                val result = spotifyApiClient.getSpotifyData(
+                    coreElement,
+                    playerPackageName,
+                    sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY
+                    )
+                )
+                refreshArtworkUriFromSpotify(
+                    context,
+                    spotifyData ?: (result as? SpotifyResult.Success)?.data
+                )?.also { return it }
             }
         }
     }
