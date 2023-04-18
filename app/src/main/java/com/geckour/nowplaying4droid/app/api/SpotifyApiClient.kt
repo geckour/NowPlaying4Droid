@@ -134,7 +134,7 @@ class SpotifyApiClient(context: Context) {
         currentQueryAndResult?.let {
             if (it.second !is SpotifyResult.Failure && query == it.first) return it.second
         }
-        return (withCatching({ return SpotifyResult.Failure(it) }) {
+        return (withCatching(onError = { return SpotifyResult.Failure(it) }) {
             val token =
                 (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
                     ?: throw IllegalStateException("Init token first.")

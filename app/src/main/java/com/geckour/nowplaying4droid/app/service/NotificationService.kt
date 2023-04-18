@@ -17,6 +17,7 @@ import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.preference.PreferenceManager
+import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
@@ -131,6 +132,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                                 sharedPreferences,
                                 spotifyApiClient,
                                 youTubeDataClient,
+                                appleMusicApiClient,
                                 lastFmApiClient,
                                 currentMetadata ?: return@launch,
                                 currentSbn?.packageName ?: return@launch,
@@ -163,6 +165,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val lastFmApiClient: LastFmApiClient = get()
     private val spotifyApiClient: SpotifyApiClient = get()
     private val youTubeDataClient: YouTubeDataClient = get()
+    private val appleMusicApiClient: AppleMusicApiClient = get()
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
@@ -270,6 +273,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationPosted(sbn)
         sbn ?: return
 
+        if (sbn.packageName == "com.google.android.as") {
+            onPixelNowPlayingChanged(
+                checkNotNull(sbn.notification.extras.getString(Notification.EXTRA_TITLE))
+            )
+        }
         sbnChannel.trySend(sbn)
     }
 
@@ -277,6 +285,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationRemoved(sbn)
         sbn ?: return
 
+
+        if (sbn.packageName == "com.google.android.as") {
+            onPixelNowPlayingChanged(null)
+        }
         if (sbn.packageName == currentSbn?.packageName && sbn.id == currentSbn?.id) onMetadataCleared()
     }
 
@@ -340,6 +352,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     sharedPreferences,
                     spotifyApiClient,
                     youTubeDataClient,
+                    appleMusicApiClient,
                     lastFmApiClient,
                     metadata,
                     playerPackageName,
@@ -354,6 +367,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     postMastodon(trackDetail)
                 }
             }
+        }
+    }
+
+    private fun onPixelNowPlayingChanged(
+        pixelNowPlaying: String?
+    ) {
+        refreshMetadataJob?.cancel()
+        refreshMetadataJob = launch {
+            updateTrackDetail(this@NotificationService, sharedPreferences, pixelNowPlaying)
         }
     }
 

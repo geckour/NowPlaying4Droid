@@ -13,10 +13,11 @@ import androidx.wear.tiles.material.Text
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.wear.domain.model.SharingInfo
 import com.geckour.nowplaying4droid.wear.ui.MainActivity
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.ExperimentalHorologistTilesApi
 import com.google.android.horologist.tiles.render.SingleTileLayoutRenderer
 
-@OptIn(ExperimentalHorologistTilesApi::class)
+@OptIn(ExperimentalHorologistTilesApi::class, ExperimentalHorologistApi::class)
 class NP4DTileRenderer(context: Context) :
     SingleTileLayoutRenderer<SharingInfo, ByteArray?>(context) {
 

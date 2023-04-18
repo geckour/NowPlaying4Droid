@@ -14,19 +14,23 @@ import android.media.MediaMetadata
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.telephony.TelephonyManager
 import android.text.Html
 import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import coil.Coil
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.geckour.nowplaying4droid.R
+import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.api.model.Image
+import com.geckour.nowplaying4droid.app.domain.model.AppleMusicResult
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyResult
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.receiver.ShareWidgetProvider
@@ -82,6 +86,15 @@ suspend fun refreshArtworkUriFromSpotify(
     return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
 }
 
+suspend fun refreshArtworkUriFromAppleMusic(
+    context: Context,
+    appleMusicData: AppleMusicResult.Data?
+): Uri? {
+    val url = appleMusicData?.artworkUrl ?: return null
+
+    return context.getBitmapFromUriString(url)?.refreshArtworkUri(context)
+}
+
 suspend fun Context.getBitmapFromUriString(
     uriString: String,
     maxSize: Int? = null
@@ -117,6 +130,7 @@ suspend fun updateTrackDetail(
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
     youTubeDataClient: YouTubeDataClient,
+    appleMusicApiClient: AppleMusicApiClient,
     lastFmApiClient: LastFmApiClient,
     metadata: MediaMetadata,
     playerPackageName: String,
@@ -135,11 +149,12 @@ suspend fun updateTrackDetail(
         return null
     }
 
-    val trackInfo = updateTrackDetail(
+    val trackDetail = updateTrackDetail(
         context,
         sharedPreferences,
         spotifyApiClient,
         youTubeDataClient,
+        appleMusicApiClient,
         lastFmApiClient,
         metadata,
         playerPackageName,
@@ -149,9 +164,25 @@ suspend fun updateTrackDetail(
         onClearMetadata
     )
 
-    reflectTrackDetail(context, sharedPreferences, trackInfo, true)
+    reflectTrackDetail(context, sharedPreferences, trackDetail, true)
 
-    return trackInfo
+    return trackDetail
+}
+
+suspend fun updateTrackDetail(
+    context: Context,
+    sharedPreferences: SharedPreferences,
+    pixelNowPlaying: String?
+): TrackDetail? {
+
+    val trackDetail = TrackDetail.fromPixelNowPlaying(
+        pixelNowPlaying,
+        sharedPreferences.getCurrentTrackDetail()
+    )
+
+    reflectTrackDetail(context, sharedPreferences, trackDetail, true)
+
+    return trackDetail
 }
 
 suspend fun updateTrackDetail(
@@ -159,6 +190,7 @@ suspend fun updateTrackDetail(
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
     youTubeDataClient: YouTubeDataClient,
+    appleMusicApiClient: AppleMusicApiClient,
     lastFmApiClient: LastFmApiClient,
     metadata: MediaMetadata,
     playerPackageName: String,
@@ -179,6 +211,9 @@ suspend fun updateTrackDetail(
     }
 
     val formatPattern = sharedPreferences.getFormatPattern(context)
+    val artworkResolveOrder = sharedPreferences.getArtworkResolveOrder()
+    val countryCode = context.getSystemService<TelephonyManager>()?.networkCountryIso
+
     val containsSpotifyPattern = formatPattern.containsPattern(FormatPattern.SPOTIFY_URL)
     FirebaseAnalytics.getInstance(context.applicationContext)
         .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
@@ -198,7 +233,7 @@ suspend fun updateTrackDetail(
         useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)
     val spotifyResult =
         if (containsSpotifyPattern
-            || sharedPreferences.getArtworkResolveOrder()
+            || artworkResolveOrder
                 .first { it.key == ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY }
                 .enabled
             || needSpotifyDataForPlayer
@@ -217,25 +252,67 @@ suspend fun updateTrackDetail(
             youTubeDataClient.searchYouTube(coreElement)
         } else null
 
+    val containsAppleMusicPattern = formatPattern.containsPattern(FormatPattern.APPLE_MUSIC_URL)
+    FirebaseAnalytics.getInstance(context.applicationContext)
+        .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
+            putString(
+                FirebaseAnalytics.Param.ITEM_NAME,
+                if (containsAppleMusicPattern) "ON: Apple Music URL trying"
+                else "OFF: Apple Music trying"
+            )
+        })
+    val useAppleMusicData =
+        sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA)
+    val useAppleMusicDataPackageState =
+        sharedPreferences.getPackageStateListAppleMusic()
+            .filter { it.state }
+            .map { it.packageName }
+    val needAppleMusicDataForPlayer =
+        useAppleMusicData && useAppleMusicDataPackageState.contains(playerPackageName)
+    val appleMusicResult =
+        if (containsAppleMusicPattern
+            || artworkResolveOrder
+                .first { it.key == ArtworkResolveMethod.ArtworkResolveMethodKey.APPLE_MUSIC }
+                .enabled
+            || needAppleMusicDataForPlayer
+        ) {
+            countryCode?.let {
+                appleMusicApiClient.searchAppleMusic(
+                    it,
+                    coreElement,
+                    sharedPreferences.getSwitchState(
+                        PrefKey.PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY
+                    )
+                )
+            }
+        } else null
+    val appleMusicData = (appleMusicResult as? AppleMusicResult.Success)?.data
+
     val artworkUri = metadata.storeArtworkUri(
         context,
         playerPackageName,
         sharedPreferences,
         spotifyApiClient,
+        appleMusicApiClient,
         lastFmApiClient,
         coreElement,
+        countryCode,
         notification?.getArtworkBitmap(context),
-        if (needSpotifyDataForPlayer) spotifyData else null
+        if (needSpotifyDataForPlayer) spotifyData else null,
+        if (needAppleMusicDataForPlayer) appleMusicData else null
     )
 
     val trackDetail = TrackDetail(
-        if (needSpotifyDataForPlayer) {
-            coreElement.withSpotifyData(spotifyData)
-        } else coreElement,
+        coreElement.withData(
+            if (needSpotifyDataForPlayer) spotifyData else null,
+            if (needAppleMusicDataForPlayer) appleMusicData else null
+        ),
         artworkUri?.toString(),
         playerPackageName,
         spotifyData,
-        youTubeMusicUrl
+        appleMusicData,
+        youTubeMusicUrl,
+        null
     )
 
     if (viaService.not()) reflectTrackDetail(
@@ -261,6 +338,8 @@ suspend fun onQuickUpdate(
         coreElement,
         null,
         packageName,
+        null,
+        null,
         null,
         null
     )
@@ -423,15 +502,55 @@ private suspend fun TrackDetail.getNotification(context: Context): Notification 
     }.build()
 }
 
+private suspend fun getNotification(context: Context, pixelNowPlaying: String): Notification {
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+    val notificationBuilder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
+        else Notification.Builder(context)
+
+    return notificationBuilder.apply {
+        val actionOpenSetting = Notification.Action.Builder(
+            Icon.createWithResource(context, R.drawable.ic_settings),
+            context.getString(R.string.action_open_pref),
+            getSettingsIntent(context)
+        ).build()
+        val actionClear = Notification.Action.Builder(
+            Icon.createWithResource(context, R.drawable.ic_clear),
+            context.getString(R.string.action_clear_notification),
+            getClearTrackDetailPendingIntent(context)
+        ).build()
+        val notificationText = sharedPreferences.getSharingText(
+            context,
+            pixelNowPlaying,
+        )
+        setSmallIcon(R.drawable.ic_notification)
+        setContentTitle(context.getString(R.string.notification_title))
+        setContentText(notificationText)
+        setContentIntent(getShareIntent(context))
+        setOngoing(true)
+        style = Notification.BigPictureStyle()
+        addAction(actionOpenSetting)
+        addAction(actionClear)
+    }.build()
+}
+
 private suspend fun MediaMetadata.storeArtworkUri(
     context: Context,
     playerPackageName: String,
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
+    appleMusicApiClient: AppleMusicApiClient,
     lastFmApiClient: LastFmApiClient,
     coreElement: TrackDetail.TrackCoreElement,
+    countryCode: String?,
     notificationBitmap: Bitmap?,
-    spotifyData: SpotifyResult.Data?
+    spotifyData: SpotifyResult.Data?,
+    appleMusicData: AppleMusicResult.Data?
 ): Uri? {
     // Check whether arg metadata and current metadata are the same or not
     val cacheInfo = sharedPreferences.getCurrentTrackDetail()
@@ -472,17 +591,26 @@ private suspend fun MediaMetadata.storeArtworkUri(
                 )?.also { return it }
             }
             ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY -> {
-                val result = spotifyApiClient.getSpotifyData(
+                val data = spotifyData ?: (spotifyApiClient.getSpotifyData(
                     coreElement,
                     playerPackageName,
                     sharedPreferences.getSwitchState(
                         PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY
                     )
-                )
-                refreshArtworkUriFromSpotify(
-                    context,
-                    spotifyData ?: (result as? SpotifyResult.Success)?.data
-                )?.also { return it }
+                ) as? SpotifyResult.Success)?.data
+                refreshArtworkUriFromSpotify(context, data)?.also { return it }
+            }
+            ArtworkResolveMethod.ArtworkResolveMethodKey.APPLE_MUSIC -> {
+                val data = appleMusicData ?: countryCode?.let {
+                    (appleMusicApiClient.searchAppleMusic(
+                        countryCode,
+                        coreElement,
+                        sharedPreferences.getSwitchState(
+                            PrefKey.PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY
+                        )
+                    ) as? AppleMusicResult.Success)?.data
+                }
+                refreshArtworkUriFromAppleMusic(context, data)?.also { return it }
             }
         }
     }
@@ -494,16 +622,6 @@ private fun Notification.getArtworkBitmap(context: Context): Bitmap? =
     (getLargeIcon()?.loadDrawable(context) as? BitmapDrawable)?.bitmap?.let {
         withCatching { it.copy(it.config, false) }
     }
-
-private fun TrackDetail.TrackCoreElement.withSpotifyData(
-    data: SpotifyResult.Data?
-): TrackDetail.TrackCoreElement =
-    TrackDetail.TrackCoreElement(
-        data?.trackName ?: title,
-        data?.artistName ?: artist,
-        data?.albumName ?: album,
-        composer
-    )
 
 suspend fun postMastodon(
     context: Context,
@@ -631,6 +749,7 @@ suspend fun forceUpdateTrackDetailIfNeeded(
     sharedPreferences: SharedPreferences,
     spotifyApiClient: SpotifyApiClient,
     youTubeDataClient: YouTubeDataClient,
+    appleMusicApiClient: AppleMusicApiClient,
     lastFmApiClient: LastFmApiClient,
     onError: () -> Unit = {}
 ): TrackDetail? {
@@ -659,6 +778,7 @@ suspend fun forceUpdateTrackDetailIfNeeded(
                 sharedPreferences,
                 spotifyApiClient,
                 youTubeDataClient,
+                appleMusicApiClient,
                 lastFmApiClient,
                 metadata,
                 mediaController.packageName,

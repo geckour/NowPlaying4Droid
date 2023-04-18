@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.geckour.nowplaying4droid.R
+import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
@@ -29,6 +30,7 @@ class SettingsViewModel(
     private val lastFmApiClient: LastFmApiClient,
     private val spotifyApiClient: SpotifyApiClient,
     private val youTubeDataClient: YouTubeDataClient,
+    private val appleMusicApiClient: AppleMusicApiClient,
     private val sharedPreferences: SharedPreferences
 ) : AndroidViewModel(application) {
 
@@ -43,8 +45,8 @@ class SettingsViewModel(
     internal val spotifyDataEnabledState =
         mutableStateOf(sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA))
 
-    internal val spotifySearchStrictlyState =
-        mutableStateOf(sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY))
+    internal val appleMusicDataEnabledState =
+        mutableStateOf(sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA))
 
     internal val errorDialogData = mutableStateOf<ErrorDialogData?>(null)
 
@@ -86,6 +88,7 @@ class SettingsViewModel(
     internal val openChangePatternFormatDialog = mutableStateOf(false)
     internal val openEditPatternModifierDialog = mutableStateOf(false)
     internal val openSelectPlayerSpotifyDialog = mutableStateOf(false)
+    internal val openSelectPlayerAppleMusicDialog = mutableStateOf(false)
     internal val openAuthMastodonDialog = mutableStateOf(false)
     internal val openSetMastodonPostDelayDialog = mutableStateOf(false)
     internal val openSetMastodonPostVisibilityDialog = mutableStateOf(false)
@@ -115,6 +118,7 @@ class SettingsViewModel(
             sharedPreferences,
             spotifyApiClient,
             youTubeDataClient,
+            appleMusicApiClient,
             lastFmApiClient
         ) {
             errorDialogData.value = ErrorDialogData(

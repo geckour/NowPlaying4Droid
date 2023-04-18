@@ -12,6 +12,7 @@ import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
+import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
@@ -27,6 +28,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_DELAY_POST_MASTODON(2000L),
     PREF_KEY_PACKAGE_LIST_AUTO_POST_MASTODON(emptyList<String>()),
     PREF_KEY_PACKAGE_LIST_SPOTIFY(emptyList<String>()),
+    PREF_KEY_PACKAGE_LIST_APPLE_MUSIC(emptyList<String>()),
     PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON(false),
     PREF_KEY_WHETHER_RESIDE(true),
     PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION(true),
@@ -48,6 +50,8 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_USE_SIMPLE_SHARE(false),
     PREF_KEY_WHETHER_USE_SPOTIFY_DATA(false),
     PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY(false),
+    PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA(false),
+    PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY(false),
 }
 
 @Serializable
@@ -59,6 +63,7 @@ data class ArtworkResolveMethod(
         CONTENT_RESOLVER(R.string.dialog_list_item_content_resolver),
         MEDIA_METADATA_URI(R.string.dialog_list_item_media_metadata_uri),
         SPOTIFY(R.string.dialog_list_item_spotify),
+        APPLE_MUSIC(R.string.dialog_list_item_apple_music),
         MEDIA_METADATA_BITMAP(R.string.dialog_list_item_media_metadata_bitmap),
         NOTIFICATION_BITMAP(R.string.dialog_list_item_notification_bitmap),
         LAST_FM(R.string.dialog_list_item_last_fm)
@@ -155,6 +160,29 @@ fun SharedPreferences.getSharingText(
             getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
         )
     else null
+
+fun SharedPreferences.getSharingText(
+    context: Context,
+    pixelNowPlaying: String
+): String? {
+    val trackInfo = TrackInfo(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        pixelNowPlaying
+    )
+    return if (readyForShare(context, trackInfo))
+        getFormatPattern(context).getSharingText(
+            trackInfo,
+            getFormatPatternModifiers(),
+            getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
+        )
+    else null
+}
 
 fun SharedPreferences.getCurrentTrackDetail(): TrackDetail? {
     val jsonString =
@@ -253,6 +281,42 @@ fun SharedPreferences.storePackageStateSpotify(packageName: String, state: Boole
     }
 }
 
+fun SharedPreferences.getPackageStateListAppleMusic(): List<PackageState> =
+    (if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_APPLE_MUSIC.name)) {
+        val appleMusicPackageStates =
+            getString(PrefKey.PREF_KEY_PACKAGE_LIST_APPLE_MUSIC.name, null)
+                ?.let { json.parseListOrNull<PackageState>(it) }
+                ?: emptyList()
+        getPackageStateListPostMastodon().map { mastodonPackageState ->
+            mastodonPackageState.copy(
+                state = appleMusicPackageStates.firstOrNull {
+                    it.packageName == mastodonPackageState.packageName
+                }?.state ?: true
+            )
+        }
+    } else {
+        emptyList()
+    }).let { states ->
+        states.ifEmpty {
+            getPackageStateListPostMastodon().map { it.copy(state = true) }
+        }
+    }
+
+fun SharedPreferences.storePackageStateAppleMusic(packageName: String, state: Boolean? = null) {
+    val toStore = getPackageStateListAppleMusic().let { stateList ->
+        val index = stateList.indexOfFirst { it.packageName == packageName }
+        if (index > -1)
+            stateList.apply { stateList[index].state = state ?: return@apply }
+        else stateList + PackageState(packageName)
+    }
+    edit {
+        putString(
+            PrefKey.PREF_KEY_PACKAGE_LIST_APPLE_MUSIC.name,
+            json.encodeToString(toStore)
+        )
+    }
+}
+
 fun SharedPreferences.storeDelayDurationPostMastodon(duration: Long) {
     edit { putLong(PrefKey.PREF_KEY_DELAY_POST_MASTODON.name, duration) }
 }
@@ -333,6 +397,13 @@ fun SharedPreferences.getDebugSpotifySearchFlag(): Boolean =
 fun SharedPreferences.readyForShare(
     context: Context,
     trackDetail: TrackDetail? = getCurrentTrackDetail()
-): Boolean = trackDetail != null &&
-        (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
-                trackDetail.toTrackInfo().isSatisfiedSpecifier(getFormatPattern(context)))
+): Boolean =
+    readyForShare(context, trackDetail?.toTrackInfo())
+
+fun SharedPreferences.readyForShare(
+    context: Context,
+    trackInfo: TrackInfo?
+): Boolean =
+    trackInfo != null &&
+            (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
+                    (trackInfo.isSatisfiedSpecifier(getFormatPattern(context))))

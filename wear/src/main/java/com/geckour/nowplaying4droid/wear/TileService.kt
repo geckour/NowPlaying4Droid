@@ -10,10 +10,11 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.ExperimentalHorologistTilesApi
 import com.google.android.horologist.tiles.SuspendingTileService
 
-@OptIn(ExperimentalHorologistTilesApi::class)
+@OptIn(ExperimentalHorologistApi::class)
 class NP4DTileService : SuspendingTileService() {
 
     private var sharingInfo = SharingInfo.empty
