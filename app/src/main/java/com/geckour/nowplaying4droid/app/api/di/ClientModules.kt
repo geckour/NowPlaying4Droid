@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4droid.app.api.di
 
+import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
@@ -12,4 +13,5 @@ val clientModule = module {
     single { LastFmApiClient() }
     single { MastodonInstancesApiClient() }
     single { YouTubeDataClient() }
+    single { AppleMusicApiClient() }
 }

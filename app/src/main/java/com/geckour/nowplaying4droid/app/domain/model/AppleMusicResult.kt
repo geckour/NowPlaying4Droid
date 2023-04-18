@@ -2,10 +2,10 @@ package com.geckour.nowplaying4droid.app.domain.model
 
 import kotlinx.serialization.Serializable
 
-sealed class SpotifyResult {
+sealed class AppleMusicResult {
 
-    class Success(val data: Data) : SpotifyResult()
-    class Failure(val cause: Throwable) : SpotifyResult()
+    class Success(val data: Data) : AppleMusicResult()
+    class Failure(val cause: Throwable) : AppleMusicResult()
 
     @Serializable
     data class Data(
@@ -14,5 +14,6 @@ sealed class SpotifyResult {
         val trackName: String,
         val artistName: String,
         val albumName: String,
+        val composerName: String?,
     ) : java.io.Serializable
 }

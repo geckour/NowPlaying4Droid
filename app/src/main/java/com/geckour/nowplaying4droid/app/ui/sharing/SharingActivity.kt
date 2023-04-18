@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
@@ -38,6 +39,7 @@ class SharingActivity : AppCompatActivity(), KoinComponent {
     private val spotifyApiClient: SpotifyApiClient by inject()
     private val lastFmApiClient: LastFmApiClient by inject()
     private val youTubeDataClient: YouTubeDataClient by inject()
+    private val appleMusicApiClient: AppleMusicApiClient by inject()
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
@@ -49,6 +51,7 @@ class SharingActivity : AppCompatActivity(), KoinComponent {
                     sharedPreferences,
                     spotifyApiClient,
                     youTubeDataClient,
+                    appleMusicApiClient,
                     lastFmApiClient
                 )
             viewModel.startShare(this@SharingActivity, sharedPreferences, trackDetail)

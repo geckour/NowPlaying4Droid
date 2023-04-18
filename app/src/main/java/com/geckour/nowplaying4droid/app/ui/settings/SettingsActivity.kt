@@ -138,6 +138,7 @@ import com.geckour.nowplaying4droid.app.util.getDelayDurationPostMastodon
 import com.geckour.nowplaying4droid.app.util.getDonateBillingState
 import com.geckour.nowplaying4droid.app.util.getFormatPattern
 import com.geckour.nowplaying4droid.app.util.getFormatPatternModifiers
+import com.geckour.nowplaying4droid.app.util.getPackageStateListAppleMusic
 import com.geckour.nowplaying4droid.app.util.getPackageStateListPostMastodon
 import com.geckour.nowplaying4droid.app.util.getPackageStateListSpotify
 import com.geckour.nowplaying4droid.app.util.getSwitchState
@@ -147,6 +148,7 @@ import com.geckour.nowplaying4droid.app.util.setArtworkResolveOrder
 import com.geckour.nowplaying4droid.app.util.setFormatPatternModifiers
 import com.geckour.nowplaying4droid.app.util.storeDelayDurationPostMastodon
 import com.geckour.nowplaying4droid.app.util.storeMastodonUserInfo
+import com.geckour.nowplaying4droid.app.util.storePackageStateAppleMusic
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4droid.app.util.storePackageStateSpotify
 import com.geckour.nowplaying4droid.app.util.withCatching
@@ -604,6 +606,9 @@ class SettingsActivity : AppCompatActivity() {
             if (viewModel.openSelectPlayerSpotifyDialog.value) {
                 SelectPlayerSpotifyDialog(onOpenPlayer = onOpenPlayer)
             }
+            if (viewModel.openSelectPlayerAppleMusicDialog.value) {
+                SelectPlayerAppleMusicDialog(onOpenPlayer = onOpenPlayer)
+            }
             if (viewModel.openAuthMastodonDialog.value) {
                 AuthMastodonDialog()
             }
@@ -915,6 +920,94 @@ class SettingsActivity : AppCompatActivity() {
             dismissButton = {
                 TextButton(onClick = {
                     viewModel.openSelectPlayerSpotifyDialog.value = false
+                }) {
+                    Text(text = stringResource(id = R.string.dialog_button_ng))
+                }
+            },
+            title = {
+                Text(text = stringResource(id = R.string.dialog_title_player_package_spotify))
+            },
+            text = {
+                Column {
+                    Text(text = stringResource(id = R.string.dialog_message_player_package_spotify))
+                    packageStates.forEachIndexed { index, packageState ->
+                        Row(
+                            modifier = Modifier
+                                .clickable {
+                                    packageStates = packageStates
+                                        .toMutableList()
+                                        .apply {
+                                            this[index] = this[index].let {
+                                                it.copy(state = it.state.not())
+                                            }
+                                        }
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { onOpenPlayer(packageState.packageName) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.OpenInNew,
+                                    contentDescription = stringResource(
+                                        id = R.string.dialog_content_desctiption_open_player
+                                    )
+                                )
+                            }
+                            Text(
+                                text = packageState.packageName,
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                color = MaterialTheme.colors.secondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Switch(
+                                checked = packageState.state,
+                                onCheckedChange = { checked ->
+                                    packageStates = packageStates.toMutableList().apply {
+                                        this[index] = this[index].copy(state = checked)
+                                    }
+                                }
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(0.75.dp)
+                                .background(MaterialTheme.colors.secondary)
+                        )
+                    }
+                }
+            },
+            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
+        )
+    }
+
+    @Composable
+    fun SelectPlayerAppleMusicDialog(onOpenPlayer: (playerPackageName: String) -> Unit) {
+        var packageStates by remember {
+            mutableStateOf(sharedPreferences.getPackageStateListAppleMusic())
+        }
+        AlertDialog(
+            onDismissRequest = { viewModel.openSelectPlayerAppleMusicDialog.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    packageStates.forEach {
+                        sharedPreferences.storePackageStateAppleMusic(it.packageName, it.state)
+                    }
+                    viewModel.openSelectPlayerAppleMusicDialog.value = false
+                    invokeUpdateWithStoragePermissionsIfNeeded()
+                }) {
+                    Text(text = stringResource(id = R.string.dialog_button_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.openSelectPlayerAppleMusicDialog.value = false
                 }) {
                     Text(text = stringResource(id = R.string.dialog_button_ng))
                 }
@@ -1527,10 +1620,7 @@ class SettingsActivity : AppCompatActivity() {
                             R.string.pref_item_title_search_spotify_strictly,
                             R.string.pref_item_desc_search_spotify_strictly,
                             PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY,
-                            enabled = viewModel.spotifyDataEnabledState,
-                            onSwitchCheckedChanged = {
-                                viewModel.spotifySearchStrictlyState.value = it
-                            }
+                            enabled = viewModel.spotifyDataEnabledState
                         )
                     }
                 }
@@ -1545,6 +1635,49 @@ class SettingsActivity : AppCompatActivity() {
                             R.string.pref_item_desc_player_package_spotify,
                             enabled = viewModel.spotifyDataEnabledState
                         ) { viewModel.openSelectPlayerSpotifyDialog.value = true }
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
+                            R.string.pref_item_title_use_apple_music_data,
+                            R.string.pref_item_desc_use_apple_music_data,
+                            PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA,
+                            onSwitchCheckedChanged = {
+                                viewModel.appleMusicDataEnabledState.value = it
+                            }
+                        )
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
+                            R.string.pref_item_title_search_apple_music_strictly,
+                            R.string.pref_item_desc_search_apple_music_strictly,
+                            PrefKey.PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY,
+                            enabled = viewModel.appleMusicDataEnabledState
+                        )
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
+                            R.string.pref_item_title_player_package_apple_music,
+                            R.string.pref_item_desc_player_package_apple_music,
+                            enabled = viewModel.appleMusicDataEnabledState
+                        ) { viewModel.openSelectPlayerAppleMusicDialog.value = true }
                     }
                 }
                 Item(item = item)

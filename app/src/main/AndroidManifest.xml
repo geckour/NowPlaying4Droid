@@ -124,6 +124,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/paths" />
         </provider>
+
+        <activity android:name="com.apple.android.sdk.authentication.SDKUriHandlerActivity"
+            android:exported="true"
+            tools:node="merge" />
     </application>
 
 </manifest>

@@ -9,6 +9,7 @@ data class TrackDetail(
     val artworkUriString: String?,
     val playerPackageName: String?,
     val spotifyData: SpotifyResult.Data?,
+    val appleMusicData: AppleMusicResult.Data?,
     val youTubeMusicUrl: String?
 ) : Serializable {
 
@@ -24,13 +25,34 @@ data class TrackDetail(
             get() = title != null && artist != null && album != null
 
         val spotifySearchQuery = listOfNotNull(
-                title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
-                artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
-                album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
-            ).joinToString("+")
+            title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
+            artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
+            album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
+        ).joinToString("+")
 
         val youTubeSearchQuery = "$title $artist"
 
+        val appleMusicSearchQuery =
+            "${
+                title?.replace(Regex("\\s"), "+").orEmpty()
+            }+${
+                album?.replace(Regex("\\s"), "+").orEmpty()
+            }+${artist?.replace(Regex("\\s"), "+").orEmpty()}"
+
+        fun isStrict(appleMusicData: AppleMusicResult.Data): Boolean =
+            title == appleMusicData.trackName &&
+                    artist == appleMusicData.artistName &&
+                    album == appleMusicData.albumName
+
+        fun withData(
+            spotifyData: SpotifyResult.Data?,
+            appleMusicData: AppleMusicResult.Data?,
+        ): TrackCoreElement = TrackCoreElement(
+            spotifyData?.trackName ?: appleMusicData?.trackName ?: title,
+            spotifyData?.artistName ?: appleMusicData?.artistName ?: artist,
+            spotifyData?.albumName ?: appleMusicData?.albumName ?: album,
+            appleMusicData?.composerName ?: composer
+        )
 
         private val String.isAscii: Boolean get() = all { it.code in 0x20..0x7E }
     }
@@ -41,7 +63,8 @@ data class TrackDetail(
         coreElement.album,
         coreElement.composer,
         spotifyData?.sharingUrl,
-        youTubeMusicUrl
+        youTubeMusicUrl,
+        appleMusicData?.sharingUrl
     )
 }
 
