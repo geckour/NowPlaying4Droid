@@ -31,32 +31,11 @@ class AppleMusicApiClient {
                 query = trackCoreElement.appleMusicSearchQuery
             )
             searchResult.results.songs.data.firstOrNull()?.let { song ->
-                val artistIds = song.relationships
-                    ?.artists?.data
-                    ?.map { it.id }
-                    .orEmpty()
-                    .ifEmpty {
-                        val data = AppleMusicResult.Data(
-                            sharingUrl = song.attributes.url,
-                            artworkUrl = song.attributes.artwork.resolvedUrl,
-                            trackName = song.attributes.name,
-                            artistName = song.attributes.artistName,
-                            albumName = song.attributes.albumName,
-                            composerName = song.attributes.composerName,
-                        )
-                        return@let if (isStrictMode.not() || trackCoreElement.isStrict(data)) {
-                            AppleMusicResult.Success(data)
-                        } else null
-                    }
-
-                val artistsString = service.getAppleMusicArtists(countryCode, artistIds).data
-                    .joinToString(", ") { it.attributes.name }
-
                 val data = AppleMusicResult.Data(
                     sharingUrl = song.attributes.url,
                     artworkUrl = song.attributes.artwork.resolvedUrl,
                     trackName = song.attributes.name,
-                    artistName = artistsString,
+                    artistName = song.attributes.artistName,
                     albumName = song.attributes.albumName,
                     composerName = song.attributes.composerName,
                 )
