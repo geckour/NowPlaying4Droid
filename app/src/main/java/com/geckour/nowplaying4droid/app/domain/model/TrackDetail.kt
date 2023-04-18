@@ -10,8 +10,31 @@ data class TrackDetail(
     val playerPackageName: String?,
     val spotifyData: SpotifyResult.Data?,
     val appleMusicData: AppleMusicResult.Data?,
-    val youTubeMusicUrl: String?
+    val youTubeMusicUrl: String?,
+    val pixelNowPlaying: String?,
 ) : Serializable {
+
+    companion object {
+
+        fun fromPixelNowPlaying(
+            pixelNowPlaying: String?,
+            currentTrackDetail: TrackDetail?
+        ): TrackDetail? =
+            pixelNowPlaying?.let {
+                (currentTrackDetail ?: TrackDetail(
+                    TrackCoreElement(null, null, null, null),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                )).copy(
+                    playerPackageName = "com.google.android.as",
+                    pixelNowPlaying = it
+                )
+            } ?: currentTrackDetail?.copy(pixelNowPlaying = null)
+    }
 
     @kotlinx.serialization.Serializable
     data class TrackCoreElement(
@@ -64,7 +87,8 @@ data class TrackDetail(
         coreElement.composer,
         spotifyData?.sharingUrl,
         youTubeMusicUrl,
-        appleMusicData?.sharingUrl
+        appleMusicData?.sharingUrl,
+        pixelNowPlaying
     )
 }
 

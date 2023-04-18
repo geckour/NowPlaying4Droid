@@ -12,6 +12,7 @@ import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
+import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
@@ -160,6 +161,29 @@ fun SharedPreferences.getSharingText(
         )
     else null
 
+fun SharedPreferences.getSharingText(
+    context: Context,
+    pixelNowPlaying: String
+): String? {
+    val trackInfo = TrackInfo(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        pixelNowPlaying
+    )
+    return if (readyForShare(context, trackInfo))
+        getFormatPattern(context).getSharingText(
+            trackInfo,
+            getFormatPatternModifiers(),
+            getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
+        )
+    else null
+}
+
 fun SharedPreferences.getCurrentTrackDetail(): TrackDetail? {
     val jsonString =
         if (contains(PrefKey.PREF_KEY_CURRENT_TRACK_INFO.name))
@@ -259,9 +283,10 @@ fun SharedPreferences.storePackageStateSpotify(packageName: String, state: Boole
 
 fun SharedPreferences.getPackageStateListAppleMusic(): List<PackageState> =
     (if (contains(PrefKey.PREF_KEY_PACKAGE_LIST_APPLE_MUSIC.name)) {
-        val appleMusicPackageStates = getString(PrefKey.PREF_KEY_PACKAGE_LIST_APPLE_MUSIC.name, null)
-            ?.let { json.parseListOrNull<PackageState>(it) }
-            ?: emptyList()
+        val appleMusicPackageStates =
+            getString(PrefKey.PREF_KEY_PACKAGE_LIST_APPLE_MUSIC.name, null)
+                ?.let { json.parseListOrNull<PackageState>(it) }
+                ?: emptyList()
         getPackageStateListPostMastodon().map { mastodonPackageState ->
             mastodonPackageState.copy(
                 state = appleMusicPackageStates.firstOrNull {
@@ -372,6 +397,13 @@ fun SharedPreferences.getDebugSpotifySearchFlag(): Boolean =
 fun SharedPreferences.readyForShare(
     context: Context,
     trackDetail: TrackDetail? = getCurrentTrackDetail()
-): Boolean = trackDetail != null &&
-        (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
-                trackDetail.toTrackInfo().isSatisfiedSpecifier(getFormatPattern(context)))
+): Boolean =
+    readyForShare(context, trackDetail?.toTrackInfo())
+
+fun SharedPreferences.readyForShare(
+    context: Context,
+    trackInfo: TrackInfo?
+): Boolean =
+    trackInfo != null &&
+            (getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE).not() ||
+                    (trackInfo.isSatisfiedSpecifier(getFormatPattern(context))))

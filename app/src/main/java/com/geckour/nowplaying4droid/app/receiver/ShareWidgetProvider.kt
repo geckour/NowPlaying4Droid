@@ -17,7 +17,6 @@ import com.geckour.nowplaying4droid.app.util.foldBreaks
 import com.geckour.nowplaying4droid.app.util.getBitmapFromUriString
 import com.geckour.nowplaying4droid.app.util.getClearTrackDetailPendingIntent
 import com.geckour.nowplaying4droid.app.util.getCurrentTrackDetail
-import com.geckour.nowplaying4droid.app.util.getFormatPatternModifiers
 import com.geckour.nowplaying4droid.app.util.getSettingsIntent
 import com.geckour.nowplaying4droid.app.util.getShareIntent
 import com.geckour.nowplaying4droid.app.util.getSharingText

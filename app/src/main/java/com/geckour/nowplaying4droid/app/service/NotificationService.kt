@@ -273,6 +273,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationPosted(sbn)
         sbn ?: return
 
+        if (sbn.packageName == "com.google.android.as") {
+            onPixelNowPlayingChanged(
+                checkNotNull(sbn.notification.extras.getString(Notification.EXTRA_TITLE))
+            )
+        }
         sbnChannel.trySend(sbn)
     }
 
@@ -280,6 +285,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         super.onNotificationRemoved(sbn)
         sbn ?: return
 
+
+        if (sbn.packageName == "com.google.android.as") {
+            onPixelNowPlayingChanged(null)
+        }
         if (sbn.packageName == currentSbn?.packageName && sbn.id == currentSbn?.id) onMetadataCleared()
     }
 
@@ -358,6 +367,15 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     postMastodon(trackDetail)
                 }
             }
+        }
+    }
+
+    private fun onPixelNowPlayingChanged(
+        pixelNowPlaying: String?
+    ) {
+        refreshMetadataJob?.cancel()
+        refreshMetadataJob = launch {
+            updateTrackDetail(this@NotificationService, sharedPreferences, pixelNowPlaying)
         }
     }
 

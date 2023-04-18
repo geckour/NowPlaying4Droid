@@ -149,7 +149,7 @@ suspend fun updateTrackDetail(
         return null
     }
 
-    val trackInfo = updateTrackDetail(
+    val trackDetail = updateTrackDetail(
         context,
         sharedPreferences,
         spotifyApiClient,
@@ -164,9 +164,25 @@ suspend fun updateTrackDetail(
         onClearMetadata
     )
 
-    reflectTrackDetail(context, sharedPreferences, trackInfo, true)
+    reflectTrackDetail(context, sharedPreferences, trackDetail, true)
 
-    return trackInfo
+    return trackDetail
+}
+
+suspend fun updateTrackDetail(
+    context: Context,
+    sharedPreferences: SharedPreferences,
+    pixelNowPlaying: String?
+): TrackDetail? {
+
+    val trackDetail = TrackDetail.fromPixelNowPlaying(
+        pixelNowPlaying,
+        sharedPreferences.getCurrentTrackDetail()
+    )
+
+    reflectTrackDetail(context, sharedPreferences, trackDetail, true)
+
+    return trackDetail
 }
 
 suspend fun updateTrackDetail(
@@ -295,7 +311,8 @@ suspend fun updateTrackDetail(
         playerPackageName,
         spotifyData,
         appleMusicData,
-        youTubeMusicUrl
+        youTubeMusicUrl,
+        null
     )
 
     if (viaService.not()) reflectTrackDetail(
@@ -321,6 +338,7 @@ suspend fun onQuickUpdate(
         coreElement,
         null,
         packageName,
+        null,
         null,
         null,
         null
@@ -481,6 +499,43 @@ private suspend fun TrackDetail.getNotification(context: Context): Notification 
                 setColor(color)
             }
         }
+    }.build()
+}
+
+private suspend fun getNotification(context: Context, pixelNowPlaying: String): Notification {
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+    val notificationBuilder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            Notification.Builder(
+                context,
+                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
+            )
+        else Notification.Builder(context)
+
+    return notificationBuilder.apply {
+        val actionOpenSetting = Notification.Action.Builder(
+            Icon.createWithResource(context, R.drawable.ic_settings),
+            context.getString(R.string.action_open_pref),
+            getSettingsIntent(context)
+        ).build()
+        val actionClear = Notification.Action.Builder(
+            Icon.createWithResource(context, R.drawable.ic_clear),
+            context.getString(R.string.action_clear_notification),
+            getClearTrackDetailPendingIntent(context)
+        ).build()
+        val notificationText = sharedPreferences.getSharingText(
+            context,
+            pixelNowPlaying,
+        )
+        setSmallIcon(R.drawable.ic_notification)
+        setContentTitle(context.getString(R.string.notification_title))
+        setContentText(notificationText)
+        setContentIntent(getShareIntent(context))
+        setOngoing(true)
+        style = Notification.BigPictureStyle()
+        addAction(actionOpenSetting)
+        addAction(actionClear)
     }.build()
 }
 

@@ -8,7 +8,6 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
-import timber.log.Timber
 import java.util.*
 
 class AppleMusicApiClient {
@@ -32,7 +31,6 @@ class AppleMusicApiClient {
                 query = trackCoreElement.appleMusicSearchQuery
             )
             searchResult.results.songs.data.firstOrNull()?.let { song ->
-                Timber.d("np4d Apple Music song: $song")
                 val artistIds = song.relationships
                     ?.artists?.data
                     ?.map { it.id }
