@@ -214,14 +214,14 @@ fun Context.getArtworkUriFromDevice(trackCoreElement: TrackDetail.TrackCoreEleme
 private fun Context.getMediaIdInfoFromDevice(
     trackCoreElement: TrackDetail.TrackCoreElement
 ): MediaIdInfo? {
-    if (trackCoreElement.isAllNonNull.not()) return null
+    val args = trackCoreElement.contentQueryArgs ?: return null
 
     return withCatching {
         contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
             arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID),
             contentQuerySelection,
-            trackCoreElement.contentQueryArgs,
+            args,
             null
         )?.use { it.getMediaIdInfoFromDevice() }
     }
@@ -312,9 +312,7 @@ fun MediaMetadata.getTrackCoreElement(): TrackDetail.TrackCoreElement = this.let
 }
 
 fun NotificationManager.destroyNotification() {
-    this.cancel(NotificationService.NotificationType.SHARE.id)
-    this.cancel(NotificationService.NotificationType.NOTIFY_SUCCESS_MASTODON.id)
-    this.cancel(NotificationService.NotificationType.DEBUG_SPOTIFY_SEARCH_RESULT.id)
+    cancelAll()
 }
 
 private suspend fun Status.getNotification(context: Context): Notification {

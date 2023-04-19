@@ -17,8 +17,8 @@ android {
         applicationId "com.geckour.nowplaying4droid"
         targetSdkVersion 33
         minSdkVersion 24
-        versionCode 137
-        versionName "3.3.0"
+        versionCode 138
+        versionName "3.3.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -196,7 +196,7 @@ dependencies {
     implementation "androidx.activity:activity-compose:1.7.0"
 
     // Subject
-    implementation "com.geckour.libraries.android:now-playing-subject-builder:1.3.0"
+    implementation "com.geckour.libraries.android:now-playing-subject-builder:1.3.1"
 
     // JWT
     implementation "com.auth0:java-jwt:4.4.0"

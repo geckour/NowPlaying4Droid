@@ -1,6 +1,7 @@
 package com.geckour.nowplaying4droid.app.domain.model
 
 import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
+import timber.log.Timber
 import java.io.Serializable
 
 @kotlinx.serialization.Serializable
@@ -16,24 +17,35 @@ data class TrackDetail(
 
     companion object {
 
+        val empty = TrackDetail(
+            TrackCoreElement(null, null, null, null),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+
         fun fromPixelNowPlaying(
             pixelNowPlaying: String?,
             currentTrackDetail: TrackDetail?
         ): TrackDetail? =
             pixelNowPlaying?.let {
-                (currentTrackDetail ?: TrackDetail(
-                    TrackCoreElement(null, null, null, null),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                )).copy(
+                (currentTrackDetail ?: empty).copy(
                     playerPackageName = "com.google.android.as",
                     pixelNowPlaying = it
                 )
-            } ?: currentTrackDetail?.copy(pixelNowPlaying = null)
+            } ?: run {
+                val result = currentTrackDetail?.copy(
+                    playerPackageName =
+                    if (currentTrackDetail.playerPackageName == "com.google.android.as") null
+                    else currentTrackDetail.playerPackageName,
+                    pixelNowPlaying = null
+                )
+                Timber.d("np4d result: $result")
+                return@run if (result == empty) null else result
+            }
     }
 
     @kotlinx.serialization.Serializable
@@ -44,8 +56,12 @@ data class TrackDetail(
         val composer: String?
     ) : Serializable {
 
-        val isAllNonNull: Boolean
-            get() = title != null && artist != null && album != null
+        val isAllNull: Boolean =
+            title == null && artist == null && album == null && composer == null
+
+        val contentQueryArgs: Array<String>? =
+            if (title != null && artist != null && album != null) arrayOf(title, artist, album)
+            else null
 
         val spotifySearchQuery = listOfNotNull(
             title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },

@@ -173,7 +173,12 @@ suspend fun updateTrackDetail(
     context: Context,
     sharedPreferences: SharedPreferences,
     pixelNowPlaying: String?
-): TrackDetail? {
+) {
+
+    val notContainingPN = sharedPreferences.getFormatPattern(context)
+        .containsPattern(FormatPattern.PIXEL_NOW_PLAYING)
+        .not()
+    if (pixelNowPlaying != null && notContainingPN) return
 
     val trackDetail = TrackDetail.fromPixelNowPlaying(
         pixelNowPlaying,
@@ -182,7 +187,7 @@ suspend fun updateTrackDetail(
 
     reflectTrackDetail(context, sharedPreferences, trackDetail, true)
 
-    return trackDetail
+    return
 }
 
 suspend fun updateTrackDetail(
@@ -554,7 +559,7 @@ private suspend fun MediaMetadata.storeArtworkUri(
 ): Uri? {
     // Check whether arg metadata and current metadata are the same or not
     val cacheInfo = sharedPreferences.getCurrentTrackDetail()
-    if (coreElement.isAllNonNull && cacheInfo?.artworkUriString != null && coreElement == cacheInfo.coreElement) {
+    if (coreElement.isAllNull.not() && cacheInfo?.artworkUriString != null && coreElement == cacheInfo.coreElement) {
         return sharedPreferences.getTempArtworkUri(context)
     }
 

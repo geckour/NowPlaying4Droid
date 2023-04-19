@@ -320,10 +320,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         currentMetadata = null
 
         refreshMetadataJob?.cancel()
-        currentTrackClearJob?.cancel()
 
         sharedPreferences.refreshTempArtwork(null)
 
+        currentTrackClearJob?.cancel()
         currentTrackClearJob = launch {
             reflectTrackDetail(
                 this@NotificationService,
