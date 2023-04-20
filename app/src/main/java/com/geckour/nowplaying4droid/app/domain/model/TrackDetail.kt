@@ -71,12 +71,11 @@ data class TrackDetail(
 
         val youTubeSearchQuery = "$title $artist"
 
-        val appleMusicSearchQuery =
-            "${
-                title?.replace(Regex("\\s"), "+").orEmpty()
-            }+${
-                album?.replace(Regex("\\s"), "+").orEmpty()
-            }+${artist?.replace(Regex("\\s"), "+").orEmpty()}"
+        val appleMusicSearchQuery = listOfNotNull(
+            title?.trim()?.replace(Regex("\\s+"), "+"),
+            album?.trim()?.replace(Regex("\\s+"), "+"),
+            artist?.trim()?.replace(Regex("\\s+"), "+")
+        ).joinToString("+")
 
         fun isStrict(appleMusicData: AppleMusicResult.Data): Boolean =
             title == appleMusicData.trackName &&

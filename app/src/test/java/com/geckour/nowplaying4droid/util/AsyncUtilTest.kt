@@ -3,13 +3,10 @@ package com.geckour.nowplaying4droid.util
 import androidx.preference.PreferenceManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.crashlytics.android.Crashlytics
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.withCatching
-import io.fabric.sdk.android.Fabric
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -19,11 +16,6 @@ class AsyncUtilTest {
     private val sampleValidUrl =
         "https://www.gravatar.com/avatar/0ad8003a07b699905aec7bb9097a2101?size=600"
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-    @Before
-    fun setUp() {
-        Fabric.with(context, Crashlytics())
-    }
 
     @Test
     fun asyncOrNull_thrownError_returnNull() {
