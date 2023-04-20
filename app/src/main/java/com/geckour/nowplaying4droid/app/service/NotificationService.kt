@@ -274,9 +274,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         sbn ?: return
 
         if (sbn.packageName == "com.google.android.as") {
-            onPixelNowPlayingChanged(
-                checkNotNull(sbn.notification.extras.getString(Notification.EXTRA_TITLE))
-            )
+            sbn.notification.extras
+                ?.getString(Notification.EXTRA_TITLE)
+                ?.let { onPixelNowPlayingChanged(it) }
         }
         sbnChannel.trySend(sbn)
     }
