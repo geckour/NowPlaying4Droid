@@ -5,6 +5,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.TokenExpiredException
 import com.geckour.nowplaying4droid.BuildConfig
+import com.geckour.nowplaying4droid.app.util.withCatching
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -107,7 +108,11 @@ object OkHttpProvider {
             return@addInterceptor chain.proceed(
                 chain.request()
                     .newBuilder()
-                    .header("Authorization", "Bearer ${checkNotNull(appleToken)}")
+                    .apply {
+                        appleToken?.let {
+                            header("Authorization", "Bearer $it")
+                        }
+                    }
                     .build()
             )
         }
@@ -115,10 +120,12 @@ object OkHttpProvider {
         .build()
 
     private fun refreshAppleToken(current: Long = System.currentTimeMillis()) {
-        appleToken = appleJwt
-            .withIssuedAt(Date(current))
-            .withExpiresAt(Date(current + APPLE_TOKEN_EXPIRE_DURATION))
-            .sign(appleJwtAlgorithm)
+        withCatching {
+            appleToken = appleJwt
+                .withIssuedAt(Date(current))
+                .withExpiresAt(Date(current + APPLE_TOKEN_EXPIRE_DURATION))
+                .sign(appleJwtAlgorithm)
+        }
     }
 
     private fun OkHttpClient.Builder.applyDebugger(): OkHttpClient.Builder =
@@ -131,7 +138,7 @@ object OkHttpProvider {
             }
         }
 
-    fun Collection<*>.toJsonElement(): JsonElement = JsonArray(mapNotNull { it.toJsonElement() })
+    private fun Collection<*>.toJsonElement(): JsonElement = JsonArray(mapNotNull { it.toJsonElement() })
 
     private fun Map<*, *>.toJsonElement(): JsonElement = JsonObject(
         mapNotNull {
