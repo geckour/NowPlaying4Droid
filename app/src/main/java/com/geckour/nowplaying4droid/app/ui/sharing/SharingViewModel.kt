@@ -16,7 +16,6 @@ import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTempArtworkUri
 import com.geckour.nowplaying4droid.app.util.readyForShare
 import com.google.firebase.analytics.FirebaseAnalytics
-import timber.log.Timber
 
 class SharingViewModel : ViewModel() {
 
@@ -41,7 +40,6 @@ class SharingViewModel : ViewModel() {
             if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK))
                 sharedPreferences.getTempArtworkUri(context)
             else null
-        Timber.d("sharingText: $sharingText, artworkUri: $artworkUri")
 
         val copyIntoClipboard = sharedPreferences
             .getSwitchState(PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD)
