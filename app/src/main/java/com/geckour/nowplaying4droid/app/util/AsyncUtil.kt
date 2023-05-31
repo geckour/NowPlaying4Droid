@@ -139,15 +139,11 @@ suspend fun updateTrackDetail(
     coreElement: TrackDetail.TrackCoreElement = metadata.getTrackCoreElement(),
     onClearMetadata: () -> Unit = {}
 ): TrackDetail? {
-    val releasedAt: String? =
-        if (metadata.containsKey(MediaMetadata.METADATA_KEY_DATE))
-            metadata.getString(MediaMetadata.METADATA_KEY_DATE)
-        else null
     val quickUpdateSucceeded = onQuickUpdate(
         context,
         sharedPreferences,
         coreElement,
-        releasedAt,
+        metadata.releasedAt,
         playerPackageName
     )
     if (quickUpdateSucceeded.not()) {
@@ -210,15 +206,11 @@ suspend fun updateTrackDetail(
     viaService: Boolean = false,
     onClearMetadata: () -> Unit = {}
 ): TrackDetail? {
-    val releasedAt: String? =
-        if (metadata.containsKey(MediaMetadata.METADATA_KEY_DATE))
-            metadata.getString(MediaMetadata.METADATA_KEY_DATE)
-        else null
     if (viaService.not() && onQuickUpdate(
             context,
             sharedPreferences,
             coreElement,
-            releasedAt,
+            metadata.releasedAt,
             playerPackageName
         ).not()
     ) {
@@ -321,8 +313,8 @@ suspend fun updateTrackDetail(
             if (needSpotifyDataForPlayer) spotifyData else null,
             if (needAppleMusicDataForPlayer) appleMusicData else null
         ),
-        releasedAt = releasedAt,
-        artworkUriString = artworkUri?.toString().apply { Timber.d("np4d artwork uri: $this") },
+        releasedAt = metadata.releasedAt,
+        artworkUriString = artworkUri?.toString(),
         playerPackageName = playerPackageName,
         spotifyData = spotifyData,
         appleMusicData = appleMusicData,
@@ -570,7 +562,6 @@ private suspend fun MediaMetadata.storeArtworkUri(
 ): Uri? {
     // Check whether arg metadata and current metadata are the same or not
     val cacheInfo = sharedPreferences.getCurrentTrackDetail()
-    Timber.d("np4d cache info: ${cacheInfo?.artworkUriString}")
     if (coreElement.isAllNull.not() && cacheInfo?.artworkUriString != null && coreElement == cacheInfo.coreElement) {
         return sharedPreferences.getTempArtworkUri(context)
     }

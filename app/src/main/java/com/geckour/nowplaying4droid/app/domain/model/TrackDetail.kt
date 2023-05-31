@@ -46,7 +46,6 @@ data class TrackDetail(
                     else currentTrackDetail.playerPackageName,
                     pixelNowPlaying = null
                 )
-                Timber.d("np4d result: $result")
                 return@run if (result == empty) null else result
             }
     }

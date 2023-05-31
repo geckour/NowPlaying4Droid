@@ -87,7 +87,7 @@ class SpotifyApiClient(context: Context) {
     }
 
     private suspend fun getUser(token: String): SpotifyUser? =
-        withCatching { getService(token.apply { Timber.d("np4d spotify token: $this") }).getUser() }
+        withCatching { getService(token).getUser() }
 
     suspend fun getSpotifyData(
         trackCoreElement: TrackDetail.TrackCoreElement,

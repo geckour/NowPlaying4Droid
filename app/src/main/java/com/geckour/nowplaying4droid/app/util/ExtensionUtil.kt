@@ -348,3 +348,17 @@ private suspend fun Status.getNotification(context: Context): Notification {
         }
     }.build()
 }
+
+val MediaMetadata.releasedAt
+    get() =
+        when {
+            containsKey(MediaMetadata.METADATA_KEY_DATE) -> {
+                getString(MediaMetadata.METADATA_KEY_DATE)
+            }
+
+            containsKey(MediaMetadata.METADATA_KEY_YEAR) -> {
+                getLong(MediaMetadata.METADATA_KEY_YEAR).toString()
+            }
+
+            else -> null
+        }
