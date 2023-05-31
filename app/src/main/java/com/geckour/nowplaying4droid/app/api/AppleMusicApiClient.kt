@@ -38,6 +38,7 @@ class AppleMusicApiClient {
                     artistName = song.attributes.artistName,
                     albumName = song.attributes.albumName,
                     composerName = song.attributes.composerName,
+                    releasedAt = song.attributes.releaseDate
                 )
                 return@let if (isStrictMode.not() || trackCoreElement.isStrict(data)) {
                     AppleMusicResult.Success(data)

@@ -14,5 +14,6 @@ sealed class SpotifyResult {
         val trackName: String,
         val artistName: String,
         val albumName: String,
+        val releasedAt: String,
     ) : java.io.Serializable
 }

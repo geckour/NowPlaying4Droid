@@ -129,7 +129,8 @@ fun String.getSharingText(
     trackInfo?.getSharingSubject(this, modifiers, requireMatchAllPattern)
 
 fun String.containsPattern(pattern: FormatPattern): Boolean =
-    this.splitConsideringEscape().contains(pattern.value)
+    this.splitConsideringEscape(TrackDetail.empty.toTrackInfo().formatPatterns)
+        .contains(pattern.value)
 
 fun Context.checkStoragePermission(
     onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}

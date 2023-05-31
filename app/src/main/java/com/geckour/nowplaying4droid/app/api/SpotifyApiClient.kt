@@ -119,7 +119,8 @@ class SpotifyApiClient(context: Context) {
                             it.album.images.firstOrNull()?.url,
                             it.name,
                             it.artistString,
-                            it.album.name
+                            it.album.name,
+                            it.album.releaseDate
                         )
                     )
                 } ?: SpotifyResult.Failure(IllegalStateException("No current playing track"))
@@ -172,7 +173,8 @@ class SpotifyApiClient(context: Context) {
                             it.album.images.firstOrNull()?.url,
                             it.name,
                             it.artistString,
-                            it.album.name
+                            it.album.name,
+                            it.album.releaseDate
                         )
                     )
                 } ?: SpotifyResult.Failure(IllegalStateException("No search result"))

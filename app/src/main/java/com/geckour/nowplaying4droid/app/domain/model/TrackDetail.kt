@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4droid.app.domain.model
 
+import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
 import timber.log.Timber
 import java.io.Serializable
@@ -7,6 +8,7 @@ import java.io.Serializable
 @kotlinx.serialization.Serializable
 data class TrackDetail(
     val coreElement: TrackCoreElement,
+    val releasedAt: String?,
     val artworkUriString: String?,
     val playerPackageName: String?,
     val spotifyData: SpotifyResult.Data?,
@@ -19,6 +21,7 @@ data class TrackDetail(
 
         val empty = TrackDetail(
             TrackCoreElement(null, null, null, null),
+            null,
             null,
             null,
             null,
@@ -96,14 +99,24 @@ data class TrackDetail(
     }
 
     fun toTrackInfo(): TrackInfo = TrackInfo(
-        coreElement.title,
-        coreElement.artist,
-        coreElement.album,
-        coreElement.composer,
-        spotifyData?.sharingUrl,
-        youTubeMusicUrl,
-        appleMusicData?.sharingUrl,
-        pixelNowPlaying
+        formatPatterns = listOf(
+            FormatPattern("TI", coreElement.title),
+            FormatPattern("AR", coreElement.artist),
+            FormatPattern("AL", coreElement.album),
+            FormatPattern("CO", coreElement.composer),
+            FormatPattern("SU", spotifyData?.sharingUrl),
+            FormatPattern("YU", youTubeMusicUrl),
+            FormatPattern("AU", appleMusicData?.sharingUrl),
+            FormatPattern("PN", pixelNowPlaying),
+            FormatPattern("PU", releasedAt),
+        )
+    )
+
+    fun withData(
+        spotifyData: SpotifyResult.Data?,
+        appleMusicData: AppleMusicResult.Data?,
+    ): TrackDetail = this.copy(
+        releasedAt = spotifyData?.releasedAt ?: appleMusicData?.releasedAt ?: releasedAt
     )
 }
 

@@ -135,6 +135,8 @@
     <string name="dialog_message_player_package_mastodon">Specify which player apps can be used for auto post for Mastodon</string>
     <string name="dialog_title_player_package_spotify">Select player apps for Spotify</string>
     <string name="dialog_message_player_package_spotify">Specify which player apps can be used with Spotify data</string>
+    <string name="dialog_title_player_package_apple_music">Select player apps for Apple Music</string>
+    <string name="dialog_message_player_package_apple_music">Specify which player apps can be used with Apple Music data</string>
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_title_alert_no_metadata">Failure to share</string>

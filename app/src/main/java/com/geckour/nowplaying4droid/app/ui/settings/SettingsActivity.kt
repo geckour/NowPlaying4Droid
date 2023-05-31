@@ -111,6 +111,7 @@ import com.geckour.nowplaying4droid.app.api.BillingApiClient
 import com.geckour.nowplaying4droid.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.service.NotificationService
 import com.geckour.nowplaying4droid.app.ui.compose.CleanBlue
 import com.geckour.nowplaying4droid.app.ui.compose.DarkRed
@@ -765,7 +766,13 @@ class SettingsActivity : AppCompatActivity() {
 
     @Composable
     fun EditPatternModifierDialog() {
-        var items by remember { mutableStateOf(sharedPreferences.getFormatPatternModifiers()) }
+        var items by remember {
+            mutableStateOf(
+                sharedPreferences.getFormatPatternModifiers(
+                    TrackDetail.empty.toTrackInfo().formatPatterns
+                )
+            )
+        }
         AlertDialog(
             onDismissRequest = { viewModel.openEditPatternModifierDialog.value = false },
             confirmButton = {
@@ -847,7 +854,7 @@ class SettingsActivity : AppCompatActivity() {
                                     )
                                 }
                                 Text(
-                                    text = item.key.value,
+                                    text = item.key.key,
                                     modifier = Modifier.padding(start = 4.dp, end = 4.dp),
                                     color = MaterialTheme.colors.secondary
                                 )
@@ -1013,11 +1020,11 @@ class SettingsActivity : AppCompatActivity() {
                 }
             },
             title = {
-                Text(text = stringResource(id = R.string.dialog_title_player_package_spotify))
+                Text(text = stringResource(id = R.string.dialog_title_player_package_apple_music))
             },
             text = {
                 Column {
-                    Text(text = stringResource(id = R.string.dialog_message_player_package_spotify))
+                    Text(text = stringResource(id = R.string.dialog_message_player_package_apple_music))
                     packageStates.forEachIndexed { index, packageState ->
                         Row(
                             modifier = Modifier
@@ -1606,6 +1613,7 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = viewModel.spotifyEnabledState,
                             onSwitchCheckedChanged = {
                                 viewModel.spotifyDataEnabledState.value = it
+                                invokeUpdateWithStoragePermissionsIfNeeded()
                             }
                         )
                     }
@@ -1649,6 +1657,7 @@ class SettingsActivity : AppCompatActivity() {
                             PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA,
                             onSwitchCheckedChanged = {
                                 viewModel.appleMusicDataEnabledState.value = it
+                                invokeUpdateWithStoragePermissionsIfNeeded()
                             }
                         )
                     }

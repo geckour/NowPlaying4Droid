@@ -35,6 +35,7 @@ data class AppleMusicSearchData(
                     val artistName: String,
                     val albumName: String,
                     val composerName: String?,
+                    val releaseDate: String,
                     val url: String,
                     val artwork: AppleMusicArtwork,
                 ) {

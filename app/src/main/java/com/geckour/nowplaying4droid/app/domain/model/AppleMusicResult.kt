@@ -15,5 +15,6 @@ sealed class AppleMusicResult {
         val artistName: String,
         val albumName: String,
         val composerName: String?,
+        val releasedAt: String,
     ) : java.io.Serializable
 }

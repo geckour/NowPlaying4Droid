@@ -102,18 +102,16 @@ fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternMod
     }
 }
 
-fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
+fun SharedPreferences.getFormatPatternModifiers(formatPatterns: List<FormatPattern>): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { jsonString ->
         val stored = json.parseListOrNull<FormatPatternModifier>(
             jsonString
         ) ?: return@let null
-        return@let FormatPattern.replaceablePatterns
-            .map { pattern ->
-                val modifier = stored.firstOrNull { it.key == pattern }
-                FormatPatternModifier(pattern, modifier?.prefix ?: "", modifier?.suffix ?: "")
-            }
-    } ?: FormatPattern.replaceablePatterns
-        .map { FormatPatternModifier(it) }
+        return@let formatPatterns.map { pattern ->
+            val modifier = stored.firstOrNull { it.key.key == pattern.key }
+            FormatPatternModifier(pattern, modifier?.prefix.orEmpty(), modifier?.suffix.orEmpty())
+        }
+    } ?: formatPatterns.map { FormatPatternModifier(it) }
 
 fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
@@ -153,32 +151,27 @@ fun SharedPreferences.getSharingText(
     context: Context,
     trackDetail: TrackDetail? = getCurrentTrackDetail()
 ): String? =
-    if (readyForShare(context, trackDetail))
+    if (readyForShare(context, trackDetail)) {
+        val trackInfo = requireNotNull(trackDetail).toTrackInfo()
         getFormatPattern(context).getSharingText(
-            requireNotNull(trackDetail).toTrackInfo(),
-            getFormatPatternModifiers(),
+            trackInfo,
+            getFormatPatternModifiers(trackInfo.formatPatterns),
             getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
         )
-    else null
+    } else null
 
 fun SharedPreferences.getSharingText(
     context: Context,
     pixelNowPlaying: String
 ): String? {
-    val trackInfo = TrackInfo(
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        pixelNowPlaying
-    )
+    val formatPatterns = TrackDetail.empty.toTrackInfo()
+        .formatPatterns
+        .map { if (it.key == "PN") it.copy(value = pixelNowPlaying) else it }
+    val trackInfo = TrackInfo(formatPatterns)
     return if (readyForShare(context, trackInfo))
         getFormatPattern(context).getSharingText(
             trackInfo,
-            getFormatPatternModifiers(),
+            getFormatPatternModifiers(formatPatterns),
             getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
         )
     else null

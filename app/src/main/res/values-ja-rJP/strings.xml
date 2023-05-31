@@ -126,6 +126,8 @@
     <string name="dialog_message_player_package_mastodon">Mastodon への自動投稿に用いるプレイヤーアプリを指定</string>
     <string name="dialog_title_player_package_spotify">Spotify データを用いるプレイヤーアプリ</string>
     <string name="dialog_message_player_package_spotify">Spotify API からのデータを用いるプレイヤーアプリを指定</string>
+    <string name="dialog_title_player_package_apple_music">Apple Music データを用いるプレイヤーアプリ</string>
+    <string name="dialog_message_player_package_apple_music">Apple Music API からのデータを用いるプレイヤーアプリを指定</string>
     <string name="dialog_title_choose_color">カラーパレットから選択</string>
     <string name="dialog_message_choose_color">アートワークのキーカラーより抽出されます</string>
     <string name="dialog_title_alert_no_metadata">共有できません</string>
