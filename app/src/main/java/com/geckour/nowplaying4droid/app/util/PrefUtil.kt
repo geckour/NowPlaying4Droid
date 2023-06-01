@@ -7,6 +7,7 @@ import androidx.core.content.edit
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.domain.model.ArtworkInfo
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
+import com.geckour.nowplaying4droid.app.domain.model.OldFormatPatternModifier
 import com.geckour.nowplaying4droid.app.domain.model.PackageState
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
@@ -102,14 +103,21 @@ fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternMod
     }
 }
 
-fun SharedPreferences.getFormatPatternModifiers(formatPatterns: List<FormatPattern>): List<FormatPatternModifier> =
+fun SharedPreferences.getFormatPatternModifiers(
+    formatPatterns: List<FormatPattern>
+): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { jsonString ->
-        val stored = json.parseListOrNull<FormatPatternModifier>(
-            jsonString
-        ) ?: return@let null
+        val stored = json.parseListOrNull<FormatPatternModifier>(jsonString)
+        val oldStored = json.parseListOrNull<OldFormatPatternModifier>(jsonString)
+        if (stored == null && oldStored == null) return@let null
         return@let formatPatterns.map { pattern ->
-            val modifier = stored.firstOrNull { it.key.key == pattern.key }
-            FormatPatternModifier(pattern, modifier?.prefix.orEmpty(), modifier?.suffix.orEmpty())
+            val modifier = stored?.firstOrNull { it.key.key == pattern.key }
+            val oldModifier = oldStored?.firstOrNull { it.key.value == pattern.key }
+            FormatPatternModifier(
+                pattern,
+                (modifier?.prefix ?: oldModifier?.prefix).orEmpty(),
+                (modifier?.suffix ?: oldModifier?.suffix).orEmpty()
+            )
         }
     } ?: formatPatterns.map { FormatPatternModifier(it) }
 
