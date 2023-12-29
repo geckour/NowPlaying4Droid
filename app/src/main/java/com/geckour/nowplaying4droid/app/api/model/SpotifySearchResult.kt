@@ -37,6 +37,8 @@ data class SpotifySearchResult(
     @Serializable
     data class SpotifyAlbum(
         val name: String,
+        @SerialName("release_date")
+        val releaseDate: String,
         val images: List<SpotifyImage>
     ) {
 

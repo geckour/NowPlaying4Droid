@@ -49,6 +49,8 @@
     <string name="pref_item_desc_player_package_apple_music">Select which player apps can be used with Apple Music data source</string>
     <string name="pref_item_title_search_apple_music_strictly">Search Apple Music strictly</string>
     <string name="pref_item_desc_search_apple_music_strictly">Use Apple Music API data if it\'s strictly matched with playing track info</string>
+    <string name="pref_item_title_use_pixel_now_playing">Use Pixel Now Playing data source</string>
+    <string name="pref_item_desc_use_pixel_now_playing">Use Pixel Now Playing as data source for track information if possible</string>
     <string name="pref_item_title_strict_match_pattern">Satisfy all format patterns</string>
     <string name="pref_item_desc_strict_match_pattern">Generate sharing text if all of specified format patterns are satisfied</string>
     <string name="pref_item_title_switch_bundle_artwork">Attach the artwork</string>
@@ -126,7 +128,7 @@
     <string name="dialog_title_artwork_resolve_order">Specify resolving order of artwork</string>
     <string name="dialog_message_artwork_resolve_order">Reorder by D\'n\'D, toggle enabled by switch</string>
     <string name="dialog_title_pattern_format">Specify formatting pattern of a sentence to post</string>
-    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name: CO\nSpotify URL: SU *Authentication required\nYouTube Music URL: YU *beta\nApple Music URL: AU *beta\nPixel Now Playing: PN *only for Pixel\nescape sequence: Wrap by \' \'\nline break: \\n</string>
+    <string name="dialog_message_pattern_format">Track name: TI\nArtist name: AR\nAlbum name: AL\nComposer name: CO\nSpotify URL: SU *Authentication required\nYouTube Music URL: YU *beta\nApple Music URL: AU *beta\nPixel Now Playing: PN *only for Pixel\nRelease date: PU\nescape sequence: Wrap by \' \'\nline break: \\n</string>
     <string name="dialog_title_mastodon_instance">Select Mastodon instance</string>
     <string name="dialog_title_mastodon_delay">Input delay duration</string>
     <string name="dialog_title_mastodon_visibility">Visibility of Mastodon</string>
@@ -135,6 +137,8 @@
     <string name="dialog_message_player_package_mastodon">Specify which player apps can be used for auto post for Mastodon</string>
     <string name="dialog_title_player_package_spotify">Select player apps for Spotify</string>
     <string name="dialog_message_player_package_spotify">Specify which player apps can be used with Spotify data</string>
+    <string name="dialog_title_player_package_apple_music">Select player apps for Apple Music</string>
+    <string name="dialog_message_player_package_apple_music">Specify which player apps can be used with Apple Music data</string>
     <string name="dialog_title_choose_color">Select from color palette</string>
     <string name="dialog_message_choose_color">Colors are extracted from artwork\'s key colors</string>
     <string name="dialog_title_alert_no_metadata">Failure to share</string>

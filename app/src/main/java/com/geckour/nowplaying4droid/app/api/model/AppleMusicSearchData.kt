@@ -27,7 +27,6 @@ data class AppleMusicSearchData(
                 val type: String,
                 val href: String,
                 val attributes: AppleMusicSongAttributes,
-                val relationships: AppleMusicRelationship?,
             ) {
 
                 @Serializable
@@ -36,6 +35,7 @@ data class AppleMusicSearchData(
                     val artistName: String,
                     val albumName: String,
                     val composerName: String?,
+                    val releaseDate: String,
                     val url: String,
                     val artwork: AppleMusicArtwork,
                 ) {
@@ -50,23 +50,6 @@ data class AppleMusicSearchData(
                         val resolvedUrl =
                             url.replace("{w}", width.toString())
                                 .replace("{h}", height.toString())
-                    }
-                }
-
-                @Serializable
-                data class AppleMusicRelationship(
-                    val artists: AppleMusicArtistResult,
-                ) {
-
-                    @Serializable
-                    data class AppleMusicArtistResult(
-                        val data: List<AppleMusicArtist>,
-                    ) {
-
-                        @Serializable
-                        data class AppleMusicArtist(
-                            val id: String,
-                        )
                     }
                 }
             }

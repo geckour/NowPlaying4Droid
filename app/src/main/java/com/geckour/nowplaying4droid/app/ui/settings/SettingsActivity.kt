@@ -111,6 +111,7 @@ import com.geckour.nowplaying4droid.app.api.BillingApiClient
 import com.geckour.nowplaying4droid.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
+import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.service.NotificationService
 import com.geckour.nowplaying4droid.app.ui.compose.CleanBlue
 import com.geckour.nowplaying4droid.app.ui.compose.DarkRed
@@ -260,6 +261,7 @@ class SettingsActivity : AppCompatActivity() {
                         BillingApiClient.BillingResult.SUCCESS -> {
                             reflectDonation(viewModel.donated, true)
                         }
+
                         BillingApiClient.BillingResult.DUPLICATED -> {
                             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_failure_purchase,
@@ -267,12 +269,14 @@ class SettingsActivity : AppCompatActivity() {
                             )
                             reflectDonation(viewModel.donated, true)
                         }
+
                         BillingApiClient.BillingResult.CANCELLED -> {
                             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_failure_purchase,
                                 R.string.dialog_message_alert_on_cancel_purchase
                             )
                         }
+
                         BillingApiClient.BillingResult.FAILURE -> {
                             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_failure_purchase,
@@ -311,6 +315,7 @@ class SettingsActivity : AppCompatActivity() {
             uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
                 onAuthSpotifyCallback(intent)
             }
+
             uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
                 onAuthMastodonCallback(
                     intent,
@@ -765,7 +770,13 @@ class SettingsActivity : AppCompatActivity() {
 
     @Composable
     fun EditPatternModifierDialog() {
-        var items by remember { mutableStateOf(sharedPreferences.getFormatPatternModifiers()) }
+        var items by remember {
+            mutableStateOf(
+                sharedPreferences.getFormatPatternModifiers(
+                    TrackDetail.empty.toTrackInfo().formatPatterns
+                )
+            )
+        }
         AlertDialog(
             onDismissRequest = { viewModel.openEditPatternModifierDialog.value = false },
             confirmButton = {
@@ -847,7 +858,7 @@ class SettingsActivity : AppCompatActivity() {
                                     )
                                 }
                                 Text(
-                                    text = item.key.value,
+                                    text = item.key.key,
                                     modifier = Modifier.padding(start = 4.dp, end = 4.dp),
                                     color = MaterialTheme.colors.secondary
                                 )
@@ -1013,11 +1024,11 @@ class SettingsActivity : AppCompatActivity() {
                 }
             },
             title = {
-                Text(text = stringResource(id = R.string.dialog_title_player_package_spotify))
+                Text(text = stringResource(id = R.string.dialog_title_player_package_apple_music))
             },
             text = {
                 Column {
-                    Text(text = stringResource(id = R.string.dialog_message_player_package_spotify))
+                    Text(text = stringResource(id = R.string.dialog_message_player_package_apple_music))
                     packageStates.forEachIndexed { index, packageState ->
                         Row(
                             modifier = Modifier
@@ -1606,6 +1617,7 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = viewModel.spotifyEnabledState,
                             onSwitchCheckedChanged = {
                                 viewModel.spotifyDataEnabledState.value = it
+                                invokeUpdateWithStoragePermissionsIfNeeded()
                             }
                         )
                     }
@@ -1649,6 +1661,7 @@ class SettingsActivity : AppCompatActivity() {
                             PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA,
                             onSwitchCheckedChanged = {
                                 viewModel.appleMusicDataEnabledState.value = it
+                                invokeUpdateWithStoragePermissionsIfNeeded()
                             }
                         )
                     }
@@ -1678,6 +1691,19 @@ class SettingsActivity : AppCompatActivity() {
                             R.string.pref_item_desc_player_package_apple_music,
                             enabled = viewModel.appleMusicDataEnabledState
                         ) { viewModel.openSelectPlayerAppleMusicDialog.value = true }
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
+                            R.string.pref_item_title_use_pixel_now_playing,
+                            R.string.pref_item_desc_use_pixel_now_playing,
+                            PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING,
+                        )
                     }
                 }
                 Item(item = item)

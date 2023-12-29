@@ -7,6 +7,7 @@ import androidx.core.content.edit
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.domain.model.ArtworkInfo
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
+import com.geckour.nowplaying4droid.app.domain.model.OldFormatPatternModifier
 import com.geckour.nowplaying4droid.app.domain.model.PackageState
 import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
@@ -52,6 +53,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY(false),
     PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA(false),
     PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY(false),
+    PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING(false),
 }
 
 @Serializable
@@ -102,18 +104,23 @@ fun SharedPreferences.setFormatPatternModifiers(modifiers: List<FormatPatternMod
     }
 }
 
-fun SharedPreferences.getFormatPatternModifiers(): List<FormatPatternModifier> =
+fun SharedPreferences.getFormatPatternModifiers(
+    formatPatterns: List<FormatPattern>
+): List<FormatPatternModifier> =
     getString(PrefKey.PREF_KEY_FORMAT_PATTERN_MODIFIERS.name, null)?.let { jsonString ->
-        val stored = json.parseListOrNull<FormatPatternModifier>(
-            jsonString
-        ) ?: return@let null
-        return@let FormatPattern.replaceablePatterns
-            .map { pattern ->
-                val modifier = stored.firstOrNull { it.key == pattern }
-                FormatPatternModifier(pattern, modifier?.prefix ?: "", modifier?.suffix ?: "")
-            }
-    } ?: FormatPattern.replaceablePatterns
-        .map { FormatPatternModifier(it) }
+        val stored = json.parseListOrNull<FormatPatternModifier>(jsonString)
+        val oldStored = json.parseListOrNull<OldFormatPatternModifier>(jsonString)
+        if (stored == null && oldStored == null) return@let null
+        return@let formatPatterns.map { pattern ->
+            val modifier = stored?.firstOrNull { it.key.key == pattern.key }
+            val oldModifier = oldStored?.firstOrNull { it.key.value == pattern.key }
+            FormatPatternModifier(
+                pattern,
+                (modifier?.prefix ?: oldModifier?.prefix).orEmpty(),
+                (modifier?.suffix ?: oldModifier?.suffix).orEmpty()
+            )
+        }
+    } ?: formatPatterns.map { FormatPatternModifier(it) }
 
 fun SharedPreferences.getFormatPattern(context: Context): String =
     getString(PrefKey.PREF_KEY_PATTERN_FORMAT_SHARE_TEXT.name, null)
@@ -153,36 +160,14 @@ fun SharedPreferences.getSharingText(
     context: Context,
     trackDetail: TrackDetail? = getCurrentTrackDetail()
 ): String? =
-    if (readyForShare(context, trackDetail))
-        getFormatPattern(context).getSharingText(
-            requireNotNull(trackDetail).toTrackInfo(),
-            getFormatPatternModifiers(),
-            getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
-        )
-    else null
-
-fun SharedPreferences.getSharingText(
-    context: Context,
-    pixelNowPlaying: String
-): String? {
-    val trackInfo = TrackInfo(
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        pixelNowPlaying
-    )
-    return if (readyForShare(context, trackInfo))
+    if (readyForShare(context, trackDetail)) {
+        val trackInfo = requireNotNull(trackDetail).toTrackInfo()
         getFormatPattern(context).getSharingText(
             trackInfo,
-            getFormatPatternModifiers(),
+            getFormatPatternModifiers(trackInfo.formatPatterns),
             getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
         )
-    else null
-}
+    } else null
 
 fun SharedPreferences.getCurrentTrackDetail(): TrackDetail? {
     val jsonString =

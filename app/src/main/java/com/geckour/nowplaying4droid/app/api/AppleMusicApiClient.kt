@@ -22,6 +22,30 @@ class AppleMusicApiClient {
 
     suspend fun searchAppleMusic(
         countryCode: String,
+        query: String,
+    ): AppleMusicResult {
+        return withCatching(onError = { return AppleMusicResult.Failure(it) }) {
+            val searchResult = service.searchAppleMusicItem(
+                countryCode = countryCode,
+                query = query
+            )
+            searchResult.results.songs.data.firstOrNull()?.let { song ->
+                val data = AppleMusicResult.Data(
+                    sharingUrl = song.attributes.url,
+                    artworkUrl = song.attributes.artwork.resolvedUrl,
+                    trackName = song.attributes.name,
+                    artistName = song.attributes.artistName,
+                    albumName = song.attributes.albumName,
+                    composerName = song.attributes.composerName,
+                    releasedAt = song.attributes.releaseDate
+                )
+                return@let AppleMusicResult.Success(data)
+            } ?: AppleMusicResult.Failure(IllegalStateException("No search result"))
+        } ?: AppleMusicResult.Failure(IllegalStateException("Unknown error"))
+    }
+
+    suspend fun searchAppleMusic(
+        countryCode: String,
         trackCoreElement: TrackDetail.TrackCoreElement,
         isStrictMode: Boolean
     ): AppleMusicResult {
@@ -31,34 +55,14 @@ class AppleMusicApiClient {
                 query = trackCoreElement.appleMusicSearchQuery
             )
             searchResult.results.songs.data.firstOrNull()?.let { song ->
-                val artistIds = song.relationships
-                    ?.artists?.data
-                    ?.map { it.id }
-                    .orEmpty()
-                    .ifEmpty {
-                        val data = AppleMusicResult.Data(
-                            sharingUrl = song.attributes.url,
-                            artworkUrl = song.attributes.artwork.resolvedUrl,
-                            trackName = song.attributes.name,
-                            artistName = song.attributes.artistName,
-                            albumName = song.attributes.albumName,
-                            composerName = song.attributes.composerName,
-                        )
-                        return@let if (isStrictMode.not() || trackCoreElement.isStrict(data)) {
-                            AppleMusicResult.Success(data)
-                        } else null
-                    }
-
-                val artistsString = service.getAppleMusicArtists(countryCode, artistIds).data
-                    .joinToString(", ") { it.attributes.name }
-
                 val data = AppleMusicResult.Data(
                     sharingUrl = song.attributes.url,
                     artworkUrl = song.attributes.artwork.resolvedUrl,
                     trackName = song.attributes.name,
-                    artistName = artistsString,
+                    artistName = song.attributes.artistName,
                     albumName = song.attributes.albumName,
                     composerName = song.attributes.composerName,
+                    releasedAt = song.attributes.releaseDate
                 )
                 return@let if (isStrictMode.not() || trackCoreElement.isStrict(data)) {
                     AppleMusicResult.Success(data)
