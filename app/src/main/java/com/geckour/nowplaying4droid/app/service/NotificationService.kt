@@ -47,6 +47,7 @@ import com.geckour.nowplaying4droid.app.util.showNotification
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4droid.app.util.toByteArray
 import com.geckour.nowplaying4droid.app.util.updateTrackDetail
+import com.geckour.nowplaying4droid.app.util.updateTrackDetailByPixelNowPlaying
 import com.geckour.nowplaying4droid.app.util.updateWear
 import com.geckour.nowplaying4droid.app.util.withCatching
 import com.google.android.gms.wearable.MessageEvent
@@ -375,7 +376,14 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     ) {
         refreshMetadataJob?.cancel()
         refreshMetadataJob = launch {
-            updateTrackDetail(this@NotificationService, sharedPreferences, pixelNowPlaying)
+            updateTrackDetailByPixelNowPlaying(
+                this@NotificationService,
+                sharedPreferences,
+                pixelNowPlaying,
+                lastFmApiClient,
+                spotifyApiClient,
+                appleMusicApiClient
+            )
         }
     }
 

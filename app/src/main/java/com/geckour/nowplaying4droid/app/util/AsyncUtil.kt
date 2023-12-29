@@ -171,20 +171,113 @@ suspend fun updateTrackDetail(
     return trackDetail
 }
 
-suspend fun updateTrackDetail(
+suspend fun updateTrackDetailByPixelNowPlaying(
     context: Context,
     sharedPreferences: SharedPreferences,
-    pixelNowPlaying: String?
+    pixelNowPlaying: String?,
+    lastFmApiClient: LastFmApiClient,
+    spotifyApiClient: SpotifyApiClient,
+    appleMusicApiClient: AppleMusicApiClient
 ) {
+    val usePixelNowPlaying = sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING)
+    val currentTrackDetail = sharedPreferences.getCurrentTrackDetail()
+
+    if (usePixelNowPlaying.not() || pixelNowPlaying == null) {
+        val trackDetail = TrackDetail.fromPixelNowPlaying(
+            null,
+            currentTrackDetail,
+            null,
+        )
+        reflectTrackDetail(context, sharedPreferences, trackDetail, true)
+        return
+    }
+
+    val formatPattern = sharedPreferences.getFormatPattern(context)
+    val countryCode = context.getSystemService<TelephonyManager>()?.networkCountryIso
+
+    val containsSpotifyPattern =
+        formatPattern.containsPattern(FormatPattern(key = "SU", value = null))
+    FirebaseAnalytics.getInstance(context.applicationContext)
+        .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
+            putString(
+                FirebaseAnalytics.Param.ITEM_NAME,
+                if (containsSpotifyPattern) "ON: Spotify URL trying"
+                else "OFF: Spotify URL trying"
+            )
+        })
+    val useSpotifyData =
+        sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_SPOTIFY_DATA)
+    val spotifyResult =
+        if (useSpotifyData) {
+            spotifyApiClient.getSpotifyData(
+                pixelNowPlaying,
+                currentTrackDetail?.playerPackageName,
+            )
+        } else null
+    val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
+
+    val containsAppleMusicPattern =
+        formatPattern.containsPattern(FormatPattern(key = "AU", value = null))
+    FirebaseAnalytics.getInstance(context.applicationContext)
+        .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
+            putString(
+                FirebaseAnalytics.Param.ITEM_NAME,
+                if (containsAppleMusicPattern) "ON: Apple Music URL trying"
+                else "OFF: Apple Music trying"
+            )
+        })
+    val useAppleMusicData =
+        sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA)
+    val appleMusicResult =
+        if (useAppleMusicData) {
+            countryCode?.let {
+                appleMusicApiClient.searchAppleMusic(
+                    it,
+                    pixelNowPlaying
+                )
+            }
+        } else null
+    val appleMusicData = (appleMusicResult as? AppleMusicResult.Success)?.data
 
     val notContainingPN = sharedPreferences.getFormatPattern(context)
         .containsPattern(FormatPattern(key = "PN", value = null))
         .not()
-    if (pixelNowPlaying != null && notContainingPN) return
+    if (notContainingPN && spotifyData == null && appleMusicData == null) {
+        val trackDetail = TrackDetail.fromPixelNowPlaying(
+            null,
+            currentTrackDetail,
+            null,
+        )
+        reflectTrackDetail(context, sharedPreferences, trackDetail, true)
+        return
+    }
+
+    val trackDetailWithData =
+        (currentTrackDetail ?: TrackDetail.empty).let {
+            it.copy(
+                coreElement = it.coreElement.withData(
+                    spotifyData,
+                    appleMusicData
+                )
+            ).withData(spotifyData, appleMusicData)
+        }
+    Timber.d("np4d with data: $trackDetailWithData")
+
+    val artworkUri = storeArtworkUri(
+        context,
+        sharedPreferences,
+        lastFmApiClient,
+        trackDetailWithData.coreElement,
+        null,
+        null,
+        spotifyData,
+        appleMusicData
+    )
 
     val trackDetail = TrackDetail.fromPixelNowPlaying(
         pixelNowPlaying,
-        sharedPreferences.getCurrentTrackDetail()
+        trackDetailWithData,
+        artworkUri?.toString()
     )
 
     reflectTrackDetail(context, sharedPreferences, trackDetail, true)
@@ -298,12 +391,13 @@ suspend fun updateTrackDetail(
         } else null
     val appleMusicData = (appleMusicResult as? AppleMusicResult.Success)?.data
 
-    val artworkUri = metadata.storeArtworkUri(
+    val artworkUri = storeArtworkUri(
         context,
         sharedPreferences,
         lastFmApiClient,
         coreElement,
         notification?.getArtworkBitmap(context),
+        metadata,
         spotifyData,
         appleMusicData
     )
@@ -514,55 +608,19 @@ private suspend fun TrackDetail.getNotification(context: Context): Notification 
     }.build()
 }
 
-private fun getNotification(context: Context, pixelNowPlaying: String): Notification {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-
-    val notificationBuilder =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            Notification.Builder(
-                context,
-                NotificationService.Channel.NOTIFICATION_CHANNEL_SHARE.name
-            )
-        else Notification.Builder(context)
-
-    return notificationBuilder.apply {
-        val actionOpenSetting = Notification.Action.Builder(
-            Icon.createWithResource(context, R.drawable.ic_settings),
-            context.getString(R.string.action_open_pref),
-            getSettingsIntent(context)
-        ).build()
-        val actionClear = Notification.Action.Builder(
-            Icon.createWithResource(context, R.drawable.ic_clear),
-            context.getString(R.string.action_clear_notification),
-            getClearTrackDetailPendingIntent(context)
-        ).build()
-        val notificationText = sharedPreferences.getSharingText(
-            context,
-            pixelNowPlaying,
-        )
-        setSmallIcon(R.drawable.ic_notification)
-        setContentTitle(context.getString(R.string.notification_title))
-        setContentText(notificationText)
-        setContentIntent(getShareIntent(context))
-        setOngoing(true)
-        style = Notification.BigPictureStyle()
-        addAction(actionOpenSetting)
-        addAction(actionClear)
-    }.build()
-}
-
-private suspend fun MediaMetadata.storeArtworkUri(
+private suspend fun storeArtworkUri(
     context: Context,
     sharedPreferences: SharedPreferences,
     lastFmApiClient: LastFmApiClient,
     coreElement: TrackDetail.TrackCoreElement,
     notificationBitmap: Bitmap?,
+    metadata: MediaMetadata?,
     spotifyData: SpotifyResult.Data?,
     appleMusicData: AppleMusicResult.Data?
 ): Uri? {
     // Check whether arg metadata and current metadata are the same or not
     val cacheInfo = sharedPreferences.getCurrentTrackDetail()
-    if (coreElement.isAllNull.not() && cacheInfo?.artworkUriString != null && coreElement == cacheInfo.coreElement) {
+    if (cacheInfo?.artworkUriString != null && coreElement == cacheInfo.coreElement) {
         return sharedPreferences.getTempArtworkUri(context)
     }
 
@@ -576,7 +634,7 @@ private suspend fun MediaMetadata.storeArtworkUri(
             }
 
             ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_URI -> {
-                this.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.let { uri ->
+                metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)?.let { uri ->
                     context.getBitmapFromUriString(uri)
                         ?.refreshArtworkUri(context)
                         ?.also { return it }
@@ -584,7 +642,7 @@ private suspend fun MediaMetadata.storeArtworkUri(
             }
 
             ArtworkResolveMethod.ArtworkResolveMethodKey.MEDIA_METADATA_BITMAP -> {
-                this.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)?.let { bitmap ->
+                metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)?.let { bitmap ->
                     bitmap.refreshArtworkUri(context)
                         ?.also { return it }
                 }

@@ -90,6 +90,19 @@ class SpotifyApiClient(context: Context) {
         withCatching { getService(token).getUser() }
 
     suspend fun getSpotifyData(
+        query: String,
+        playerPackageName: String?
+    ): SpotifyResult {
+        val nowPlayingResult =
+            if (playerPackageName?.lowercase()?.contains("spotify") == true)
+                getSpotifyNowPlaying()
+            else null
+
+        return nowPlayingResult?.let { if (it is SpotifyResult.Success) it else null }
+            ?: searchSpotify(query)
+    }
+
+    suspend fun getSpotifyData(
         trackCoreElement: TrackDetail.TrackCoreElement,
         playerPackageName: String,
         isStrictMode: Boolean
@@ -125,6 +138,38 @@ class SpotifyApiClient(context: Context) {
                     )
                 } ?: SpotifyResult.Failure(IllegalStateException("No current playing track"))
         } ?: SpotifyResult.Failure(IllegalStateException("Unknown error"))
+    }
+
+    private suspend fun searchSpotify(query: String): SpotifyResult {
+        return (withCatching(onError = { return SpotifyResult.Failure(it) }) {
+            val token =
+                (refreshTokenIfNeeded() ?: sharedPreferences.getSpotifyUserInfo())?.token
+                    ?: throw IllegalStateException("Init token first.")
+            val countryCode =
+                if (token.scope == "user-read-private") "from_token"
+                else Locale.getDefault().country
+            getService(token.accessToken).searchSpotifyItem(
+                query,
+                marketCountryCode = countryCode
+            )
+                .tracks
+                ?.items
+                ?.firstOrNull()
+                ?.let {
+                    SpotifyResult.Success(
+                        SpotifyResult.Data(
+                            it.urls["spotify"] ?: return@let null,
+                            it.album.images.firstOrNull()?.url,
+                            it.name,
+                            it.artistString,
+                            it.album.name,
+                            it.album.releaseDate
+                        )
+                    )
+                } ?: SpotifyResult.Failure(IllegalStateException("No search result"))
+        } ?: SpotifyResult.Failure(IllegalStateException("Unknown error"))).apply {
+            currentQueryAndResult = query to this
+        }
     }
 
     private suspend fun searchSpotify(

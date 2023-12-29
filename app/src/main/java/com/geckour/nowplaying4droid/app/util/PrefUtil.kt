@@ -53,6 +53,7 @@ enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY(false),
     PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA(false),
     PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY(false),
+    PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING(false),
 }
 
 @Serializable
@@ -167,23 +168,6 @@ fun SharedPreferences.getSharingText(
             getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
         )
     } else null
-
-fun SharedPreferences.getSharingText(
-    context: Context,
-    pixelNowPlaying: String
-): String? {
-    val formatPatterns = TrackDetail.empty.toTrackInfo()
-        .formatPatterns
-        .map { if (it.key == "PN") it.copy(value = pixelNowPlaying) else it }
-    val trackInfo = TrackInfo(formatPatterns)
-    return if (readyForShare(context, trackInfo))
-        getFormatPattern(context).getSharingText(
-            trackInfo,
-            getFormatPatternModifiers(formatPatterns),
-            getSwitchState(PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE)
-        )
-    else null
-}
 
 fun SharedPreferences.getCurrentTrackDetail(): TrackDetail? {
     val jsonString =

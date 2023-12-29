@@ -130,7 +130,7 @@ fun String.getSharingText(
 
 fun String.containsPattern(pattern: FormatPattern): Boolean =
     this.splitConsideringEscape(TrackDetail.empty.toTrackInfo().formatPatterns)
-        .contains(pattern.value)
+        .contains(pattern.key)
 
 fun Context.checkStoragePermission(
     onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}

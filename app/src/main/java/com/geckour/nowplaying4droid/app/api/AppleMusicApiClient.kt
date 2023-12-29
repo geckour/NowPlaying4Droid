@@ -22,6 +22,30 @@ class AppleMusicApiClient {
 
     suspend fun searchAppleMusic(
         countryCode: String,
+        query: String,
+    ): AppleMusicResult {
+        return withCatching(onError = { return AppleMusicResult.Failure(it) }) {
+            val searchResult = service.searchAppleMusicItem(
+                countryCode = countryCode,
+                query = query
+            )
+            searchResult.results.songs.data.firstOrNull()?.let { song ->
+                val data = AppleMusicResult.Data(
+                    sharingUrl = song.attributes.url,
+                    artworkUrl = song.attributes.artwork.resolvedUrl,
+                    trackName = song.attributes.name,
+                    artistName = song.attributes.artistName,
+                    albumName = song.attributes.albumName,
+                    composerName = song.attributes.composerName,
+                    releasedAt = song.attributes.releaseDate
+                )
+                return@let AppleMusicResult.Success(data)
+            } ?: AppleMusicResult.Failure(IllegalStateException("No search result"))
+        } ?: AppleMusicResult.Failure(IllegalStateException("Unknown error"))
+    }
+
+    suspend fun searchAppleMusic(
+        countryCode: String,
         trackCoreElement: TrackDetail.TrackCoreElement,
         isStrictMode: Boolean
     ): AppleMusicResult {

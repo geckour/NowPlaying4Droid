@@ -2,7 +2,6 @@ package com.geckour.nowplaying4droid.app.domain.model
 
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
-import timber.log.Timber
 import java.io.Serializable
 
 @kotlinx.serialization.Serializable
@@ -19,6 +18,8 @@ data class TrackDetail(
 
     companion object {
 
+        const val PIXEL_NOW_PLAYING_PACKAGE_NAME = "com.google.android.as"
+
         val empty = TrackDetail(
             TrackCoreElement(null, null, null, null),
             null,
@@ -32,18 +33,22 @@ data class TrackDetail(
 
         fun fromPixelNowPlaying(
             pixelNowPlaying: String?,
-            currentTrackDetail: TrackDetail?
+            currentTrackDetail: TrackDetail?,
+            artworkUriString: String?,
         ): TrackDetail? =
             pixelNowPlaying?.let {
                 (currentTrackDetail ?: empty).copy(
-                    playerPackageName = "com.google.android.as",
-                    pixelNowPlaying = it
+                    playerPackageName = PIXEL_NOW_PLAYING_PACKAGE_NAME,
+                    pixelNowPlaying = it,
+                    artworkUriString = artworkUriString
                 )
             } ?: run {
+                // Resetting
+                if (currentTrackDetail?.playerPackageName == PIXEL_NOW_PLAYING_PACKAGE_NAME) {
+                    return@run null
+                }
                 val result = currentTrackDetail?.copy(
-                    playerPackageName =
-                    if (currentTrackDetail.playerPackageName == "com.google.android.as") null
-                    else currentTrackDetail.playerPackageName,
+                    playerPackageName = currentTrackDetail.playerPackageName,
                     pixelNowPlaying = null
                 )
                 return@run if (result == empty) null else result
@@ -57,9 +62,6 @@ data class TrackDetail(
         val album: String?,
         val composer: String?
     ) : Serializable {
-
-        val isAllNull: Boolean =
-            title == null && artist == null && album == null && composer == null
 
         val contentQueryArgs: Array<String>? =
             if (title != null && artist != null && album != null) arrayOf(title, artist, album)
@@ -115,6 +117,8 @@ data class TrackDetail(
         spotifyData: SpotifyResult.Data?,
         appleMusicData: AppleMusicResult.Data?,
     ): TrackDetail = this.copy(
+        spotifyData = spotifyData,
+        appleMusicData = appleMusicData,
         releasedAt = spotifyData?.releasedAt ?: appleMusicData?.releasedAt ?: releasedAt
     )
 }

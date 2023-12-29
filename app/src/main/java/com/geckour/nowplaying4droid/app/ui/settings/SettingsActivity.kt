@@ -261,6 +261,7 @@ class SettingsActivity : AppCompatActivity() {
                         BillingApiClient.BillingResult.SUCCESS -> {
                             reflectDonation(viewModel.donated, true)
                         }
+
                         BillingApiClient.BillingResult.DUPLICATED -> {
                             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_failure_purchase,
@@ -268,12 +269,14 @@ class SettingsActivity : AppCompatActivity() {
                             )
                             reflectDonation(viewModel.donated, true)
                         }
+
                         BillingApiClient.BillingResult.CANCELLED -> {
                             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_failure_purchase,
                                 R.string.dialog_message_alert_on_cancel_purchase
                             )
                         }
+
                         BillingApiClient.BillingResult.FAILURE -> {
                             viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
                                 R.string.dialog_title_alert_failure_purchase,
@@ -312,6 +315,7 @@ class SettingsActivity : AppCompatActivity() {
             uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
                 onAuthSpotifyCallback(intent)
             }
+
             uriString?.startsWith(App.MASTODON_CALLBACK) == true -> {
                 onAuthMastodonCallback(
                     intent,
@@ -1687,6 +1691,19 @@ class SettingsActivity : AppCompatActivity() {
                             R.string.pref_item_desc_player_package_apple_music,
                             enabled = viewModel.appleMusicDataEnabledState
                         ) { viewModel.openSelectPlayerAppleMusicDialog.value = true }
+                    }
+                }
+                Item(item = item)
+            }
+            item {
+                val item by remember {
+                    derivedStateOf {
+                        SettingsViewModel.Item(
+                            sharedPreferences,
+                            R.string.pref_item_title_use_pixel_now_playing,
+                            R.string.pref_item_desc_use_pixel_now_playing,
+                            PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING,
+                        )
                     }
                 }
                 Item(item = item)

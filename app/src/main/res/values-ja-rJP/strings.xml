@@ -42,6 +42,8 @@
     <string name="pref_item_desc_player_package_apple_music">Apple Music API からのデータを用いるプレイヤーアプリを指定する</string>
     <string name="pref_item_title_search_apple_music_strictly">厳密な Apple Music 検索データの使用</string>
     <string name="pref_item_desc_search_apple_music_strictly">再生中の楽曲情報と厳密に一致する場合にのみ Apple Music API からのデータを使用する</string>
+    <string name="pref_item_title_use_pixel_now_playing">この曲なに？データの使用</string>
+    <string name="pref_item_desc_use_pixel_now_playing">楽曲情報のソースとして可能な場合この曲なに？からのデータを使用する (Pixel 限定)</string>
     <string name="pref_item_title_strict_match_pattern">全てのフォーマットパターンの解決</string>
     <string name="pref_item_desc_strict_match_pattern">全てのフォーマットパターンが解決されたときのみ共有文を生成する </string>
     <string name="pref_item_title_switch_bundle_artwork">投稿時の画像添付</string>
