@@ -50,7 +50,6 @@ import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import timber.log.Timber
 import kotlin.math.max
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
@@ -179,7 +178,8 @@ suspend fun updateTrackDetailByPixelNowPlaying(
     spotifyApiClient: SpotifyApiClient,
     appleMusicApiClient: AppleMusicApiClient
 ) {
-    val usePixelNowPlaying = sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING)
+    val usePixelNowPlaying =
+        sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING)
     val currentTrackDetail = sharedPreferences.getCurrentTrackDetail()
 
     if (usePixelNowPlaying.not() || pixelNowPlaying == null) {
@@ -261,7 +261,6 @@ suspend fun updateTrackDetailByPixelNowPlaying(
                 )
             ).withData(spotifyData, appleMusicData)
         }
-    Timber.d("np4d with data: $trackDetailWithData")
 
     val artworkUri = storeArtworkUri(
         context,

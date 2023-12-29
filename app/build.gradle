@@ -17,8 +17,8 @@ android {
         applicationId "com.geckour.nowplaying4droid"
         targetSdkVersion 34
         minSdkVersion 24
-        versionCode 144
-        versionName "3.4.3"
+        versionCode 145
+        versionName "3.4.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
@@ -164,7 +164,7 @@ dependencies {
     kapt "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
     // Billing
-    implementation "com.android.billingclient:billing-ktx:5.2.0"
+    implementation "com.android.billingclient:billing-ktx:6.1.0"
 
     // Preference
     implementation "androidx.preference:preference-ktx:1.2.0"

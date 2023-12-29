@@ -135,7 +135,7 @@ fun String.containsPattern(pattern: FormatPattern): Boolean =
 fun Context.checkStoragePermission(
     onNotGranted: ((context: Context) -> Unit)? = null, onGranted: (context: Context) -> Unit = {}
 ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || ContextCompat.checkSelfPermission(
+    if (Build.VERSION.SDK_INT > 29 || ContextCompat.checkSelfPermission(
             this, Manifest.permission.READ_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED
     ) {

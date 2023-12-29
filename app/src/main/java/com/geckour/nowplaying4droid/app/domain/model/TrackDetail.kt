@@ -1,5 +1,6 @@
 package com.geckour.nowplaying4droid.app.domain.model
 
+import com.geckour.nowplaying4droid.app.service.NotificationService.Companion.PIXEL_NOW_PLAYING_PACKAGE_NAME
 import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPattern
 import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
 import java.io.Serializable
@@ -17,8 +18,6 @@ data class TrackDetail(
 ) : Serializable {
 
     companion object {
-
-        const val PIXEL_NOW_PLAYING_PACKAGE_NAME = "com.google.android.as"
 
         val empty = TrackDetail(
             TrackCoreElement(null, null, null, null),

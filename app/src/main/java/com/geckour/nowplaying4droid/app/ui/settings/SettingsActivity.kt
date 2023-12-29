@@ -349,7 +349,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun invokeUpdateWithStoragePermissionsIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT > 29) {
             invokeUpdate()
         } else {
             requestUpdate.launch()
@@ -1617,7 +1617,6 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = viewModel.spotifyEnabledState,
                             onSwitchCheckedChanged = {
                                 viewModel.spotifyDataEnabledState.value = it
-                                invokeUpdateWithStoragePermissionsIfNeeded()
                             }
                         )
                     }
@@ -1661,7 +1660,6 @@ class SettingsActivity : AppCompatActivity() {
                             PrefKey.PREF_KEY_WHETHER_USE_APPLE_MUSIC_DATA,
                             onSwitchCheckedChanged = {
                                 viewModel.appleMusicDataEnabledState.value = it
-                                invokeUpdateWithStoragePermissionsIfNeeded()
                             }
                         )
                     }
@@ -1702,7 +1700,7 @@ class SettingsActivity : AppCompatActivity() {
                             sharedPreferences,
                             R.string.pref_item_title_use_pixel_now_playing,
                             R.string.pref_item_desc_use_pixel_now_playing,
-                            PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING,
+                            PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING
                         )
                     }
                 }

@@ -13,6 +13,7 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
+import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -41,6 +42,7 @@ import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
+import com.geckour.nowplaying4droid.app.util.refreshCurrentTrackDetail
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.showNotification
@@ -75,6 +77,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.android.ext.android.get
+import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
@@ -105,6 +108,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         const val WEAR_KEY_SUBJECT = "key_subject"
         const val WEAR_KEY_ARTWORK = "key_artwork"
 
+        const val PIXEL_NOW_PLAYING_PACKAGE_NAME = "com.google.android.as"
+
         fun sendRequestInvokeUpdate(context: Context) {
             context.checkStoragePermission { it.sendBroadcast(Intent(ACTION_INVOKE_UPDATE)) }
         }
@@ -126,21 +131,34 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
 
                     ACTION_INVOKE_UPDATE -> {
-                        val trackDetail = sharedPreferences.getCurrentTrackDetail() ?: return@apply
                         launch {
-                            updateTrackDetail(
-                                this@NotificationService,
-                                sharedPreferences,
-                                spotifyApiClient,
-                                youTubeDataClient,
-                                appleMusicApiClient,
-                                lastFmApiClient,
-                                currentMetadata ?: return@launch,
-                                currentSbn?.packageName ?: return@launch,
-                                currentSbn?.notification,
-                                trackDetail.coreElement,
-                                onClearMetadata = this@NotificationService::onMetadataCleared
-                            )
+                            Timber.d("np4d called 1")
+                            sharedPreferences.getCurrentTrackDetail()?.let { trackDetail ->
+                                updateTrackDetail(
+                                    this@NotificationService,
+                                    sharedPreferences,
+                                    spotifyApiClient,
+                                    youTubeDataClient,
+                                    appleMusicApiClient,
+                                    lastFmApiClient,
+                                    currentMetadata ?: return@let,
+                                    currentSbn?.packageName ?: return@let,
+                                    currentSbn?.notification,
+                                    trackDetail.coreElement,
+                                    onClearMetadata = this@NotificationService::onMetadataCleared
+                                )
+                            }
+                            if (currentSbn?.packageName == PIXEL_NOW_PLAYING_PACKAGE_NAME) {
+                                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING)
+                                        .not()
+                                ) {
+                                    onPixelNowPlayingChanged(null)
+                                } else {
+                                    currentSbn?.notification?.extras
+                                        ?.getString(Notification.EXTRA_TITLE)
+                                        ?.let { onPixelNowPlayingChanged(it) }
+                                }
+                            }
                         }
                     }
 
@@ -223,7 +241,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             addAction(ACTION_INVOKE_UPDATE)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-        registerReceiver(receiver, intentFilter)
+        if (Build.VERSION.SDK_INT > 33) {
+            registerReceiver(receiver, intentFilter, RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(receiver, intentFilter)
+        }
 
         sbnFlow.onEach { it.process() }.launchIn(this)
     }
@@ -243,8 +265,11 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (currentSbn == null) {
             withCatching {
                 activeNotifications.sortedByDescending { it.postTime }
-                    .firstOrNull { it.notification.mediaMetadata != null }
-                    .apply { onNotificationPosted(this) }
+                    .firstOrNull {
+                        it.notification.mediaMetadata != null
+                                || it.packageName == PIXEL_NOW_PLAYING_PACKAGE_NAME
+                    }
+                    ?.let { onNotificationPosted(it) }
             }
         }
 
@@ -305,6 +330,9 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     currentSbn = this
                     sharedPreferences.storePackageStatePostMastodon(this.packageName)
                     onMetadataChanged(it, this.packageName, this.notification)
+                }
+                if (this.packageName == PIXEL_NOW_PLAYING_PACKAGE_NAME) {
+                    currentSbn = this
                 }
             }
         }
