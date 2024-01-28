@@ -187,12 +187,6 @@ inline fun <reified T : Any> Json.parseListOrNull(
 
 fun String.foldBreaks(): String = this.replace(Regex("[\r\n]"), " ")
 
-fun <T> MutableList<T>.swap(from: Int, to: Int) {
-    val tmp = this[to]
-    this[to] = this[from]
-    this[from] = tmp
-}
-
 fun Context.getArtworkUriFromDevice(trackCoreElement: TrackDetail.TrackCoreElement): Uri? =
     getMediaIdInfoFromDevice(trackCoreElement)?.let {
         withCatching {
@@ -362,3 +356,11 @@ val MediaMetadata.releasedAt
 
             else -> null
         }
+
+fun <T> MutableList<T>.move(from: Int, to: Int) {
+    val tmp = this[from]
+    this.removeAt(from)
+    this.add(to, tmp)
+}
+
+fun <T> List<T>.moved(from: Int, to: Int): List<T> = this.toMutableList().apply { move(from, to) }

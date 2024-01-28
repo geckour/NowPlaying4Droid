@@ -13,7 +13,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
-import android.widget.FrameLayout
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -23,6 +22,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -30,6 +30,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -53,10 +54,12 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.Card
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Divider
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Snackbar
@@ -77,6 +80,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Alignment.Companion.BottomEnd
 import androidx.compose.ui.Alignment.Companion.Center
@@ -98,12 +102,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.geckour.nowplaying4droid.BuildConfig
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.App
@@ -117,6 +119,7 @@ import com.geckour.nowplaying4droid.app.ui.compose.CleanBlue
 import com.geckour.nowplaying4droid.app.ui.compose.DarkRed
 import com.geckour.nowplaying4droid.app.ui.compose.DeepBlue
 import com.geckour.nowplaying4droid.app.ui.compose.DeepRed
+import com.geckour.nowplaying4droid.app.ui.compose.DullBlue
 import com.geckour.nowplaying4droid.app.ui.compose.InkBlackWeak
 import com.geckour.nowplaying4droid.app.ui.compose.LightRed
 import com.geckour.nowplaying4droid.app.ui.compose.MilkBlack
@@ -126,7 +129,6 @@ import com.geckour.nowplaying4droid.app.ui.compose.SmokeBlack
 import com.geckour.nowplaying4droid.app.ui.compose.SmokeWhite
 import com.geckour.nowplaying4droid.app.ui.license.LicensesActivity
 import com.geckour.nowplaying4droid.app.ui.sharing.SharingActivity
-import com.geckour.nowplaying4droid.app.ui.widget.adapter.ArtworkResolveMethodListAdapter
 import com.geckour.nowplaying4droid.app.util.PaletteColor
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.Visibility
@@ -144,6 +146,7 @@ import com.geckour.nowplaying4droid.app.util.getPackageStateListPostMastodon
 import com.geckour.nowplaying4droid.app.util.getPackageStateListSpotify
 import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
+import com.geckour.nowplaying4droid.app.util.moved
 import com.geckour.nowplaying4droid.app.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4droid.app.util.setArtworkResolveOrder
 import com.geckour.nowplaying4droid.app.util.setFormatPatternModifiers
@@ -165,6 +168,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 import org.koin.android.ext.android.get
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import permissions.dispatcher.ktx.PermissionsRequester
@@ -657,20 +664,17 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
+    @OptIn(ExperimentalMaterialApi::class)
     @Composable
     fun ChangeArtworkResolveOrderDialog() {
-        val adapter by remember {
-            derivedStateOf {
-                ArtworkResolveMethodListAdapter(
-                    sharedPreferences.getArtworkResolveOrder().toMutableList()
-                )
-            }
+        var items by remember {
+            mutableStateOf(sharedPreferences.getArtworkResolveOrder())
         }
         AlertDialog(
             onDismissRequest = { viewModel.openChangeArtworkResolveOrderDialog.value = false },
             confirmButton = {
                 TextButton(onClick = {
-                    sharedPreferences.setArtworkResolveOrder(adapter.items)
+                    sharedPreferences.setArtworkResolveOrder(items)
                     viewModel.openChangeArtworkResolveOrderDialog.value = false
                     invokeUpdateWithStoragePermissionsIfNeeded()
                 }) {
@@ -688,28 +692,63 @@ class SettingsActivity : AppCompatActivity() {
                 Text(text = stringResource(id = R.string.dialog_title_artwork_resolve_order))
             },
             text = {
+                val reorderableState = rememberReorderableLazyListState(
+                    onMove = { from, to -> items = items.moved(from.index, to.index) }
+                )
                 Column {
                     Text(text = stringResource(id = R.string.dialog_message_artwork_resolve_order))
-                    AndroidView(factory = {
-                        FrameLayout(it).apply {
-                            layoutParams = FrameLayout.LayoutParams(
-                                FrameLayout.LayoutParams.MATCH_PARENT,
-                                FrameLayout.LayoutParams.WRAP_CONTENT
-                            )
-                            addView(
-                                RecyclerView(it).apply {
-                                    layoutParams = RecyclerView.LayoutParams(
-                                        RecyclerView.LayoutParams.MATCH_PARENT,
-                                        RecyclerView.LayoutParams.WRAP_CONTENT
-                                    )
-                                    layoutManager =
-                                        LinearLayoutManager(it, RecyclerView.VERTICAL, false)
-                                    adapter.itemTouchHolder.attachToRecyclerView(this)
-                                    this.adapter = adapter
+                    LazyColumn(
+                        state = reorderableState.listState,
+                        modifier = Modifier
+                            .reorderable(reorderableState)
+                            .detectReorderAfterLongPress(reorderableState)
+                    ) {
+                        items(
+                            items = items,
+                            key = { it.key }
+                        ) { item ->
+                            ReorderableItem(
+                                reorderableState = reorderableState,
+                                key = item.key
+                            ) { isDragging ->
+                                val elevation by animateDpAsState(
+                                    targetValue = if (isDragging) 16.dp else 0.dp
+                                )
+                                Surface(
+                                    color = if (isSystemInDarkTheme()) MilkBlack else MilkWhite,
+                                    elevation = elevation
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 10.dp),
+                                        verticalAlignment = CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stringResource(id = item.key.strResId),
+                                            fontSize = 12.sp,
+                                            color = if (isSystemInDarkTheme()) CleanBlue else DullBlue,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .padding(end = 8.dp)
+                                        )
+                                        CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                                            Switch(
+                                                checked = item.enabled,
+                                                onCheckedChange = { enabled ->
+                                                    items = items.map {
+                                                        if (it.key == item.key) it.copy(enabled = enabled)
+                                                        else it
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
-                            )
+                            }
                         }
-                    })
+                    }
                 }
             },
             backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
@@ -915,87 +954,98 @@ class SettingsActivity : AppCompatActivity() {
         var packageStates by remember {
             mutableStateOf(sharedPreferences.getPackageStateListSpotify())
         }
-        AlertDialog(
-            onDismissRequest = { viewModel.openSelectPlayerSpotifyDialog.value = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    packageStates.forEach {
-                        sharedPreferences.storePackageStateSpotify(it.packageName, it.state)
-                    }
-                    viewModel.openSelectPlayerSpotifyDialog.value = false
-                    invokeUpdateWithStoragePermissionsIfNeeded()
-                }) {
-                    Text(text = stringResource(id = R.string.dialog_button_ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    viewModel.openSelectPlayerSpotifyDialog.value = false
-                }) {
-                    Text(text = stringResource(id = R.string.dialog_button_ng))
-                }
-            },
-            title = {
-                Text(text = stringResource(id = R.string.dialog_title_player_package_spotify))
-            },
-            text = {
-                Column {
-                    Text(text = stringResource(id = R.string.dialog_message_player_package_spotify))
-                    packageStates.forEachIndexed { index, packageState ->
-                        Row(
-                            modifier = Modifier
-                                .clickable {
-                                    packageStates = packageStates
-                                        .toMutableList()
-                                        .apply {
-                                            this[index] = this[index].let {
-                                                it.copy(state = it.state.not())
+        Dialog(onDismissRequest = { viewModel.openSelectPlayerSpotifyDialog.value = false }) {
+            Card(
+                modifier = Modifier.padding(8.dp),
+                backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(
+                        text = stringResource(id = R.string.dialog_title_player_package_spotify),
+                        style = MaterialTheme.typography.subtitle1
+                    )
+                    Text(
+                        text = stringResource(id = R.string.dialog_message_player_package_spotify),
+                        style = MaterialTheme.typography.body2,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                        itemsIndexed(packageStates) { index, packageState ->
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .clickable {
+                                            packageStates = packageStates
+                                                .toMutableList()
+                                                .apply {
+                                                    this[index] = this[index].let {
+                                                        it.copy(state = it.state.not())
+                                                    }
+                                                }
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = { onOpenPlayer(packageState.packageName) }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.OpenInNew,
+                                            contentDescription = stringResource(
+                                                id = R.string.dialog_content_desctiption_open_player
+                                            )
+                                        )
+                                    }
+                                    Text(
+                                        text = packageState.packageName,
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                        color = MaterialTheme.colors.secondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Switch(
+                                        checked = packageState.state,
+                                        onCheckedChange = { checked ->
+                                            packageStates = packageStates.toMutableList().apply {
+                                                this[index] = this[index].copy(state = checked)
                                             }
                                         }
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { onOpenPlayer(packageState.packageName) }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.OpenInNew,
-                                    contentDescription = stringResource(
-                                        id = R.string.dialog_content_desctiption_open_player
                                     )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(0.75.dp)
+                                        .background(MaterialTheme.colors.secondary)
                                 )
                             }
-                            Text(
-                                text = packageState.packageName,
-                                modifier = Modifier
-                                    .padding(horizontal = 4.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                color = MaterialTheme.colors.secondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Switch(
-                                checked = packageState.state,
-                                onCheckedChange = { checked ->
-                                    packageStates = packageStates.toMutableList().apply {
-                                        this[index] = this[index].copy(state = checked)
-                                    }
-                                }
-                            )
                         }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.75.dp)
-                                .background(MaterialTheme.colors.secondary)
-                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            viewModel.openSelectPlayerSpotifyDialog.value = false
+                        }) {
+                            Text(text = stringResource(id = R.string.dialog_button_ng))
+                        }
+                        TextButton(onClick = {
+                            packageStates.forEach {
+                                sharedPreferences.storePackageStateSpotify(it.packageName, it.state)
+                            }
+                            viewModel.openSelectPlayerSpotifyDialog.value = false
+                            invokeUpdateWithStoragePermissionsIfNeeded()
+                        }) {
+                            Text(text = stringResource(id = R.string.dialog_button_ok))
+                        }
                     }
                 }
-            },
-            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
-        )
+            }
+        }
     }
 
     @Composable
@@ -1003,87 +1053,101 @@ class SettingsActivity : AppCompatActivity() {
         var packageStates by remember {
             mutableStateOf(sharedPreferences.getPackageStateListAppleMusic())
         }
-        AlertDialog(
-            onDismissRequest = { viewModel.openSelectPlayerAppleMusicDialog.value = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    packageStates.forEach {
-                        sharedPreferences.storePackageStateAppleMusic(it.packageName, it.state)
-                    }
-                    viewModel.openSelectPlayerAppleMusicDialog.value = false
-                    invokeUpdateWithStoragePermissionsIfNeeded()
-                }) {
-                    Text(text = stringResource(id = R.string.dialog_button_ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    viewModel.openSelectPlayerAppleMusicDialog.value = false
-                }) {
-                    Text(text = stringResource(id = R.string.dialog_button_ng))
-                }
-            },
-            title = {
-                Text(text = stringResource(id = R.string.dialog_title_player_package_apple_music))
-            },
-            text = {
-                Column {
-                    Text(text = stringResource(id = R.string.dialog_message_player_package_apple_music))
-                    packageStates.forEachIndexed { index, packageState ->
-                        Row(
-                            modifier = Modifier
-                                .clickable {
-                                    packageStates = packageStates
-                                        .toMutableList()
-                                        .apply {
-                                            this[index] = this[index].let {
-                                                it.copy(state = it.state.not())
+        Dialog(onDismissRequest = { viewModel.openSelectPlayerAppleMusicDialog.value = false }) {
+            Card(
+                modifier = Modifier.padding(8.dp),
+                backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text(
+                        text = stringResource(id = R.string.dialog_title_player_package_apple_music),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(id = R.string.dialog_message_player_package_spotify),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                        itemsIndexed(packageStates) { index, packageState ->
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .clickable {
+                                            packageStates = packageStates
+                                                .toMutableList()
+                                                .apply {
+                                                    this[index] = this[index].let {
+                                                        it.copy(state = it.state.not())
+                                                    }
+                                                }
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = { onOpenPlayer(packageState.packageName) }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.OpenInNew,
+                                            contentDescription = stringResource(
+                                                id = R.string.dialog_content_desctiption_open_player
+                                            )
+                                        )
+                                    }
+                                    Text(
+                                        text = packageState.packageName,
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                        color = MaterialTheme.colors.secondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Switch(
+                                        checked = packageState.state,
+                                        onCheckedChange = { checked ->
+                                            packageStates = packageStates.toMutableList().apply {
+                                                this[index] = this[index].copy(state = checked)
                                             }
                                         }
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { onOpenPlayer(packageState.packageName) }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.OpenInNew,
-                                    contentDescription = stringResource(
-                                        id = R.string.dialog_content_desctiption_open_player
                                     )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(0.75.dp)
+                                        .background(MaterialTheme.colors.secondary)
                                 )
                             }
-                            Text(
-                                text = packageState.packageName,
-                                modifier = Modifier
-                                    .padding(horizontal = 4.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                color = MaterialTheme.colors.secondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Switch(
-                                checked = packageState.state,
-                                onCheckedChange = { checked ->
-                                    packageStates = packageStates.toMutableList().apply {
-                                        this[index] = this[index].copy(state = checked)
-                                    }
-                                }
-                            )
                         }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.75.dp)
-                                .background(MaterialTheme.colors.secondary)
-                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            viewModel.openSelectPlayerAppleMusicDialog.value = false
+                        }) {
+                            Text(text = stringResource(id = R.string.dialog_button_ng))
+                        }
+                        TextButton(onClick = {
+                            packageStates.forEach {
+                                sharedPreferences.storePackageStateAppleMusic(
+                                    it.packageName,
+                                    it.state
+                                )
+                            }
+                            viewModel.openSelectPlayerAppleMusicDialog.value = false
+                            invokeUpdateWithStoragePermissionsIfNeeded()
+                        }) {
+                            Text(text = stringResource(id = R.string.dialog_button_ok))
+                        }
                     }
                 }
-            },
-            backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
-        )
+            }
+        }
     }
 
     @Composable
