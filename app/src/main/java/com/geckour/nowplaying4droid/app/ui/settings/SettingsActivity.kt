@@ -1426,14 +1426,14 @@ class SettingsActivity : AppCompatActivity() {
             item { Category(R.string.pref_category_general) }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_change_artwork_resolve_order,
                             descStringRes = R.string.pref_item_desc_change_artwork_resolve_order,
                             onClick = { viewModel.openChangeArtworkResolveOrderDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
@@ -1441,7 +1441,7 @@ class SettingsActivity : AppCompatActivity() {
             item { Category(R.string.pref_category_share) }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_pattern,
@@ -1449,39 +1449,39 @@ class SettingsActivity : AppCompatActivity() {
                             summary = viewModel.patternFormatSummary,
                             onClick = { viewModel.openChangePatternFormatDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_pattern_modifiers,
                             descStringRes = R.string.pref_item_desc_pattern_modifiers,
                             onClick = { viewModel.openEditPatternModifierDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_simplify_share,
                             descStringRes = R.string.pref_item_desc_simplify_share,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_USE_SIMPLE_SHARE
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_auth_spotify,
@@ -1489,13 +1489,13 @@ class SettingsActivity : AppCompatActivity() {
                             summary = viewModel.authSpotifySummary,
                             onClick = { onClickAuthSpotify() }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_use_spotify_data,
@@ -1506,13 +1506,13 @@ class SettingsActivity : AppCompatActivity() {
                                 viewModel.spotifyDataEnabledState.value = it
                             }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_search_spotify_strictly,
@@ -1520,13 +1520,13 @@ class SettingsActivity : AppCompatActivity() {
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY,
                             enabled = viewModel.spotifyDataEnabledState
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_player_package_spotify,
@@ -1534,13 +1534,13 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = viewModel.spotifyDataEnabledState,
                             onClick = { viewModel.openSelectPlayerSpotifyDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_use_apple_music_data,
@@ -1550,13 +1550,13 @@ class SettingsActivity : AppCompatActivity() {
                                 viewModel.appleMusicDataEnabledState.value = it
                             }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_search_apple_music_strictly,
@@ -1564,13 +1564,13 @@ class SettingsActivity : AppCompatActivity() {
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY,
                             enabled = viewModel.appleMusicDataEnabledState
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_player_package_apple_music,
@@ -1578,65 +1578,65 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = viewModel.appleMusicDataEnabledState,
                             onClick = { viewModel.openSelectPlayerAppleMusicDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_use_pixel_now_playing,
                             descStringRes = R.string.pref_item_desc_use_pixel_now_playing,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_USE_PIXEL_NOW_PLAYING
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_strict_match_pattern,
                             descStringRes = R.string.pref_item_desc_strict_match_pattern,
                             switchPrefKey = PrefKey.PREF_KEY_STRICT_MATCH_PATTERN_MODE
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_bundle_artwork,
                             descStringRes = R.string.pref_item_desc_switch_bundle_artwork,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_copy_into_clipboard,
                             descStringRes = R.string.pref_item_desc_switch_copy_into_clipboard,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_COPY_INTO_CLIPBOARD
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_auto_post_mastodon,
@@ -1646,13 +1646,13 @@ class SettingsActivity : AppCompatActivity() {
                                 mastodonEnabledState.value = state
                             }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_auth_mastodon,
@@ -1661,13 +1661,13 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = mastodonEnabledState,
                             onClick = { viewModel.openAuthMastodonDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_delay_mastodon,
@@ -1676,13 +1676,13 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = mastodonEnabledState,
                             onClick = { viewModel.openSetMastodonPostDelayDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_visibility_mastodon,
@@ -1691,13 +1691,13 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = mastodonEnabledState,
                             onClick = { viewModel.openSetMastodonPostVisibilityDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_player_package_mastodon,
@@ -1705,13 +1705,13 @@ class SettingsActivity : AppCompatActivity() {
                             enabled = mastodonEnabledState,
                             onClick = { viewModel.openSelectPlayerPostMastodonDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_success_notification_mastodon,
@@ -1719,7 +1719,7 @@ class SettingsActivity : AppCompatActivity() {
                             switchPrefKey = PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON,
                             enabled = mastodonEnabledState
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
@@ -1727,33 +1727,33 @@ class SettingsActivity : AppCompatActivity() {
             item { Category(titleRes = R.string.pref_category_notification) }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_reside_notification,
                             descStringRes = R.string.pref_item_desc_switch_reside_notification,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_RESIDE
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_show_artwork_in_notification,
                             descStringRes = R.string.pref_item_desc_switch_show_artwork_in_notification,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_NOTIFICATION
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_choose_color,
@@ -1761,20 +1761,20 @@ class SettingsActivity : AppCompatActivity() {
                             summary = viewModel.chosePaletteColorSummary,
                             onClick = { viewModel.openSelectNotificationColorDialog.value = true }
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_colorize_notification_bg,
                             descStringRes = R.string.pref_item_desc_switch_colorize_notification_bg,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_COLORIZE_NOTIFICATION_BG
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
@@ -1782,40 +1782,40 @@ class SettingsActivity : AppCompatActivity() {
             item { Category(titleRes = R.string.pref_category_widget) }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_show_artwork_in_widget,
                             descStringRes = R.string.pref_item_desc_switch_show_artwork_in_widget,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_SHOW_ARTWORK_IN_WIDGET
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_launch_player_on_click_widget_artwork,
                             descStringRes = R.string.pref_item_desc_switch_launch_player_on_click_widget_artwork,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_LAUNCH_PLAYER_WITH_WIDGET_ARTWORK
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
             item {
                 val item by remember {
-                    mutableStateOf(
+                    derivedStateOf {
                         SettingsViewModel.Item(
                             sharedPreferences = sharedPreferences,
                             titleStringRes = R.string.pref_item_title_switch_show_clear_button_in_widget,
                             descStringRes = R.string.pref_item_desc_switch_show_clear_button_in_widget,
                             switchPrefKey = PrefKey.PREF_KEY_WHETHER_SHOW_CLEAR_BUTTON_IN_WIDGET
                         )
-                    )
+                    }
                 }
                 Item(item = item)
             }
@@ -1823,7 +1823,7 @@ class SettingsActivity : AppCompatActivity() {
                 item { Category(titleRes = R.string.pref_category_others) }
                 item {
                     val item by remember {
-                        mutableStateOf(
+                        derivedStateOf {
                             SettingsViewModel.Item(
                                 sharedPreferences = sharedPreferences,
                                 titleStringRes = R.string.pref_item_title_donate,
@@ -1836,7 +1836,7 @@ class SettingsActivity : AppCompatActivity() {
                                     )
                                 }
                             }
-                        )
+                        }
                     }
                     Item(item = item)
                 }

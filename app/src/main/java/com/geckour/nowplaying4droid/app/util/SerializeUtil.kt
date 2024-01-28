@@ -8,6 +8,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encodeToString
 
 object MastodonAccessTokenSerializer : KSerializer<AccessToken> {
 
@@ -16,10 +17,7 @@ object MastodonAccessTokenSerializer : KSerializer<AccessToken> {
 
     override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: AccessToken) {
         encoder.encodeString(
-            json.encodeToString(
-                MastodonAccessToken.serializer(),
-                MastodonAccessToken.from(value)
-            )
+            json.encodeToString(MastodonAccessToken.from(value))
         )
     }
 
