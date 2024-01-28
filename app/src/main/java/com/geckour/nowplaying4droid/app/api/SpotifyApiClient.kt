@@ -17,7 +17,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
-import timber.log.Timber
 import java.util.*
 
 class SpotifyApiClient(context: Context) {
@@ -193,36 +192,42 @@ class SpotifyApiClient(context: Context) {
             )
                 .tracks
                 ?.items
-            (results?.firstOrNull { spotifyTrack ->
+            results?.firstOrNull { spotifyTrack ->
+                if (isStrictMode.not()) return@firstOrNull true
+
                 val titleValid = trackCoreElement.title?.let { title ->
-                    title.filterNot { it.isWhitespace() }
-                        .lowercase() == spotifyTrack.name.filterNot { it.isWhitespace() }
-                        .lowercase()
+                    title.filterNot { it.isWhitespace() }.lowercase() ==
+                            spotifyTrack.name
+                                .filterNot { it.isWhitespace() }
+                                .lowercase()
                 } != false
                 val albumValid = trackCoreElement.album?.let { album ->
-                    album.filterNot { it.isWhitespace() }
-                        .lowercase() == spotifyTrack.album.name.filterNot { it.isWhitespace() }
-                        .lowercase()
+                    album.removeSuffix(" - EP")
+                        .filterNot { it.isWhitespace() }
+                        .lowercase() ==
+                            spotifyTrack.album.name
+                                .filterNot { it.isWhitespace() }
+                                .lowercase()
                 } != false
                 val artistValid = trackCoreElement.artist?.let { artist ->
-                    spotifyTrack.artists.map { it.name.filterNot { it.isWhitespace() }.lowercase() }
-                        .contains(artist.filterNot { it.isWhitespace() }.lowercase())
+                    spotifyTrack.artists.map { artist ->
+                        artist.name.filterNot { it.isWhitespace() }.lowercase()
+                    }.contains(artist.filterNot { it.isWhitespace() }.lowercase())
                 } != false
 
                 return@firstOrNull titleValid && albumValid && artistValid
-            } ?: (if (isStrictMode) null else results?.firstOrNull()))
-                ?.let {
-                    SpotifyResult.Success(
-                        SpotifyResult.Data(
-                            it.urls["spotify"] ?: return@let null,
-                            it.album.images.firstOrNull()?.url,
-                            it.name,
-                            it.artistString,
-                            it.album.name,
-                            it.album.releaseDate
-                        )
+            }?.let {
+                SpotifyResult.Success(
+                    SpotifyResult.Data(
+                        it.urls["spotify"] ?: return@let null,
+                        it.album.images.firstOrNull()?.url,
+                        it.name,
+                        it.artistString,
+                        it.album.name,
+                        it.album.releaseDate
                     )
-                } ?: SpotifyResult.Failure(IllegalStateException("No search result"))
+                )
+            } ?: SpotifyResult.Failure(IllegalStateException("No search result"))
         } ?: SpotifyResult.Failure(IllegalStateException("Unknown error"))).apply {
             currentQueryAndResult = query to this
         }

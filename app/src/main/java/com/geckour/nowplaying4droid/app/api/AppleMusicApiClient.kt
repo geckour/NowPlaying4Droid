@@ -8,6 +8,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
+import timber.log.Timber
 import java.util.*
 
 class AppleMusicApiClient {
@@ -54,7 +55,33 @@ class AppleMusicApiClient {
                 countryCode = countryCode,
                 query = trackCoreElement.appleMusicSearchQuery
             )
-            searchResult.results.songs.data.firstOrNull()?.let { song ->
+            searchResult.results.songs.data.firstOrNull { appleMusicSong ->
+                if (isStrictMode.not()) return@firstOrNull true
+
+                val titleValid = trackCoreElement.title?.let { title ->
+                    title.filterNot { it.isWhitespace() }.lowercase() ==
+                            appleMusicSong.attributes.name
+                                .filterNot { it.isWhitespace() }
+                                .lowercase()
+                } != false
+                val albumValid = trackCoreElement.album?.let { album ->
+                    album.removeSuffix(" - EP")
+                        .filterNot { it.isWhitespace() }
+                        .lowercase().apply { Timber. d("np4d album name processed: $this") } ==
+                            appleMusicSong.attributes.albumName
+                                .removeSuffix(" - EP")
+                                .filterNot { it.isWhitespace() }
+                                .lowercase().apply { Timber. d("np4d Apple album name processed: $this") }
+                } != false
+                val artistValid = trackCoreElement.artist?.let { artist ->
+                    artist.filterNot { it.isWhitespace() }.lowercase() ==
+                            appleMusicSong.attributes.artistName
+                                .filterNot { it.isWhitespace() }
+                                .lowercase()
+                } != false
+
+                return@firstOrNull titleValid && albumValid && artistValid
+            }?.let { song ->
                 val data = AppleMusicResult.Data(
                     sharingUrl = song.attributes.url,
                     artworkUrl = song.attributes.artwork.resolvedUrl,
@@ -64,9 +91,7 @@ class AppleMusicApiClient {
                     composerName = song.attributes.composerName,
                     releasedAt = song.attributes.releaseDate
                 )
-                return@let if (isStrictMode.not() || trackCoreElement.isStrict(data)) {
-                    AppleMusicResult.Success(data)
-                } else null
+                return@let AppleMusicResult.Success(data)
             } ?: AppleMusicResult.Failure(IllegalStateException("No search result"))
         } ?: AppleMusicResult.Failure(IllegalStateException("Unknown error"))
     }

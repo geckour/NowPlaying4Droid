@@ -42,7 +42,6 @@ import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
-import com.geckour.nowplaying4droid.app.util.refreshCurrentTrackDetail
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.showNotification
@@ -77,7 +76,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.android.ext.android.get
-import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
@@ -132,7 +130,6 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
                     ACTION_INVOKE_UPDATE -> {
                         launch {
-                            Timber.d("np4d called 1")
                             sharedPreferences.getCurrentTrackDetail()?.let { trackDetail ->
                                 updateTrackDetail(
                                     this@NotificationService,

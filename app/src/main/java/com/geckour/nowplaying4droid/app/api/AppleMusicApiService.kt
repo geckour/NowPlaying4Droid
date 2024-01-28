@@ -19,7 +19,7 @@ interface AppleMusicApiService {
         query: String,
 
         @Query("limit")
-        limit: Int = 1,
+        limit: Int = 20,
 
         @Query("types")
         types: List<String> = listOf("songs"),

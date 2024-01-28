@@ -70,20 +70,15 @@ data class TrackDetail(
             title?.let { if (it.isAscii) "track:\"$it\"" else "\"$it\"" },
             artist?.let { if (it.isAscii) "artist:\"$it\"" else "\"$it\"" },
             album?.let { if (it.isAscii) "album:\"$it\"" else "\"$it\"" }
-        ).joinToString("+")
+        ).joinToString(" ")
 
         val youTubeSearchQuery = "$title $artist"
 
         val appleMusicSearchQuery = listOfNotNull(
-            title?.trim()?.replace(Regex("\\s+"), "+"),
-            album?.trim()?.replace(Regex("\\s+"), "+"),
-            artist?.trim()?.replace(Regex("\\s+"), "+")
-        ).joinToString("+")
-
-        fun isStrict(appleMusicData: AppleMusicResult.Data): Boolean =
-            title == appleMusicData.trackName &&
-                    artist == appleMusicData.artistName &&
-                    album == appleMusicData.albumName
+            title?.trim()?.replace(Regex("\\s+"), " "),
+            album?.trim()?.replace(Regex("\\s+"), " "),
+            artist?.trim()?.replace(Regex("\\s+"), " ")
+        ).joinToString(" ")
 
         fun withData(
             spotifyData: SpotifyResult.Data?,
