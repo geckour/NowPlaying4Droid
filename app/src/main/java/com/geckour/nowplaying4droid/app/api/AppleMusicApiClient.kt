@@ -66,10 +66,12 @@ class AppleMusicApiClient {
                 } != false
                 val albumValid = trackCoreElement.album?.let { album ->
                     album.removeSuffix(" - EP")
+                        .removeSuffix(" - Single")
                         .filterNot { it.isWhitespace() }
                         .lowercase().apply { Timber. d("np4d album name processed: $this") } ==
                             appleMusicSong.attributes.albumName
                                 .removeSuffix(" - EP")
+                                .removeSuffix(" - Single")
                                 .filterNot { it.isWhitespace() }
                                 .lowercase().apply { Timber. d("np4d Apple album name processed: $this") }
                 } != false
