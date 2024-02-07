@@ -19,8 +19,8 @@ android {
         applicationId "com.geckour.nowplaying4droid"
         targetSdk 34
         minSdk 24
-        versionCode 146
-        versionName "3.4.5"
+        versionCode 147
+        versionName "3.4.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding.enabled = true
 
