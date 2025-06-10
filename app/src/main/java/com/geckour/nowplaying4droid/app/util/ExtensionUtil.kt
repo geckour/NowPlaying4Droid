@@ -364,3 +364,9 @@ fun <T> MutableList<T>.move(from: Int, to: Int) {
 }
 
 fun <T> List<T>.moved(from: Int, to: Int): List<T> = this.toMutableList().apply { move(from, to) }
+
+fun String.normalizedAppleAlbumName(): String =
+    this.removeSuffix(" - EP")
+        .removeSuffix(" - Single")
+        .filterNot { it.isWhitespace() }
+        .lowercase()

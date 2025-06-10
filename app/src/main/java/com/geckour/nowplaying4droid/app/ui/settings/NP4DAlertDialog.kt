@@ -26,10 +26,10 @@ fun NP4DAlertDialog(
     title: String,
     message: String? = null,
     onConfirm: (() -> Unit)? = null,
-    onDismissRequest: () -> Unit,
+    onDismissRequest: (() -> Unit)? = null,
     content: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    Dialog(onDismissRequest = onDismissRequest) {
+    Dialog(onDismissRequest = onDismissRequest ?: {}) {
         Card(
             modifier = Modifier.padding(8.dp),
             backgroundColor = if (isSystemInDarkTheme()) MilkBlack else MilkWhite
@@ -47,9 +47,11 @@ fun NP4DAlertDialog(
                     )
                 }
                 content?.let {
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false)
+                    ) {
                         it()
                     }
                 }
@@ -57,8 +59,10 @@ fun NP4DAlertDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismissRequest) {
-                        Text(text = stringResource(id = R.string.dialog_button_ng))
+                    onDismissRequest?.let {
+                        TextButton(onClick = it) {
+                            Text(text = stringResource(id = R.string.dialog_button_ng))
+                        }
                     }
                     onConfirm?.let {
                         TextButton(onClick = it) {

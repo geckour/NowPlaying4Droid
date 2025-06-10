@@ -50,6 +50,7 @@ import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import timber.log.Timber
 import kotlin.math.max
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
@@ -675,7 +676,8 @@ private suspend fun storeArtworkUri(
 
 private fun Notification.getArtworkBitmap(context: Context): Bitmap? =
     (getLargeIcon()?.loadDrawable(context) as? BitmapDrawable)?.bitmap?.let {
-        withCatching { it.copy(it.config, false) }
+        val config = it.config ?: return@let null
+        withCatching { it.copy(config, false) }
     }
 
 suspend fun postMastodon(

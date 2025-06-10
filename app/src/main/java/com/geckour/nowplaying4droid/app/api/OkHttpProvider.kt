@@ -25,7 +25,7 @@ object OkHttpProvider {
     private const val APPLE_TOKEN_EXPIRE_DURATION = 15777000000
     private val appleJwt = JWT.create()
         .withIssuer("5228F48D57")
-        .withKeyId("AFWU7W3X4T")
+        .withKeyId("643DA6326H")
     private val appleJwtAlgorithm = Algorithm.ECDSA256(
         null,
         KeyFactory.getInstance("EC")

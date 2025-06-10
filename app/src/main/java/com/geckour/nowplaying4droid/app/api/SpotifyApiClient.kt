@@ -9,6 +9,7 @@ import com.geckour.nowplaying4droid.app.domain.model.SpotifyUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.util.getSpotifyUserInfo
 import com.geckour.nowplaying4droid.app.util.json
+import com.geckour.nowplaying4droid.app.util.normalizedAppleAlbumName
 import com.geckour.nowplaying4droid.app.util.storeSpotifyUserInfoImmediately
 import com.geckour.nowplaying4droid.app.util.withCatching
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -17,6 +18,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
+import timber.log.Timber
 import java.util.*
 
 class SpotifyApiClient(context: Context) {
@@ -197,21 +199,15 @@ class SpotifyApiClient(context: Context) {
 
                 val titleValid = trackCoreElement.title?.let { title ->
                     title.filterNot { it.isWhitespace() }.lowercase() ==
-                            spotifyTrack.name
-                                .filterNot { it.isWhitespace() }
-                                .lowercase()
+                            spotifyTrack.name.filterNot { it.isWhitespace() }.lowercase()
                 } != false
                 val albumValid = trackCoreElement.album?.let { album ->
-                    album.removeSuffix(" - EP")
-                        .filterNot { it.isWhitespace() }
-                        .lowercase() ==
-                            spotifyTrack.album.name
-                                .filterNot { it.isWhitespace() }
-                                .lowercase()
+                    album.normalizedAppleAlbumName() ==
+                            spotifyTrack.album.name.normalizedAppleAlbumName()
                 } != false
                 val artistValid = trackCoreElement.artist?.let { artist ->
-                    spotifyTrack.artists.map { artist ->
-                        artist.name.filterNot { it.isWhitespace() }.lowercase()
+                    spotifyTrack.artists.map { spotifyArtist ->
+                        spotifyArtist.name.filterNot { it.isWhitespace() }.lowercase()
                     }.contains(artist.filterNot { it.isWhitespace() }.lowercase())
                 } != false
 

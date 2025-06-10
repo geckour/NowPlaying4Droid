@@ -82,13 +82,12 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     enum class Channel {
         NOTIFICATION_CHANNEL_SHARE,
-        NOTIFICATION_CHANNEL_NOTIFY
+        NOTIFICATION_CHANNEL_NOTIFY,
     }
 
     enum class NotificationType(val id: Int, val channel: Channel) {
         SHARE(180, Channel.NOTIFICATION_CHANNEL_SHARE),
         NOTIFY_SUCCESS_MASTODON(190, Channel.NOTIFICATION_CHANNEL_NOTIFY),
-        DEBUG_SPOTIFY_SEARCH_RESULT(191, Channel.NOTIFICATION_CHANNEL_NOTIFY)
     }
 
     companion object {

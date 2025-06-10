@@ -34,8 +34,6 @@ class SettingsViewModel(
     private val sharedPreferences: SharedPreferences
 ) : AndroidViewModel(application) {
 
-    internal var showingNotificationServicePermissionDialog = false
-
     internal val settingsVisible = mutableStateOf(false)
     internal val donated = mutableStateOf(false)
 
@@ -84,6 +82,9 @@ class SettingsViewModel(
             }.orEmpty()
         )
 
+
+    internal var openNotificationServicePermissionDialog = mutableStateOf(false)
+    internal var openIgnoreBatteryOptimizationDialog = mutableStateOf(false)
     internal val openChangeArtworkResolveOrderDialog = mutableStateOf(false)
     internal val openChangePatternFormatDialog = mutableStateOf(false)
     internal val openEditPatternModifierDialog = mutableStateOf(false)

@@ -2,7 +2,6 @@ package com.geckour.nowplaying4droid.app.ui.settings
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -12,7 +11,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
-import android.provider.Settings
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -21,7 +19,6 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
@@ -129,7 +126,6 @@ import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.Visibility
 import com.geckour.nowplaying4droid.app.util.clearSpotifyUserInfoImmediately
 import com.geckour.nowplaying4droid.app.util.executeCatching
-import com.geckour.nowplaying4droid.app.util.getAlertTwitterAuthFlag
 import com.geckour.nowplaying4droid.app.util.getArtworkResolveOrder
 import com.geckour.nowplaying4droid.app.util.getChosePaletteColor
 import com.geckour.nowplaying4droid.app.util.getDelayDurationPostMastodon
@@ -142,7 +138,6 @@ import com.geckour.nowplaying4droid.app.util.getPackageStateListSpotify
 import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import com.geckour.nowplaying4droid.app.util.moved
-import com.geckour.nowplaying4droid.app.util.setAlertTwitterAuthFlag
 import com.geckour.nowplaying4droid.app.util.setArtworkResolveOrder
 import com.geckour.nowplaying4droid.app.util.setFormatPatternModifiers
 import com.geckour.nowplaying4droid.app.util.storeDelayDurationPostMastodon
@@ -196,12 +191,12 @@ class SettingsActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 postNotificationPermissionRequestLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
-                showIgnoreBatteryOptimizationDialog()
+                showIgnoreBatteryOptimizationDialogIfNeeded()
             }
         }
     private val postNotificationPermissionRequestLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            showIgnoreBatteryOptimizationDialog()
+            showIgnoreBatteryOptimizationDialogIfNeeded()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -297,21 +292,12 @@ class SettingsActivity : AppCompatActivity() {
         requestNotificationListenerPermission()
 
         reflectDonation(viewModel.donated)
-
-        if (sharedPreferences.getAlertTwitterAuthFlag()) {
-            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                R.string.dialog_title_alert_must_auth_twitter,
-                R.string.dialog_message_alert_must_auth_twitter
-            ) {
-                sharedPreferences.setAlertTwitterAuthFlag(false)
-            }
-        }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        val uriString = intent?.data?.toString()
+        val uriString = intent.data?.toString()
         Timber.d("intent data: $uriString")
         when {
             uriString?.startsWith(SpotifyApiClient.SPOTIFY_CALLBACK) == true -> {
@@ -332,22 +318,10 @@ class SettingsActivity : AppCompatActivity() {
             NotificationManagerCompat.getEnabledListenerPackages(this)
                 .contains(packageName)
                 .not()
-        if (notificationListenerNotEnabled) {
-            if (viewModel.showingNotificationServicePermissionDialog.not()) {
-                viewModel.showingNotificationServicePermissionDialog = true
-                AlertDialog.Builder(this)
-                    .setTitle(R.string.dialog_title_alert_grant_notification_listener)
-                    .setMessage(R.string.dialog_message_alert_grant_notification_listener)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                        notificationListenerSettingsActivityResultLauncher.launch(
-                            Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-                        )
-                        dialog.dismiss()
-                        viewModel.showingNotificationServicePermissionDialog = false
-                    }.show()
-            }
-        } else invokeUpdateWithStoragePermissionsIfNeeded()
+        viewModel.openNotificationServicePermissionDialog.value = notificationListenerNotEnabled
+        if (notificationListenerNotEnabled.not()) {
+            invokeUpdateWithStoragePermissionsIfNeeded()
+        }
     }
 
     private fun invokeUpdateWithStoragePermissionsIfNeeded() {
@@ -372,36 +346,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     @SuppressLint("BatteryLife")
-    private fun showIgnoreBatteryOptimizationDialog() {
-        if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION)
+    private fun showIgnoreBatteryOptimizationDialogIfNeeded() {
+        viewModel.openIgnoreBatteryOptimizationDialog.value =
+            sharedPreferences.getSwitchState(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION)
                 .not() &&
-            getSystemService(PowerManager::class.java)
-                ?.isIgnoringBatteryOptimizations(packageName) == false
-        ) {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.dialog_title_ignore_battery_optimization)
-                .setMessage(R.string.dialog_message_ignore_battery_optimization)
-                .setPositiveButton(R.string.dialog_button_ok) { dialog, _ ->
-                    val intent =
-                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                            data = Uri.parse("package:$packageName")
-                        }
-                    withCatching { startActivity(intent) }
-                    dialog.dismiss()
-                }
-                .setNegativeButton(R.string.dialog_button_ng) { dialog, _ ->
-                    sharedPreferences.edit {
-                        putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
-                    }
-                    dialog.dismiss()
-                }
-                .setOnCancelListener {
-                    sharedPreferences.edit {
-                        putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
-                    }
-                }
-                .show()
-        }
+                    getSystemService(PowerManager::class.java)
+                        ?.isIgnoringBatteryOptimizations(packageName) == false
     }
 
     private fun reflectDonation(state: MutableState<Boolean>, donated: Boolean? = null) {
@@ -516,7 +466,6 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    @OptIn(ExperimentalAnimationApi::class)
     @Composable
     fun Content(
         settingsVisible: MutableState<Boolean>,
@@ -604,6 +553,12 @@ class SettingsActivity : AppCompatActivity() {
     @Composable
     fun Dialogs(onOpenPlayer: (playerPackageName: String) -> Unit) {
         Box(modifier = Modifier.fillMaxSize()) {
+            if (viewModel.openNotificationServicePermissionDialog.value) {
+                NotificationServicePermissionDialog()
+            }
+            if (viewModel.openIgnoreBatteryOptimizationDialog.value) {
+                IgnoreBatteryOptimizationDialog()
+            }
             if (viewModel.openChangeArtworkResolveOrderDialog.value) {
                 ChangeArtworkResolveOrderDialog()
             }
@@ -648,6 +603,44 @@ class SettingsActivity : AppCompatActivity() {
             title = stringResource(id = errorDialogData.titleRes)
         ) {
             Text(text = stringResource(id = errorDialogData.textRes))
+        }
+    }
+
+    @Composable
+    fun NotificationServicePermissionDialog() {
+        NP4DAlertDialog(
+            onConfirm = {
+                notificationListenerSettingsActivityResultLauncher.launch(
+                    Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                )
+                viewModel.openNotificationServicePermissionDialog.value = false
+            },
+            title = stringResource(id = R.string.dialog_title_alert_grant_notification_listener)
+        ) {
+            Text(text = stringResource(id = R.string.dialog_message_alert_grant_notification_listener))
+        }
+    }
+
+    @Composable
+    fun IgnoreBatteryOptimizationDialog() {
+        NP4DAlertDialog(
+            onDismissRequest = {
+                viewModel.openIgnoreBatteryOptimizationDialog.value = false
+                sharedPreferences.edit {
+                    putBoolean(PrefKey.PREF_KEY_DENIED_IGNORE_BATTERY_OPTIMIZATION.name, true)
+                }
+            },
+            onConfirm = {
+                viewModel.openIgnoreBatteryOptimizationDialog.value = false
+                val intent =
+                    Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                withCatching { startActivity(intent) }
+            },
+            title = stringResource(id = R.string.dialog_title_ignore_battery_optimization)
+        ) {
+            Text(text = stringResource(id = R.string.dialog_message_ignore_battery_optimization))
         }
     }
 

@@ -41,7 +41,7 @@ class SharingActivity : AppCompatActivity(), KoinComponent {
     private val youTubeDataClient: YouTubeDataClient by inject()
     private val appleMusicApiClient: AppleMusicApiClient by inject()
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
         lifecycleScope.launch {
