@@ -37,8 +37,7 @@ paletteKtx = "1.0.0"
 playServicesWearable = "19.0.0"
 preferenceKtx = "1.2.1"
 reorderable = "0.9.6"
-retrofit = "2.9.0"
-retrofit2KotlinxSerializationConverter = "0.8.0"
+retrofit = "3.0.0"
 robolectric = "4.10.3"
 runner = "1.6.2"
 timber = "5.0.1"
@@ -87,7 +86,7 @@ play-services-wearable = { module = "com.google.android.gms:play-services-wearab
 preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
 reorderable = { module = "org.burnoutcrew.composereorderable:reorderable", version.ref = "reorderable" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit2-kotlinx-serialization-converter = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofit2KotlinxSerializationConverter" }
+retrofit-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 runner = { module = "androidx.test:runner", version.ref = "runner" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }

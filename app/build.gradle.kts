@@ -184,7 +184,7 @@ dependencies {
 
     // Networking
     implementation(libs.retrofit)
-    implementation(libs.retrofit2.kotlinx.serialization.converter)
+    implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
 

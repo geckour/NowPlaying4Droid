@@ -12,14 +12,12 @@ import com.geckour.nowplaying4droid.app.util.json
 import com.geckour.nowplaying4droid.app.util.normalizedAppleAlbumName
 import com.geckour.nowplaying4droid.app.util.storeSpotifyUserInfoImmediately
 import com.geckour.nowplaying4droid.app.util.withCatching
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
-import timber.log.Timber
-import java.util.*
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.Locale
 
 class SpotifyApiClient(context: Context) {
 
@@ -31,19 +29,21 @@ class SpotifyApiClient(context: Context) {
             "https://accounts.spotify.com/authorize?client_id=${BuildConfig.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=$SPOTIFY_CALLBACK_ENCODED&scope=user-read-private,user-read-playback-state"
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     private val authService = Retrofit.Builder()
         .client(OkHttpProvider.spotifyAuthClient)
         .baseUrl("https://accounts.spotify.com/")
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .addConverterFactory(
+            json.asConverterFactory("application/json; charset=UTF8".toMediaType())
+        )
         .build()
         .create(SpotifyAuthService::class.java)
 
-    @OptIn(ExperimentalSerializationApi::class)
     private fun getService(token: String): SpotifyApiService = Retrofit.Builder()
         .client(OkHttpProvider.getSpotifyApiClient(token))
         .baseUrl("https://api.spotify.com/")
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .addConverterFactory(
+            json.asConverterFactory("application/json; charset=UTF8".toMediaType())
+        )
         .build()
         .create(SpotifyApiService::class.java)
 

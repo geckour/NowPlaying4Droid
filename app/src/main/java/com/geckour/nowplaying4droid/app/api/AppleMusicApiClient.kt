@@ -5,19 +5,18 @@ import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.util.json
 import com.geckour.nowplaying4droid.app.util.normalizedAppleAlbumName
 import com.geckour.nowplaying4droid.app.util.withCatching
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
-import timber.log.Timber
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 class AppleMusicApiClient {
 
-    @OptIn(ExperimentalSerializationApi::class)
     private val service: AppleMusicApiService = Retrofit.Builder()
         .client(OkHttpProvider.appleMusicApiClient)
         .baseUrl("https://api.music.apple.com")
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .addConverterFactory(
+            json.asConverterFactory("application/json; charset=UTF8".toMediaType())
+        )
         .build()
         .create(AppleMusicApiService::class.java)
 
