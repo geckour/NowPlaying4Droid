@@ -4,11 +4,13 @@ import com.geckour.nowplaying4droid.app.api.model.MastodonInstance
 import com.geckour.nowplaying4droid.app.util.json
 import com.geckour.nowplaying4droid.app.util.withCatching
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 
 class MastodonInstancesApiClient {
 
+    @OptIn(ExperimentalSerializationApi::class)
     private val service = Retrofit.Builder()
         .client(OkHttpProvider.mastodonInstancesClient)
         .baseUrl("https://instances.social/")

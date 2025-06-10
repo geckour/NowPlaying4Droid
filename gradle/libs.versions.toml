@@ -13,6 +13,7 @@ firebaseCrashlytics = "3.0.4"
 fragmentKtx = "1.8.8"
 googleServices = "4.4.2"
 gradle = "8.6.0"
+gson = "2.13.1"
 javaJwt = "4.4.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -63,6 +64,7 @@ firebase-analytics-ktx = { module = "com.google.firebase:firebase-analytics-ktx"
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-crashlytics-ktx = { module = "com.google.firebase:firebase-crashlytics-ktx" }
 fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 java-jwt = { module = "com.auth0:java-jwt", version.ref = "javaJwt" }
 junit = { module = "junit:junit", version.ref = "junit" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinAndroidxCompose" }

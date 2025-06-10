@@ -419,20 +419,20 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 sharedPreferences.getSharingText(this@NotificationService, trackDetail) ?: return
 
             FirebaseAnalytics.getInstance(application)
-                .logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
-                    putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
-                })
-
-            val artworkBytes = if (sharedPreferences.getSwitchState(
-                    PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
-                )
-            ) {
-                trackDetail.artworkUriString?.let {
-                    return@let withCatching {
-                        getBitmapFromUriString(it)?.toByteArray()
+                .logEvent(
+                    FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
+                        putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
                     }
-                }
-            } else null
+                )
+
+            val artworkBytes =
+                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
+                    trackDetail.artworkUriString?.let {
+                        return@let withCatching {
+                            getBitmapFromUriString(it)?.toByteArray()
+                        }
+                    }
+                } else null
 
             val userInfo = sharedPreferences.getMastodonUserInfo() ?: return
 

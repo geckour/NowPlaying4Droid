@@ -165,6 +165,7 @@ dependencies {
 
     // JSON
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.gson)
 
     // Permission
     implementation(libs.ktx)
