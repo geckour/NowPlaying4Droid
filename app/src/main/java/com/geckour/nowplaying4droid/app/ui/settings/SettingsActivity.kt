@@ -2,6 +2,7 @@ package com.geckour.nowplaying4droid.app.ui.settings
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -34,11 +35,15 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -57,6 +62,7 @@ import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.Surface
@@ -64,6 +70,7 @@ import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -75,7 +82,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.BottomCenter
-import androidx.compose.ui.Alignment.Companion.BottomEnd
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -97,6 +103,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
+import androidx.core.content.getSystemService
 import androidx.lifecycle.lifecycleScope
 import com.geckour.nowplaying4droid.BuildConfig
 import com.geckour.nowplaying4droid.R
@@ -214,32 +221,74 @@ class SettingsActivity : AppCompatActivity() {
             SettingsTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
-                    Content(
-                        viewModel.settingsVisible,
-                        onEasterEggActivate = {
-                            startActivity(LicensesActivity.getIntent(this@SettingsActivity))
+                    val lazyListState = rememberLazyListState()
+
+                    Scaffold(
+                        topBar = {
+                            SettingTopBar(
+                                onEasterEggActivate = {
+                                    startActivity(LicensesActivity.getIntent(this@SettingsActivity))
+                                },
+                            )
                         },
-                        onOpenPlayer = { playerPackageName ->
-                            packageManager?.let {
-                                withCatching {
-                                    if (Build.VERSION.SDK_INT >= 33) {
-                                        it.getLaunchIntentSenderForPackage(playerPackageName)
-                                            .sendIntent(
-                                                this,
-                                                0,
-                                                it.getLaunchIntentForPackage(playerPackageName),
-                                                { _, _, _, _, _ -> },
-                                                Handler(Looper.getMainLooper())
-                                            )
-                                    } else {
-                                        startActivity(
-                                            it.getLaunchIntentForPackage(playerPackageName)
-                                        )
-                                    }
+                        floatingActionButton = {
+                            val visibleLastItemIndex by remember {
+                                derivedStateOf {
+                                    lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+                                }
+                            }
+                            val lastItemIndex by remember {
+                                derivedStateOf { lazyListState.layoutInfo.totalItemsCount - 1 }
+                            }
+                            AnimatedVisibility(
+                                visible = lazyListState.isScrollInProgress || visibleLastItemIndex != lastItemIndex,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                val scale by transition.animateFloat(label = "FAB size animation") { state ->
+                                    if (state == EnterExitState.Visible) 1f else 0f
+                                }
+                                FloatingActionButton(
+                                    modifier = Modifier.scale(scale),
+                                    onClick = { onClickFab() },
+                                    backgroundColor = if (isSystemInDarkTheme()) DarkRed else LightRed,
+                                    contentColor = Color.White
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_app_icon),
+                                        contentDescription = null,
+                                        colorFilter = ColorFilter.tint(Color.White)
+                                    )
                                 }
                             }
                         }
-                    )
+                    ) {
+                        Content(
+                            contentPadding = it,
+                            settingsVisible = viewModel.settingsVisible,
+                            lazyListState = lazyListState,
+                            onOpenPlayer = { playerPackageName ->
+                                packageManager?.let {
+                                    withCatching {
+                                        if (Build.VERSION.SDK_INT >= 33) {
+                                            it.getLaunchIntentSenderForPackage(playerPackageName)
+                                                .sendIntent(
+                                                    this,
+                                                    0,
+                                                    it.getLaunchIntentForPackage(playerPackageName),
+                                                    { _, _, _, _, _ -> },
+                                                    Handler(Looper.getMainLooper())
+                                                )
+                                        } else {
+                                            startActivity(
+                                                it.getLaunchIntentForPackage(playerPackageName)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -468,51 +517,18 @@ class SettingsActivity : AppCompatActivity() {
 
     @Composable
     fun Content(
+        contentPadding: PaddingValues,
         settingsVisible: MutableState<Boolean>,
-        onEasterEggActivate: () -> Unit,
+        lazyListState: LazyListState,
         onOpenPlayer: (playerPackageName: String) -> Unit
     ) {
-        val lazyListState = rememberLazyListState()
 
-        val visibleLastItemIndex by remember {
-            derivedStateOf {
-                lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-            }
-        }
-        val lastItemIndex by remember {
-            derivedStateOf { lazyListState.layoutInfo.totalItemsCount - 1 }
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column {
-                SettingTopBar(onEasterEggActivate)
-                Settings(Modifier.weight(1f), lazyListState)
-            }
-
-            AnimatedVisibility(
-                modifier = Modifier
-                    .align(BottomEnd)
-                    .padding(16.dp),
-                visible = lazyListState.isScrollInProgress || visibleLastItemIndex != lastItemIndex,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                val scale by transition.animateFloat(label = "FAB size animation") { state ->
-                    if (state == EnterExitState.Visible) 1f else 0f
-                }
-                FloatingActionButton(
-                    modifier = Modifier.scale(scale),
-                    onClick = { onClickFab() },
-                    backgroundColor = if (isSystemInDarkTheme()) DarkRed else LightRed,
-                    contentColor = Color.White
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_app_icon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color.White)
-                    )
-                }
-            }
+        Box(
+            modifier = Modifier
+                .padding(contentPadding)
+                .fillMaxSize(),
+        ) {
+            Settings(lazyListState)
 
             if (settingsVisible.value.not()) {
                 Box(
@@ -1387,8 +1403,7 @@ class SettingsActivity : AppCompatActivity() {
         val tag = remember { mutableStateOf(EasterEggTag(0, -1L)) }
         val countLimit = 7
         TopAppBar(
-            backgroundColor = if (isSystemInDarkTheme()) DeepRed else LightRed,
-            contentPadding = PaddingValues(8.dp),
+            windowInsets = WindowInsets.statusBars,
             modifier = Modifier.clickable {
                 val timeLimit = 300L
                 val count = tag.value.count + 1
@@ -1401,9 +1416,21 @@ class SettingsActivity : AppCompatActivity() {
                     onEasterEggActivate()
                     EasterEggTag(0, -1L)
                 }
-            }
+            },
+            contentPadding = PaddingValues(8.dp),
+            backgroundColor = if (isSystemInDarkTheme()) DeepRed else LightRed,
         ) {
             CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+                if ((getSystemService<ActivityManager>()?.appTasks
+                        ?.sumOf { it.taskInfo.numActivities } ?: 0) > 1
+                ) {
+                    IconButton(onClick = { finish() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                            contentDescription = "Back",
+                        )
+                    }
+                }
                 Text(
                     text = "${stringResource(R.string.activity_title_settings)} - ${stringResource(R.string.app_name)}",
                     fontWeight = FontWeight.Bold
@@ -1413,9 +1440,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun Settings(modifier: Modifier, lazyListState: LazyListState) {
+    fun Settings(lazyListState: LazyListState) {
         val mastodonEnabledState = remember { mutableStateOf(false) }
-        LazyColumn(modifier = modifier, state = lazyListState) {
+        LazyColumn(
+            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+            state = lazyListState,
+        ) {
             item { Category(R.string.pref_category_general) }
             item {
                 val item by remember {
