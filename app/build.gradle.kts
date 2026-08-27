@@ -19,8 +19,8 @@ android {
         applicationId = "com.geckour.nowplaying4droid"
         targetSdk = 37
         minSdk = 24
-        versionCode = 151
-        versionName = "3.4.10"
+        versionCode = 152
+        versionName = "3.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val filesAuthorityValue = applicationId + ".files"
