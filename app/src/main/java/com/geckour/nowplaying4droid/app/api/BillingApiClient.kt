@@ -7,6 +7,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.ProductType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
@@ -39,12 +40,15 @@ class BillingApiClient(
                     } else BillingResult.DUPLICATED
                 } else BillingResult.FAILURE
             }
+
             BillingClient.BillingResponseCode.USER_CANCELED -> {
                 BillingResult.CANCELLED
             }
+
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
                 BillingResult.DUPLICATED
             }
+
             else -> {
                 BillingResult.FAILURE
             }
@@ -55,7 +59,9 @@ class BillingApiClient(
     private val client: BillingClient =
         BillingClient.newBuilder(context)
             .setListener(purchasesUpdatedListener)
-            .enablePendingPurchases()
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
+            )
             .build()
 
     init {

@@ -46,7 +46,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
-import androidx.navigation.compose.rememberNavController
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.domain.model.LicenseItem
 import com.geckour.nowplaying4droid.app.ui.compose.DeepRed
@@ -82,7 +81,7 @@ class LicensesActivity : AppCompatActivity() {
                             ) {
                                 CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
                                     if ((getSystemService<ActivityManager>()?.appTasks
-                                        ?.sumOf { it.taskInfo.numActivities } ?: 0) > 1) {
+                                        ?.sumOf { it.taskInfo?.numActivities ?: 0 } ?: 0) > 1) {
                                         IconButton(onClick = { finish() }) {
                                             Icon(
                                                 imageVector = Icons.AutoMirrored.Default.ArrowBack,

@@ -62,10 +62,11 @@ class AppleMusicApiClient {
                 val titleValid = trackCoreElement.title?.let { title ->
                     title
                         .filterNot { it.isWhitespace() }
-                        .lowercase() ==
+                        .equals(
                             appleMusicSong.attributes.name
-                                .filterNot { it.isWhitespace() }
-                                .lowercase()
+                                .filterNot { it.isWhitespace() },
+                            ignoreCase = true,
+                        )
                 } != false
                 val albumValid = trackCoreElement.album?.let { album ->
                     album.normalizedAppleAlbumName() ==
@@ -74,10 +75,11 @@ class AppleMusicApiClient {
                 val artistValid = trackCoreElement.artist?.let { artist ->
                     artist
                         .filterNot { it.isWhitespace() }
-                        .lowercase() ==
+                        .equals(
                             appleMusicSong.attributes.artistName
-                                .filterNot { it.isWhitespace() }
-                                .lowercase()
+                                .filterNot { it.isWhitespace() },
+                            ignoreCase = true,
+                        )
                 } != false
 
                 return@firstOrNull titleValid && albumValid && artistValid

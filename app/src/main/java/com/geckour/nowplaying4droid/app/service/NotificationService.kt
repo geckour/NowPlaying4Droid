@@ -51,7 +51,7 @@ import com.geckour.nowplaying4droid.app.util.updateTrackDetail
 import com.geckour.nowplaying4droid.app.util.updateTrackDetailByPixelNowPlaying
 import com.geckour.nowplaying4droid.app.util.updateWear
 import com.geckour.nowplaying4droid.app.util.withCatching
-import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
@@ -77,6 +77,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.android.ext.android.get
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.milliseconds
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
 
@@ -204,19 +205,21 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         }
     }
 
-    private val onMessageReceived: (MessageEvent) -> Unit = {
-        when (it.path) {
-            WEAR_PATH_GET_SHARING_INFO -> {
-                launch {
-                    updateWear(this@NotificationService, sharedPreferences, null)
-                    updateWear(this@NotificationService, sharedPreferences)
+    private val onMessageReceivedListener: MessageClient.OnMessageReceivedListener by lazy {
+        MessageClient.OnMessageReceivedListener { event ->
+            when (event.path) {
+                WEAR_PATH_GET_SHARING_INFO -> {
+                    launch {
+                        updateWear(this@NotificationService, sharedPreferences, null)
+                        updateWear(this@NotificationService, sharedPreferences)
+                    }
                 }
-            }
 
-            WEAR_PATH_POST_TWITTER -> Unit
+                WEAR_PATH_POST_TWITTER -> Unit
 
-            WEAR_PATH_SHARE_DELEGATE -> {
-                onRequestDelegateShareFromWear(it.sourceNodeId)
+                WEAR_PATH_SHARE_DELEGATE -> {
+                    onRequestDelegateShareFromWear(event.sourceNodeId)
+                }
             }
         }
     }
@@ -224,7 +227,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     private val sbnChannel = Channel<StatusBarNotification>(CONFLATED)
 
     @OptIn(FlowPreview::class)
-    private val sbnFlow = sbnChannel.receiveAsFlow().debounce(200)
+    private val sbnFlow = sbnChannel.receiveAsFlow().debounce(200.milliseconds)
 
     override fun onCreate() {
         super.onCreate()
@@ -269,7 +272,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
             }
         }
 
-        Wearable.getMessageClient(this).addListener(onMessageReceived)
+        Wearable.getMessageClient(this).addListener(onMessageReceivedListener)
         withCatching {
             getSystemService(MediaSessionManager::class.java)
                 ?.removeOnActiveSessionsChangedListener(onActiveSessionChanged)
@@ -279,7 +282,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
 
-        Wearable.getMessageClient(this).removeListener(onMessageReceived)
+        Wearable.getMessageClient(this).removeListener(onMessageReceivedListener)
         withCatching {
             getSystemService(MediaSessionManager::class.java)
                 ?.addOnActiveSessionsChangedListener(
@@ -335,7 +338,10 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private val Notification.mediaController: MediaController?
-        get() = extras.getParcelable<MediaSession.Token>(Notification.EXTRA_MEDIA_SESSION)
+        get() = (if (Build.VERSION.SDK_INT > 32) extras.getParcelable(
+            Notification.EXTRA_MEDIA_SESSION,
+            MediaSession.Token::class.java,
+        ) else extras.getParcelable<MediaSession.Token>(Notification.EXTRA_MEDIA_SESSION))
             ?.let { MediaController(this@NotificationService, it) }
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
@@ -413,7 +419,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
 
     private suspend fun postMastodon(trackDetail: TrackDetail) {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
-            delay(sharedPreferences.getDelayDurationPostMastodon())
+            delay(sharedPreferences.getDelayDurationPostMastodon().milliseconds)
 
             val subject =
                 sharedPreferences.getSharingText(this@NotificationService, trackDetail) ?: return
@@ -449,7 +455,8 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     )
                 ).executeCatching()?.id
             }
-            val result = Statuses(mastodonClient).postStatus(subject,
+            val result = Statuses(mastodonClient).postStatus(
+                subject,
                 null,
                 mediaId?.let { listOf(it) },
                 false,
@@ -470,7 +477,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
             notificationManager.apply {
                 showNotification(this@NotificationService, sharedPreferences, status)
-                delay(2500)
+                delay(2500.milliseconds)
                 cancel(NotificationType.NOTIFY_SUCCESS_MASTODON.id)
             }
         }

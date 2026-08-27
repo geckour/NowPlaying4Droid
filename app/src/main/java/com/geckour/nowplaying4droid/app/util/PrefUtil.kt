@@ -16,7 +16,6 @@ import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
 import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.encodeToString
 
 enum class PrefKey(val defaultValue: Any? = null) {
     PREF_KEY_ARTWORK_RESOLVE_ORDER,
@@ -89,9 +88,7 @@ fun SharedPreferences.getArtworkResolveOrder(): List<ArtworkResolveMethod> =
     getString(PrefKey.PREF_KEY_ARTWORK_RESOLVE_ORDER.name, null)?.let {
         json.parseListOrNull<ArtworkResolveMethod>(it)
     }.orEmpty().let { stored ->
-        val origin = ArtworkResolveMethod.ArtworkResolveMethodKey
-            .values()
-            .toList()
+        val origin = ArtworkResolveMethod.ArtworkResolveMethodKey.entries
         stored + (origin - stored.map { it.key }.toSet()).map { ArtworkResolveMethod(it, true) }
     }
 
@@ -181,7 +178,7 @@ fun SharedPreferences.getCurrentTrackDetail(): TrackDetail? {
 }
 
 fun SharedPreferences.getChosePaletteColor(): PaletteColor =
-    PaletteColor.values().getOrNull(
+    PaletteColor.entries.getOrNull(
         getInt(
             PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name,
             PaletteColor.LIGHT_VIBRANT.ordinal
@@ -202,7 +199,7 @@ fun SharedPreferences.getDelayDurationPostMastodon(): Long =
     else PrefKey.PREF_KEY_DELAY_POST_MASTODON.defaultValue as Long
 
 fun SharedPreferences.getVisibilityMastodon(): Visibility =
-    Visibility.values().getOrNull(
+    Visibility.entries.getOrNull(
         getInt(
             PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name,
             Visibility.PUBLIC.ordinal

@@ -112,7 +112,7 @@ class SpotifyApiClient(context: Context) {
             if (playerPackageName.lowercase().contains("spotify")) getSpotifyNowPlaying()
             else null
 
-        return nowPlayingResult?.let { if (it is SpotifyResult.Success) it else null }
+        return nowPlayingResult?.let { it as? SpotifyResult.Success }
             ?: searchSpotify(trackCoreElement, isStrictMode)
     }
 

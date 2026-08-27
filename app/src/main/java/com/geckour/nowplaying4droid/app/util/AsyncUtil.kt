@@ -18,6 +18,7 @@ import android.telephony.TelephonyManager
 import android.text.Html
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
+import androidx.core.graphics.scale
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import coil.Coil
@@ -50,8 +51,8 @@ import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import timber.log.Timber
 import kotlin.math.max
+import kotlin.time.Duration.Companion.milliseconds
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
     noinline onCatch: ((Throwable) -> Unit)? = null
@@ -505,12 +506,7 @@ suspend fun updateWear(
     val artwork = trackDetail?.artworkUriString?.let { uriString ->
         context.getBitmapFromUriString(uriString)?.let {
             val scale = 400f / max(it.width, it.height)
-            val scaled = Bitmap.createScaledBitmap(
-                it,
-                (it.width * scale).toInt(),
-                (it.height * scale).toInt(),
-                false
-            )
+            val scaled = it.scale((it.width * scale).toInt(), (it.height * scale).toInt(), false)
             if (scaled.width != it.width && scaled.height != it.height) it.recycle()
             scaled
         }
@@ -686,7 +682,7 @@ suspend fun postMastodon(
     trackDetail: TrackDetail
 ) {
     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
-        delay(sharedPreferences.getDelayDurationPostMastodon())
+        delay(sharedPreferences.getDelayDurationPostMastodon().milliseconds)
 
         val subject =
             sharedPreferences.getSharingText(context, trackDetail) ?: return
@@ -722,7 +718,8 @@ suspend fun postMastodon(
                 )
             ).executeCatching()?.id
         }
-        val result = Statuses(mastodonClient).postStatus(subject,
+        val result = Statuses(mastodonClient).postStatus(
+            subject,
             null,
             mediaId?.let { listOf(it) },
             false,
@@ -747,7 +744,7 @@ private suspend fun showShortNotify(
     if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_SHOW_SUCCESS_NOTIFICATION_MASTODON)) {
         context.getSystemService(NotificationManager::class.java)?.apply {
             showNotification(context, sharedPreferences, status)
-            delay(2500)
+            delay(2500.milliseconds)
             cancel(NotificationService.NotificationType.NOTIFY_SUCCESS_MASTODON.id)
         }
     }

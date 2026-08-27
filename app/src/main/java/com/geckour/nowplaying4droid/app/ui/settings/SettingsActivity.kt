@@ -6,7 +6,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -71,7 +70,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -104,7 +103,10 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.core.content.getSystemService
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.geckour.nowplaying4droid.BuildConfig
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.App
@@ -302,32 +304,34 @@ class SettingsActivity : AppCompatActivity() {
                 )
             },
             onDonateCompleted = {
-                lifecycleScope.launchWhenResumed {
-                    when (it) {
-                        BillingApiClient.BillingResult.SUCCESS -> {
-                            reflectDonation(viewModel.donated, true)
-                        }
+                lifecycleScope.launch {
+                    repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                        when (it) {
+                            BillingApiClient.BillingResult.SUCCESS -> {
+                                reflectDonation(viewModel.donated, true)
+                            }
 
-                        BillingApiClient.BillingResult.DUPLICATED -> {
-                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_already_purchase
-                            )
-                            reflectDonation(viewModel.donated, true)
-                        }
+                            BillingApiClient.BillingResult.DUPLICATED -> {
+                                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                    R.string.dialog_title_alert_failure_purchase,
+                                    R.string.dialog_message_alert_already_purchase
+                                )
+                                reflectDonation(viewModel.donated, true)
+                            }
 
-                        BillingApiClient.BillingResult.CANCELLED -> {
-                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_on_cancel_purchase
-                            )
-                        }
+                            BillingApiClient.BillingResult.CANCELLED -> {
+                                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                    R.string.dialog_title_alert_failure_purchase,
+                                    R.string.dialog_message_alert_on_cancel_purchase
+                                )
+                            }
 
-                        BillingApiClient.BillingResult.FAILURE -> {
-                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                                R.string.dialog_title_alert_failure_purchase,
-                                R.string.dialog_message_alert_failure_purchase
-                            )
+                            BillingApiClient.BillingResult.FAILURE -> {
+                                viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                    R.string.dialog_title_alert_failure_purchase,
+                                    R.string.dialog_message_alert_failure_purchase
+                                )
+                            }
                         }
                     }
                 }
@@ -434,12 +438,14 @@ class SettingsActivity : AppCompatActivity() {
                     .build()
             )
             .build()
-            .launchUrl(this, Uri.parse(SpotifyApiClient.OAUTH_URL))
+            .launchUrl(this, SpotifyApiClient.OAUTH_URL.toUri())
     }
 
-    private fun onClickFab() = lifecycleScope.launchWhenResumed {
-        viewModel.updateTrackDetail(this@SettingsActivity)
-        startActivity(SharingActivity.getIntent(this@SettingsActivity))
+    private fun onClickFab() = lifecycleScope.launch {
+        repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.updateTrackDetail(this@SettingsActivity)
+            startActivity(SharingActivity.getIntent(this@SettingsActivity))
+        }
     }
 
     private fun onAuthSpotifyCallback(
@@ -447,8 +453,10 @@ class SettingsActivity : AppCompatActivity() {
     ) {
         val verifier = intent.data?.getQueryParameter("code")
         if (verifier == null) {
-            lifecycleScope.launchWhenResumed {
-                onAuthSpotifyError()
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                    onAuthSpotifyError()
+                }
             }
             return
         }
@@ -463,8 +471,10 @@ class SettingsActivity : AppCompatActivity() {
         mastodonRegistrationInfo?.apply {
             val token = intent.data?.getQueryParameter("code")
             if (token == null) {
-                lifecycleScope.launchWhenResumed {
-                    onAuthMastodonError()
+                lifecycleScope.launch {
+                    repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                        onAuthMastodonError()
+                    }
                 }
                 return
             }
@@ -650,7 +660,7 @@ class SettingsActivity : AppCompatActivity() {
                 viewModel.openIgnoreBatteryOptimizationDialog.value = false
                 val intent =
                     Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = Uri.parse("package:$packageName")
+                        data = "package:$packageName".toUri()
                     }
                 withCatching { startActivity(intent) }
             },
@@ -940,7 +950,7 @@ class SettingsActivity : AppCompatActivity() {
                                 onClick = { onOpenPlayer(packageState.packageName) }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.OpenInNew,
+                                    imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
                                     contentDescription = stringResource(
                                         id = R.string.dialog_content_desctiption_open_player
                                     )
@@ -1018,7 +1028,7 @@ class SettingsActivity : AppCompatActivity() {
                                 onClick = { onOpenPlayer(packageState.packageName) }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.OpenInNew,
+                                    imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
                                     contentDescription = stringResource(
                                         id = R.string.dialog_content_desctiption_open_player
                                     )
@@ -1112,7 +1122,7 @@ class SettingsActivity : AppCompatActivity() {
                                     .build()
                             )
                             .build()
-                            .launchUrl(this@SettingsActivity, Uri.parse(authUrl))
+                            .launchUrl(this@SettingsActivity, authUrl.toUri())
                     }
                 }
                 viewModel.openAuthMastodonDialog.value = false
@@ -1182,11 +1192,13 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 } ?: run {
                     duration = sharedPreferences.getDelayDurationPostMastodon().toString()
-                    lifecycleScope.launchWhenResumed {
-                        viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
-                            R.string.dialog_title_alert_invalid_duration_value,
-                            R.string.dialog_message_alert_invalid_duration_value
-                        )
+                    lifecycleScope.launch {
+                        repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                            viewModel.errorDialogData.value = SettingsViewModel.ErrorDialogData(
+                                R.string.dialog_title_alert_invalid_duration_value,
+                                R.string.dialog_message_alert_invalid_duration_value
+                            )
+                        }
                     }
                 }
                 viewModel.openSetMastodonPostDelayDialog.value = false
@@ -1213,7 +1225,7 @@ class SettingsActivity : AppCompatActivity() {
         NP4DAlertDialog(
             onDismissRequest = { viewModel.openSetMastodonPostVisibilityDialog.value = false },
             onConfirm = {
-                val visibilityIndex = Visibility.values().indexOf(visibility)
+                val visibilityIndex = Visibility.entries.indexOf(visibility)
                 sharedPreferences.edit {
                     putInt(PrefKey.PREF_KEY_CHOSEN_MASTODON_VISIBILITY.name, visibilityIndex)
                 }
@@ -1241,7 +1253,7 @@ class SettingsActivity : AppCompatActivity() {
                     if (showCandidate) {
                         Card(backgroundColor = MaterialTheme.colors.background) {
                             LazyColumn(modifier = Modifier.padding(vertical = 6.dp)) {
-                                items(Visibility.values()) {
+                                items(Visibility.entries.toTypedArray()) {
                                     Text(
                                         text = stringResource(id = it.getSummaryResId()),
                                         modifier = Modifier
@@ -1304,7 +1316,7 @@ class SettingsActivity : AppCompatActivity() {
                                         onClick = { onOpenPlayer(packageState.packageName) }
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Rounded.OpenInNew,
+                                            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
                                             contentDescription = stringResource(
                                                 id = R.string.dialog_content_desctiption_open_player
                                             )
@@ -1349,7 +1361,7 @@ class SettingsActivity : AppCompatActivity() {
         NP4DAlertDialog(
             onDismissRequest = { viewModel.openSelectNotificationColorDialog.value = false },
             onConfirm = {
-                val paletteIndex = PaletteColor.values().indexOf(paletteColor)
+                val paletteIndex = PaletteColor.entries.indexOf(paletteColor)
                 sharedPreferences.edit {
                     putInt(PrefKey.PREF_KEY_CHOSEN_PALETTE_COLOR.name, paletteIndex)
                 }
@@ -1377,7 +1389,7 @@ class SettingsActivity : AppCompatActivity() {
                     if (showCandidate) {
                         Card(backgroundColor = MaterialTheme.colors.background) {
                             LazyColumn(modifier = Modifier.padding(vertical = 6.dp)) {
-                                items(PaletteColor.values()) {
+                                items(PaletteColor.entries.toTypedArray()) {
                                     Text(
                                         text = stringResource(id = it.getSummaryResId()),
                                         modifier = Modifier
@@ -1422,7 +1434,7 @@ class SettingsActivity : AppCompatActivity() {
         ) {
             CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
                 if ((getSystemService<ActivityManager>()?.appTasks
-                        ?.sumOf { it.taskInfo.numActivities } ?: 0) > 1
+                        ?.sumOf { it.taskInfo?.numActivities ?: 0 } ?: 0) > 1
                 ) {
                     IconButton(onClick = { finish() }) {
                         Icon(

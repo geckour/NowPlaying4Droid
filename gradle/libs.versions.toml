@@ -1,48 +1,46 @@
 [versions]
-activityKtx = "1.10.1"
-appcompat = "1.7.1"
-assertjCore = "3.24.2"
-billingKtx = "7.1.1"
-browser = "1.8.0"
-coil = "2.5.0"
-constraintlayout = "2.2.1"
-coreKtx = "1.16.0"
-espressoCore = "3.6.1"
-firebaseBom = "33.15.0"
-firebaseCrashlytics = "3.0.4"
-fragmentKtx = "1.8.8"
-googleServices = "4.4.2"
-gradle = "8.6.0"
-gson = "2.13.1"
-javaJwt = "4.4.0"
+activityKtx = "1.13.0"
+appcompat = "1.8.0"
+assertjCore = "3.27.7"
+billingKtx = "9.1.0"
+browser = "1.10.0"
+coil = "2.7.0"
+constraintlayout = "2.2.2"
+coreKtx = "1.19.0"
+espressoCore = "3.7.0"
+firebaseBom = "34.18.0"
+firebaseCrashlytics = "3.0.8"
+fragmentKtx = "1.9.0"
+googleServices = "4.5.0"
+gradle = "9.3.2"
+javaJwt = "4.6.0"
 junit = "4.13.2"
-junitVersion = "1.2.1"
-koinAndroid = "3.4.0"
-koinAndroidxCompose = "3.4.0"
-koinTest = "3.4.0"
-kotlin = "2.1.21"
-kotlinxSerializationJson = "1.8.1"
+junitVersion = "1.3.0"
+koin = "4.2.2"
+koinCompiler = "1.1.0"
+kotlin = "2.4.10"
+kotlinxSerializationJson = "1.11.0"
 ktx = "1.1.4"
 legacySupportV4 = "1.0.0"
-lifecycleViewmodelKtx = "2.9.1"
-loggingInterceptor = "4.12.0"
+lifecycleViewmodelKtx = "2.11.0"
+loggingInterceptor = "5.5.0"
 mastodon4j = "1.7.0"
-material = "1.12.0"
+material = "1.14.0"
 materialIconsExtended = "1.7.8"
-materialVersion = "1.8.2"
-mockk = "1.13.5"
+materialVersion = "1.12.0"
+mockk = "1.14.11"
 nowPlayingSubjectBuilder = "1.4.0"
-okhttp = "4.12.0"
+okhttp = "5.5.0"
 paletteKtx = "1.0.0"
-playServicesWearable = "19.0.0"
+playServicesWearable = "20.0.1"
 preferenceKtx = "1.2.1"
 reorderable = "0.9.6"
 retrofit = "3.0.0"
-robolectric = "4.10.3"
-runner = "1.6.2"
+robolectric = "4.16.1"
+runner = "1.7.0"
 timber = "5.0.1"
-ui = "1.8.2"
-uiToolingPreview = "1.8.2"
+ui = "1.12.0"
+uiToolingPreview = "1.12.0"
 
 [libraries]
 activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
@@ -59,16 +57,15 @@ constraintlayout = { module = "androidx.constraintlayout:constraintlayout", vers
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
 ext-junit = { module = "androidx.test.ext:junit", version.ref = "junitVersion" }
-firebase-analytics-ktx = { module = "com.google.firebase:firebase-analytics-ktx" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-firebase-crashlytics-ktx = { module = "com.google.firebase:firebase-crashlytics-ktx" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 java-jwt = { module = "com.auth0:java-jwt", version.ref = "javaJwt" }
 junit = { module = "junit:junit", version.ref = "junit" }
-koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinAndroidxCompose" }
-koin-android = { module = "io.insert-koin:koin-android", version.ref = "koinAndroid" }
-koin-test = { module = "io.insert-koin:koin-test", version.ref = "koinTest" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 ktx = { module = "com.github.permissions-dispatcher:ktx", version.ref = "ktx" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
@@ -97,5 +94,5 @@ android-application = { id = "com.android.application", version.ref = "gradle" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlytics" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koinCompiler" }

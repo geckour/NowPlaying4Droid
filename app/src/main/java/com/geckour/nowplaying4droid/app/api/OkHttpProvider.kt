@@ -17,7 +17,7 @@ import timber.log.Timber
 import java.security.KeyFactory
 import java.security.interfaces.ECPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
-import java.util.*
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 object OkHttpProvider {
@@ -138,7 +138,8 @@ object OkHttpProvider {
             }
         }
 
-    private fun Collection<*>.toJsonElement(): JsonElement = JsonArray(mapNotNull { it.toJsonElement() })
+    private fun Collection<*>.toJsonElement(): JsonElement =
+        JsonArray(mapNotNull { it.toJsonElement() })
 
     private fun Map<*, *>.toJsonElement(): JsonElement = JsonObject(
         mapNotNull {

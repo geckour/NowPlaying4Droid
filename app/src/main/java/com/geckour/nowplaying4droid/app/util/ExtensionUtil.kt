@@ -22,6 +22,7 @@ import android.text.Html
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.palette.graphics.Palette
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.BuildConfig
@@ -147,7 +148,7 @@ fun Context.checkStoragePermission(
     }
 }
 
-fun String.getUri(): Uri? = withCatching { Uri.parse(this) }
+fun String.getUri(): Uri? = withCatching { this.toUri() }
 
 private fun Palette.getColorFromPaletteColor(paletteColor: PaletteColor): Int =
     when (paletteColor) {
@@ -198,7 +199,7 @@ fun Context.getArtworkUriFromDevice(trackCoreElement: TrackDetail.TrackCoreEleme
             }
             retriever.embeddedPicture?.toBitmap()?.refreshArtworkUri(this)
                 ?: ContentUris.withAppendedId(
-                    Uri.parse("content://media/external/audio/albumart"), it.mediaAlbumId
+                    "content://media/external/audio/albumart".toUri(), it.mediaAlbumId
                 ).also { uri ->
                     contentResolver.openInputStream(uri)?.close() ?: throw IllegalStateException()
                     PreferenceManager.getDefaultSharedPreferences(this).refreshTempArtwork(uri)
