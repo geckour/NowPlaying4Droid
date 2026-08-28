@@ -41,10 +41,10 @@ import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
-import com.geckour.nowplaying4droid.app.util.refreshArtworkUri
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.showNotification
+import com.geckour.nowplaying4droid.app.util.storeArtworkCache
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4droid.app.util.updateTrackDetail
 import com.geckour.nowplaying4droid.app.util.updateTrackDetailByPixelNowPlaying
@@ -66,15 +66,10 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.android.ext.android.get
 import social.bigbone.MastodonClient
 import social.bigbone.api.entity.Status
 import social.bigbone.api.method.FileAsMediaAttachment
-import java.io.File
-import java.net.URI
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 import social.bigbone.api.entity.data.Visibility as BigBoneVisibility
@@ -435,9 +430,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                 if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
                     trackDetail.artworkUriString?.let {
                         return@let withCatching {
-                            getBitmapFromUriString(it)?.refreshArtworkUri(this)?.let { uri ->
-                                File(URI.create(uri.path))
-                            }
+                            getBitmapFromUriString(it)?.storeArtworkCache(this)
                         }
                     }
                 } else null

@@ -236,8 +236,7 @@ private fun Cursor?.getMediaIdInfoFromDevice(): MediaIdInfo? =
 fun ByteArray.toBitmap(): Bitmap? =
     withCatching { BitmapFactory.decodeByteArray(this, 0, this.size) }
 
-fun Bitmap.refreshArtworkUri(context: Context): Uri? {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+fun Bitmap.storeArtworkCache(context: Context): File {
     val dirName = "images"
     val fileName = "temp_artwork.png"
     val dir = File(context.cacheDir, dirName)
@@ -250,6 +249,13 @@ fun Bitmap.refreshArtworkUri(context: Context): Uri? {
         compress(Bitmap.CompressFormat.PNG, 100, it)
         it.flush()
     }
+
+    return file
+}
+
+fun Bitmap.refreshArtworkUri(context: Context): Uri? {
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    val file = storeArtworkCache(context)
 
     return FileProvider.getUriForFile(context, BuildConfig.FILES_AUTHORITY, file).apply {
         sharedPreferences.refreshTempArtwork(this)
