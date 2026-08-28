@@ -29,8 +29,8 @@ dependencyResolutionManagement {
 
 val githubProperties
     get() = Properties().apply {
-        File(settingsDir, "github.properties").inputStream().use { stream ->
-            Properties().load(stream)
+        File(settingsDir, "secret.properties").inputStream().use { stream ->
+            load(stream)
         }
     }
 

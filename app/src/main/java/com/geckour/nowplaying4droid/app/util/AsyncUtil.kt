@@ -27,7 +27,6 @@ import coil.request.ImageRequest
 import com.geckour.nowplaying4droid.R
 import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
-import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.api.model.Image
@@ -41,18 +40,16 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.gson.Gson
-import com.sys1yagi.mastodon4j.MastodonClient
-import com.sys1yagi.mastodon4j.MastodonRequest
-import com.sys1yagi.mastodon4j.api.entity.Status
-import com.sys1yagi.mastodon4j.api.method.Media
-import com.sys1yagi.mastodon4j.api.method.Statuses
 import kotlinx.coroutines.delay
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import social.bigbone.MastodonClient
+import social.bigbone.MastodonRequest
+import social.bigbone.api.entity.Status
+import social.bigbone.api.method.FileAsMediaAttachment
+import java.io.File
+import java.net.URI
 import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
+import social.bigbone.api.entity.data.Visibility as BigBoneVisibility
 
 inline fun <reified T> MastodonRequest<T>.executeCatching(
     noinline onCatch: ((Throwable) -> Unit)? = null
@@ -692,45 +689,42 @@ suspend fun postMastodon(
                 putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
             })
 
-        val artworkBytes = if (sharedPreferences.getSwitchState(
+        val artworkFile = if (sharedPreferences.getSwitchState(
                 PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK
             )
         ) {
             trackDetail.artworkUriString?.let {
                 return@let withCatching {
-                    context.getBitmapFromUriString(it)?.toByteArray()
+                    context.getBitmapFromUriString(it)?.refreshArtworkUri(context)?.let { uri ->
+                        File(URI.create(uri.path))
+                    }
                 }
             }
         } else null
 
         val userInfo = sharedPreferences.getMastodonUserInfo() ?: return
 
-        val mastodonClient = MastodonClient.Builder(
-            userInfo.instanceName, OkHttpProvider.clientBuilder, Gson()
-        ).accessToken(userInfo.accessToken.accessToken).build()
+        val mastodonClient = MastodonClient.Builder(userInfo.instanceName)
+            .accessToken(userInfo.accessToken.accessToken)
+            .build()
 
-        val mediaId = artworkBytes?.let {
-            Media(mastodonClient).postMedia(
-                MultipartBody.Part.createFormData(
-                    "file",
-                    "artwork.png",
-                    it.toRequestBody("image/png".toMediaTypeOrNull())
-                )
-            ).executeCatching()?.id
+        val mediaId = artworkFile?.let {
+            mastodonClient.media
+                .uploadMediaAsync(FileAsMediaAttachment(file = it, mediaType = "image/png"))
+                .execute()
+                .id
         }
-        val result = Statuses(mastodonClient).postStatus(
+        val result = mastodonClient.statuses.postStatus(
             subject,
-            null,
             mediaId?.let { listOf(it) },
-            false,
-            null,
             sharedPreferences.getVisibilityMastodon().let {
                 when (it) {
-                    Visibility.PUBLIC -> Status.Visibility.Public
-                    Visibility.UNLISTED -> Status.Visibility.Unlisted
-                    Visibility.PRIVATE -> Status.Visibility.Private
+                    Visibility.PUBLIC -> BigBoneVisibility.PUBLIC
+                    Visibility.UNLISTED -> BigBoneVisibility.UNLISTED
+                    Visibility.PRIVATE -> BigBoneVisibility.PRIVATE
                 }
-            }).executeCatching() ?: return
+            },
+        ).executeCatching() ?: return
 
         showShortNotify(context, sharedPreferences, result)
     }

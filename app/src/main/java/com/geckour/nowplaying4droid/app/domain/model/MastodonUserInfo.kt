@@ -1,13 +1,11 @@
 package com.geckour.nowplaying4droid.app.domain.model
 
-import com.geckour.nowplaying4droid.app.util.MastodonAccessTokenSerializer
-import com.sys1yagi.mastodon4j.api.entity.auth.AccessToken
 import kotlinx.serialization.Serializable
+import social.bigbone.api.entity.Token
 
 @Serializable
 data class MastodonUserInfo(
-    @Serializable(with = MastodonAccessTokenSerializer::class)
-    val accessToken: AccessToken,
+    val accessToken: Token,
     val instanceName: String,
-    val userName: String
+    val username: String
 )

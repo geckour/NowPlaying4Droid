@@ -20,7 +20,6 @@ import android.service.notification.StatusBarNotification
 import androidx.preference.PreferenceManager
 import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
-import com.geckour.nowplaying4droid.app.api.OkHttpProvider
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
@@ -42,11 +41,11 @@ import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
 import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
+import com.geckour.nowplaying4droid.app.util.refreshArtworkUri
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
 import com.geckour.nowplaying4droid.app.util.showNotification
 import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
-import com.geckour.nowplaying4droid.app.util.toByteArray
 import com.geckour.nowplaying4droid.app.util.updateTrackDetail
 import com.geckour.nowplaying4droid.app.util.updateTrackDetailByPixelNowPlaying
 import com.geckour.nowplaying4droid.app.util.updateWear
@@ -54,11 +53,6 @@ import com.geckour.nowplaying4droid.app.util.withCatching
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.gson.Gson
-import com.sys1yagi.mastodon4j.MastodonClient
-import com.sys1yagi.mastodon4j.api.entity.Status
-import com.sys1yagi.mastodon4j.api.method.Media
-import com.sys1yagi.mastodon4j.api.method.Statuses
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -76,8 +70,14 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.koin.android.ext.android.get
+import social.bigbone.MastodonClient
+import social.bigbone.api.entity.Status
+import social.bigbone.api.method.FileAsMediaAttachment
+import java.io.File
+import java.net.URI
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.milliseconds
+import social.bigbone.api.entity.data.Visibility as BigBoneVisibility
 
 class NotificationService : NotificationListenerService(), CoroutineScope {
 
@@ -431,41 +431,36 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
                     }
                 )
 
-            val artworkBytes =
+            val artworkFile =
                 if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
                     trackDetail.artworkUriString?.let {
                         return@let withCatching {
-                            getBitmapFromUriString(it)?.toByteArray()
+                            getBitmapFromUriString(it)?.refreshArtworkUri(this)?.let { uri ->
+                                File(URI.create(uri.path))
+                            }
                         }
                     }
                 } else null
 
             val userInfo = sharedPreferences.getMastodonUserInfo() ?: return
 
-            val mastodonClient = MastodonClient.Builder(
-                userInfo.instanceName, OkHttpProvider.clientBuilder, Gson()
-            ).accessToken(userInfo.accessToken.accessToken).build()
+            val mastodonClient = MastodonClient.Builder(userInfo.instanceName)
+                .accessToken(userInfo.accessToken.accessToken)
+                .build()
 
-            val mediaId = artworkBytes?.let {
-                Media(mastodonClient).postMedia(
-                    MultipartBody.Part.createFormData(
-                        "file",
-                        "artwork.png",
-                        it.toRequestBody("image/png".toMediaTypeOrNull())
-                    )
+            val mediaId = artworkFile?.let {
+                mastodonClient.media.uploadMediaAsync(
+                    FileAsMediaAttachment(it, mediaType = "image/png"),
                 ).executeCatching()?.id
             }
-            val result = Statuses(mastodonClient).postStatus(
+            val result = mastodonClient.statuses.postStatus(
                 subject,
-                null,
                 mediaId?.let { listOf(it) },
-                false,
-                null,
                 sharedPreferences.getVisibilityMastodon().let {
                     when (it) {
-                        Visibility.PUBLIC -> Status.Visibility.Public
-                        Visibility.UNLISTED -> Status.Visibility.Unlisted
-                        Visibility.PRIVATE -> Status.Visibility.Private
+                        Visibility.PUBLIC -> BigBoneVisibility.PUBLIC
+                        Visibility.UNLISTED -> BigBoneVisibility.UNLISTED
+                        Visibility.PRIVATE -> BigBoneVisibility.PRIVATE
                     }
                 }).executeCatching() ?: return
 

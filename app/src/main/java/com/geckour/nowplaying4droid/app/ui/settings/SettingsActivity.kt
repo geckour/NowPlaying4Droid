@@ -113,6 +113,7 @@ import com.geckour.nowplaying4droid.app.App
 import com.geckour.nowplaying4droid.app.api.BillingApiClient
 import com.geckour.nowplaying4droid.app.api.MastodonInstancesApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
+import com.geckour.nowplaying4droid.app.domain.model.MastodonPendingAuthInfo
 import com.geckour.nowplaying4droid.app.domain.model.MastodonUserInfo
 import com.geckour.nowplaying4droid.app.domain.model.TrackDetail
 import com.geckour.nowplaying4droid.app.service.NotificationService
@@ -156,17 +157,9 @@ import com.geckour.nowplaying4droid.app.util.storePackageStatePostMastodon
 import com.geckour.nowplaying4droid.app.util.storePackageStateSpotify
 import com.geckour.nowplaying4droid.app.util.withCatching
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.google.gson.Gson
-import com.sys1yagi.mastodon4j.MastodonClient
-import com.sys1yagi.mastodon4j.api.Scope
-import com.sys1yagi.mastodon4j.api.entity.auth.AppRegistration
-import com.sys1yagi.mastodon4j.api.method.Accounts
-import com.sys1yagi.mastodon4j.api.method.Apps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
@@ -175,11 +168,17 @@ import org.koin.android.ext.android.get
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import permissions.dispatcher.ktx.PermissionsRequester
 import permissions.dispatcher.ktx.constructPermissionsRequest
+import social.bigbone.MastodonClient
+import social.bigbone.api.Scope
+import social.bigbone.api.method.OAuthMethods
 import timber.log.Timber
 
 class SettingsActivity : AppCompatActivity() {
 
     companion object {
+
+        private val mastodonScope = Scope(Scope.READ.ALL, Scope.WRITE.ALL)
+
         fun getIntent(context: Context): Intent =
             Intent(context, SettingsActivity::class.java)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -189,9 +188,6 @@ class SettingsActivity : AppCompatActivity() {
     private val sharedPreferences: SharedPreferences = get()
 
     private lateinit var billingApiClient: BillingApiClient
-
-    private val mastodonScope = Scope(Scope.Name.ALL)
-    private var mastodonRegistrationInfo: AppRegistration? = null
 
     private lateinit var requestUpdate: PermissionsRequester
 
@@ -468,9 +464,9 @@ class SettingsActivity : AppCompatActivity() {
         intent: Intent,
         summary: MutableState<String?>
     ) {
-        mastodonRegistrationInfo?.apply {
-            val token = intent.data?.getQueryParameter("code")
-            if (token == null) {
+        viewModel.mastodonPendingAuthInfo?.apply {
+            val code = intent.data?.getQueryParameter("code")
+            if (code == null) {
                 lifecycleScope.launch {
                     repeatOnLifecycle(Lifecycle.State.RESUMED) {
                         onAuthMastodonError()
@@ -479,43 +475,38 @@ class SettingsActivity : AppCompatActivity() {
                 return
             }
 
-            val mastodonApiClientBuilder = MastodonClient.Builder(
-                this@apply.instanceName, OkHttpClient.Builder().apply {
-                    if (BuildConfig.DEBUG) {
-                        addNetworkInterceptor(
-                            HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-                        )
-                    }
-                }, Gson()
-            )
+            val mastodonApiClientBuilder = MastodonClient.Builder(instanceName)
             lifecycleScope.launch(Dispatchers.IO) {
-                val accessToken = Apps(mastodonApiClientBuilder.build()).getAccessToken(
-                    this@apply.clientId,
-                    this@apply.clientSecret,
-                    App.MASTODON_CALLBACK,
-                    token
-                ).executeCatching()
+                val accessToken =
+                    OAuthMethods(mastodonApiClientBuilder.build()).getUserAccessTokenWithAuthorizationCodeGrant(
+                        clientId = clientId,
+                        clientSecret = clientSecret,
+                        redirectUri = App.MASTODON_CALLBACK,
+                        code = code,
+                    ).executeCatching()
 
                 if (accessToken == null) {
                     onAuthMastodonError()
                     return@launch
                 }
 
-                val userName = Accounts(
-                    mastodonApiClientBuilder.accessToken(accessToken.accessToken).build()
-                ).getVerifyCredentials()
-                    .executeCatching()
-                    ?.userName
-                    ?: run {
-                        onAuthMastodonError()
-                        return@launch
-                    }
-                val userInfo = MastodonUserInfo(accessToken, this@apply.instanceName, userName)
+                val username =
+                    mastodonApiClientBuilder.accessToken(accessToken.accessToken)
+                        .build()
+                        .accounts
+                        .verifyCredentials()
+                        .executeCatching()
+                        ?.username
+                        ?: run {
+                            onAuthMastodonError()
+                            return@launch
+                        }
+                val userInfo = MastodonUserInfo(accessToken, instanceName, username)
                 sharedPreferences.storeMastodonUserInfo(userInfo)
 
                 summary.value = getString(
                     R.string.pref_item_summary_auth_mastodon,
-                    userInfo.userName,
+                    userInfo.username,
                     userInfo.instanceName
                 )
                 withContext(Dispatchers.Main) { invokeUpdateWithStoragePermissionsIfNeeded() }
@@ -1079,27 +1070,25 @@ class SettingsActivity : AppCompatActivity() {
             onConfirm = {
                 if (textFieldValue.text.isNotBlank()) {
                     lifecycleScope.launch {
-                        val mastodonApiClient =
-                            MastodonClient.Builder(
-                                textFieldValue.text,
-                                OkHttpClient.Builder().apply {
-                                    if (BuildConfig.DEBUG) {
-                                        addNetworkInterceptor(
-                                            HttpLoggingInterceptor().setLevel(
-                                                HttpLoggingInterceptor.Level.BODY
-                                            )
-                                        )
-                                    }
-                                },
-                                Gson()
-                            ).build()
+                        val instanceName = textFieldValue.text
 
                         val authUrl = withContext(Dispatchers.IO) {
-                            val registrationInfo = Apps(mastodonApiClient).createApp(
-                                App.MASTODON_CLIENT_NAME,
-                                App.MASTODON_CALLBACK,
+                            val mastodonApiClient =
+                                runCatching {
+                                    MastodonClient.Builder(instanceName).build()
+                                }
+                                    .onFailure {
+                                        Timber.e(it)
+                                        FirebaseCrashlytics.getInstance().recordException(it)
+                                        onAuthMastodonError()
+                                        return@withContext null
+                                    }
+                                    .getOrNull() ?: return@withContext null
+                            val registrationInfo = mastodonApiClient.apps.createApp(
+                                clientName = App.MASTODON_CLIENT_NAME,
+                                redirectUris = App.MASTODON_CALLBACK,
+                                website = App.MASTODON_WEB_URL,
                                 mastodonScope,
-                                App.MASTODON_WEB_URL
                             ).executeCatching {
                                 Timber.e(it)
                                 FirebaseCrashlytics.getInstance().recordException(it)
@@ -1107,10 +1096,23 @@ class SettingsActivity : AppCompatActivity() {
                                 onAuthMastodonError()
                                 return@withContext null
                             }
-                            mastodonRegistrationInfo = registrationInfo
+                            val clientId = registrationInfo.clientId
+                            val clientSecret = registrationInfo.clientSecret
+                            if (clientId == null || clientSecret == null) {
+                                onAuthMastodonError()
+                                return@withContext null
+                            }
 
-                            Apps(mastodonApiClient).getOAuthUrl(
-                                registrationInfo.clientId, mastodonScope, App.MASTODON_CALLBACK
+                            viewModel.mastodonPendingAuthInfo = MastodonPendingAuthInfo(
+                                instanceName = instanceName,
+                                clientId = clientId,
+                                clientSecret = clientSecret,
+                            )
+
+                            mastodonApiClient.oauth.getOAuthUrl(
+                                clientId = clientId,
+                                redirectUri = App.MASTODON_CALLBACK,
+                                scope = mastodonScope,
                             )
                         } ?: return@launch
 

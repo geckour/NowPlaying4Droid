@@ -36,12 +36,12 @@ import com.geckour.nowplayingsubjectbuilder.lib.model.FormatPatternModifier
 import com.geckour.nowplayingsubjectbuilder.lib.model.TrackInfo
 import com.geckour.nowplayingsubjectbuilder.lib.util.splitConsideringEscape
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.sys1yagi.mastodon4j.api.entity.Status
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
+import social.bigbone.api.entity.Status
 import timber.log.Timber
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream

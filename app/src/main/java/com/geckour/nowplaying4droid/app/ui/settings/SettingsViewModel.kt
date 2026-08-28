@@ -14,6 +14,7 @@ import com.geckour.nowplaying4droid.app.api.AppleMusicApiClient
 import com.geckour.nowplaying4droid.app.api.LastFmApiClient
 import com.geckour.nowplaying4droid.app.api.SpotifyApiClient
 import com.geckour.nowplaying4droid.app.api.YouTubeDataClient
+import com.geckour.nowplaying4droid.app.domain.model.MastodonPendingAuthInfo
 import com.geckour.nowplaying4droid.app.util.PrefKey
 import com.geckour.nowplaying4droid.app.util.forceUpdateTrackDetailIfNeeded
 import com.geckour.nowplaying4droid.app.util.getChosePaletteColor
@@ -76,11 +77,13 @@ class SettingsViewModel(
             sharedPreferences.getMastodonUserInfo()?.let {
                 application.getString(
                     R.string.pref_item_summary_auth_mastodon,
-                    it.userName,
+                    it.username,
                     it.instanceName
                 )
             }.orEmpty()
         )
+
+    internal var mastodonPendingAuthInfo: MastodonPendingAuthInfo? = null
 
 
     internal var openNotificationServicePermissionDialog = mutableStateOf(false)

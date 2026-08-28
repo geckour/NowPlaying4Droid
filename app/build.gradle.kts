@@ -181,7 +181,7 @@ dependencies {
     implementation(libs.play.services.wearable)
 
     // Mastodon
-    implementation(libs.mastodon4j)
+    implementation(libs.bigbone)
 
     // Compose
     implementation(libs.ui)
