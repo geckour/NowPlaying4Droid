@@ -160,14 +160,12 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorderAfterLongPress
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
 import org.koin.android.ext.android.get
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import permissions.dispatcher.ktx.PermissionsRequester
 import permissions.dispatcher.ktx.constructPermissionsRequest
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import social.bigbone.MastodonClient
 import social.bigbone.api.Scope
 import social.bigbone.api.method.OAuthMethods
@@ -676,31 +674,29 @@ class SettingsActivity : AppCompatActivity() {
             },
             title = stringResource(id = R.string.dialog_title_artwork_resolve_order)
         ) {
-            val reorderableState = rememberReorderableLazyListState(
-                onMove = { from, to -> items = items.moved(from.index, to.index) }
-            )
+            val lazyListState = rememberLazyListState()
+            val reorderableState =
+                rememberReorderableLazyListState(lazyListState = lazyListState) { from, to ->
+                    items = items.moved(from.index, to.index)
+                }
             Column {
                 Text(text = stringResource(id = R.string.dialog_message_artwork_resolve_order))
-                LazyColumn(
-                    state = reorderableState.listState,
-                    modifier = Modifier
-                        .reorderable(reorderableState)
-                        .detectReorderAfterLongPress(reorderableState)
-                ) {
+                LazyColumn(state = lazyListState) {
                     items(
                         items = items,
                         key = { it.key }
                     ) { item ->
                         ReorderableItem(
-                            reorderableState = reorderableState,
-                            key = item.key
+                            state = reorderableState,
+                            key = item.key,
                         ) { isDragging ->
                             val elevation by animateDpAsState(
                                 targetValue = if (isDragging) 16.dp else 0.dp
                             )
                             Surface(
                                 color = if (isSystemInDarkTheme()) MilkBlack else MilkWhite,
-                                elevation = elevation
+                                elevation = elevation,
+                                modifier = Modifier.longPressDraggableHandle()
                             ) {
                                 Row(
                                     modifier = Modifier

@@ -35,7 +35,7 @@ okhttp = "5.5.0"
 paletteKtx = "1.0.0"
 playServicesWearable = "20.0.1"
 preferenceKtx = "1.2.1"
-reorderable = "0.9.6"
+reorderable = "3.1.0"
 retrofit = "3.0.0"
 robolectric = "4.16.1"
 runner = "1.7.0"
@@ -83,7 +83,7 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 palette-ktx = { module = "androidx.palette:palette-ktx", version.ref = "paletteKtx" }
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearable" }
 preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
-reorderable = { module = "org.burnoutcrew.composereorderable:reorderable", version.ref = "reorderable" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
