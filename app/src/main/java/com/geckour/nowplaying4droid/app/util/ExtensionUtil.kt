@@ -14,6 +14,7 @@ import android.graphics.Color
 import android.media.MediaMetadata
 import android.media.MediaMetadataRetriever
 import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
 import android.net.Uri
 import android.os.Build
@@ -276,6 +277,21 @@ fun Serializable.asString(): String =
         ObjectOutputStream(byteArrayStream).writeObject(this)
         json.encodeToString(ByteArray::class.serializer(), byteArrayStream.toByteArray())
     }
+
+val Notification.mediaSessionToken: MediaSession.Token?
+    get() = if (Build.VERSION.SDK_INT > 32) {
+        extras.getParcelable(Notification.EXTRA_MEDIA_SESSION, MediaSession.Token::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        extras.getParcelable(Notification.EXTRA_MEDIA_SESSION)
+    }
+
+fun Context.resolveMediaSessionToken(
+    notification: Notification?,
+    playerPackageName: String
+): MediaSession.Token? =
+    notification?.mediaSessionToken
+        ?: digMediaController(playerPackageName)?.sessionToken
 
 fun Context.digMediaController(playerPackageName: String? = null): MediaController? =
     withCatching {

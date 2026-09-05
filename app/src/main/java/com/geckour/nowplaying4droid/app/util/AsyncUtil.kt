@@ -11,6 +11,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
 import android.media.MediaMetadata
+import android.media.session.MediaSession
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -40,6 +41,8 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.google.firebase.analytics.FirebaseAnalytics
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import social.bigbone.MastodonClient
 import social.bigbone.MastodonRequest
@@ -160,8 +163,8 @@ suspend fun updateTrackDetail(
         playerPackageName,
         notification,
         coreElement,
-        true,
-        onClearMetadata
+        viaService = true,
+        onClearMetadata = onClearMetadata
     )
 
     reflectTrackDetail(context, sharedPreferences, trackDetail, true)
@@ -294,6 +297,8 @@ suspend fun updateTrackDetail(
     playerPackageName: String,
     notification: Notification?,
     coreElement: TrackDetail.TrackCoreElement = metadata.getTrackCoreElement(),
+    sessionToken: MediaSession.Token? =
+        context.resolveMediaSessionToken(notification, playerPackageName),
     viaService: Boolean = false,
     onClearMetadata: () -> Unit = {}
 ): TrackDetail? {
@@ -331,26 +336,15 @@ suspend fun updateTrackDetail(
             .map { it.packageName }
     val needSpotifyDataForPlayer =
         useSpotifyData && useSpotifyDataPackageState.contains(playerPackageName)
-    val spotifyResult =
-        if (containsSpotifyPattern
+    val needSpotify = containsSpotifyPattern
             || artworkResolveOrder
                 .first { it.key == ArtworkResolveMethod.ArtworkResolveMethodKey.SPOTIFY }
                 .enabled
             || needSpotifyDataForPlayer
-        ) {
-            spotifyApiClient.getSpotifyData(
-                coreElement,
-                playerPackageName,
-                sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY)
-            )
-        } else null
-    val spotifyData = (spotifyResult as? SpotifyResult.Success)?.data
 
     val containsYTMPattern = formatPattern.containsPattern(FormatPattern(key = "YU", value = null))
-    val youTubeMusicUrl =
-        if (containsYTMPattern && playerPackageName == "com.google.android.apps.youtube.music") {
-            youTubeDataClient.searchYouTube(coreElement)
-        } else null
+    val needYouTubeMusic =
+        containsYTMPattern && playerPackageName == "com.google.android.apps.youtube.music"
 
     val containsAppleMusicPattern =
         formatPattern.containsPattern(FormatPattern(key = "AU", value = null))
@@ -370,61 +364,94 @@ suspend fun updateTrackDetail(
             .map { it.packageName }
     val needAppleMusicDataForPlayer =
         useAppleMusicData && useAppleMusicDataPackageState.contains(playerPackageName)
-    val appleMusicResult =
-        if (containsAppleMusicPattern
+    val needAppleMusic = containsAppleMusicPattern
             || artworkResolveOrder
                 .first { it.key == ArtworkResolveMethod.ArtworkResolveMethodKey.APPLE_MUSIC }
                 .enabled
             || needAppleMusicDataForPlayer
-        ) {
-            countryCode?.let {
-                appleMusicApiClient.searchAppleMusic(
-                    it,
+
+    return coroutineScope {
+        val sessionReleasedAtDeferred = async {
+            context.getReleasedAtViaMedia3(sessionToken, playerPackageName)
+                ?.takeIf { it.contains('-') }
+                ?: metadata.releasedAt
+        }
+
+        val spotifyResultDeferred = async {
+            if (needSpotify) {
+                spotifyApiClient.getSpotifyData(
                     coreElement,
-                    sharedPreferences.getSwitchState(
-                        PrefKey.PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY
-                    )
+                    playerPackageName,
+                    sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_SEARCH_SPOTIFY_STRICTLY)
                 )
-            }
-        } else null
-    val appleMusicData = (appleMusicResult as? AppleMusicResult.Success)?.data
+            } else null
+        }
+        val youTubeMusicUrlDeferred = async {
+            if (needYouTubeMusic) youTubeDataClient.searchYouTube(coreElement) else null
+        }
+        val appleMusicResultDeferred = async {
+            if (needAppleMusic) {
+                countryCode?.let {
+                    appleMusicApiClient.searchAppleMusic(
+                        it,
+                        coreElement,
+                        sharedPreferences.getSwitchState(
+                            PrefKey.PREF_KEY_WHETHER_SEARCH_APPLE_MUSIC_STRICTLY
+                        )
+                    )
+                }
+            } else null
+        }
+        val notificationBitmapDeferred = async { notification?.getArtworkBitmap(context) }
 
-    val artworkUri = storeArtworkUri(
-        context,
-        sharedPreferences,
-        lastFmApiClient,
-        coreElement,
-        notification?.getArtworkBitmap(context),
-        metadata,
-        spotifyData,
-        appleMusicData
-    )
+        val spotifyData = (spotifyResultDeferred.await() as? SpotifyResult.Success)?.data
+        val appleMusicData = (appleMusicResultDeferred.await() as? AppleMusicResult.Success)?.data
 
-    val trackDetail = TrackDetail(
-        coreElement = coreElement.withData(
-            if (needSpotifyDataForPlayer) spotifyData else null,
-            if (needAppleMusicDataForPlayer) appleMusicData else null
-        ),
-        releasedAt = metadata.releasedAt,
-        artworkUriString = artworkUri?.toString(),
-        playerPackageName = playerPackageName,
-        spotifyData = spotifyData,
-        appleMusicData = appleMusicData,
-        youTubeMusicUrl = youTubeMusicUrl,
-        pixelNowPlaying = null
-    ).withData(
-        if (needSpotifyDataForPlayer) spotifyData else null,
-        if (needAppleMusicDataForPlayer) appleMusicData else null
-    )
+        // A catalogue only speaks for the track on players the user opted in for - the lookups
+        // themselves also run just to resolve artwork, and those results must not touch the track.
+        val optedInSpotifyData = if (needSpotifyDataForPlayer) spotifyData else null
+        val optedInAppleMusicData = if (needAppleMusicDataForPlayer) appleMusicData else null
 
-    if (viaService.not()) reflectTrackDetail(
-        context,
-        sharedPreferences,
-        trackDetail,
-        true
-    )
+        // The catalogue wins whenever it has a date. Cancelling the session lookup then keeps
+        // coroutineScope from waiting on a result nothing will read.
+        val releasedAt = (optedInSpotifyData?.releasedAt ?: optedInAppleMusicData?.releasedAt)
+            ?.also { sessionReleasedAtDeferred.cancel() }
+            ?: sessionReleasedAtDeferred.await()
 
-    return trackDetail
+        val trackDetail = TrackDetail(
+            coreElement = coreElement.withData(optedInSpotifyData, optedInAppleMusicData),
+            releasedAt = releasedAt,
+            artworkUriString = null,
+            playerPackageName = playerPackageName,
+            spotifyData = spotifyData,
+            appleMusicData = appleMusicData,
+            youTubeMusicUrl = youTubeMusicUrlDeferred.await(),
+            pixelNowPlaying = null
+        ).withData(optedInSpotifyData, optedInAppleMusicData)
+
+        reflectTrackDetail(context, sharedPreferences, trackDetail, false)
+
+        val artworkUri = storeArtworkUri(
+            context,
+            sharedPreferences,
+            lastFmApiClient,
+            coreElement,
+            notificationBitmapDeferred.await(),
+            metadata,
+            spotifyData,
+            appleMusicData
+        )
+        val trackDetailWithArtwork = trackDetail.copy(artworkUriString = artworkUri?.toString())
+
+        if (viaService.not()) reflectTrackDetail(
+            context,
+            sharedPreferences,
+            trackDetailWithArtwork,
+            true
+        )
+
+        trackDetailWithArtwork
+    }
 }
 
 suspend fun onQuickUpdate(
@@ -830,7 +857,8 @@ suspend fun forceUpdateTrackDetailIfNeeded(
                 lastFmApiClient,
                 metadata,
                 mediaController.packageName,
-                null
+                null,
+                sessionToken = mediaController.sessionToken
             ) ?: run {
                 onError()
                 return null

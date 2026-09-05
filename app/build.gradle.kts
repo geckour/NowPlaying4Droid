@@ -177,6 +177,9 @@ dependencies {
     // Image processing
     implementation(libs.coil)
 
+    // Media3 Session
+    implementation(libs.media3.session)
+
     // Wear
     implementation(libs.play.services.wearable)
 

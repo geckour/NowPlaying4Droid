@@ -11,7 +11,6 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.media.MediaMetadata
 import android.media.session.MediaController
-import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
 import android.os.Build
 import android.os.Bundle
@@ -40,6 +39,7 @@ import com.geckour.nowplaying4droid.app.util.getSharingText
 import com.geckour.nowplaying4droid.app.util.getSwitchState
 import com.geckour.nowplaying4droid.app.util.getTrackCoreElement
 import com.geckour.nowplaying4droid.app.util.getVisibilityMastodon
+import com.geckour.nowplaying4droid.app.util.mediaSessionToken
 import com.geckour.nowplaying4droid.app.util.reflectTrackDetail
 import com.geckour.nowplaying4droid.app.util.refreshTempArtwork
 import com.geckour.nowplaying4droid.app.util.setReceivedDelegateShareNodeId
@@ -333,11 +333,7 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
     }
 
     private val Notification.mediaController: MediaController?
-        get() = (if (Build.VERSION.SDK_INT > 32) extras.getParcelable(
-            Notification.EXTRA_MEDIA_SESSION,
-            MediaSession.Token::class.java,
-        ) else extras.getParcelable<MediaSession.Token>(Notification.EXTRA_MEDIA_SESSION))
-            ?.let { MediaController(this@NotificationService, it) }
+        get() = mediaSessionToken?.let { MediaController(this@NotificationService, it) }
 
     private val Notification.mediaMetadata: MediaMetadata? get() = mediaController?.metadata
 

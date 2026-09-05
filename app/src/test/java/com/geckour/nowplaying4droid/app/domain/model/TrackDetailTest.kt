@@ -32,7 +32,7 @@ internal class TrackDetailTest {
     @Test
     fun `TrackCoreElement#appleMusicSearchQuery 5`() {
         val actual = TrackDetail.empty.coreElement.copy(title = "abc def").appleMusicSearchQuery
-        assertEquals("abc+def", actual)
+        assertEquals("abc def", actual)
     }
 
     @Test
@@ -40,7 +40,7 @@ internal class TrackDetailTest {
         val actual = TrackDetail.empty.coreElement
             .copy(title = "abc def", album = "ghi")
             .appleMusicSearchQuery
-        assertEquals("abc+def+ghi", actual)
+        assertEquals("abc def ghi", actual)
     }
 
     @Test
@@ -52,13 +52,13 @@ internal class TrackDetailTest {
     @Test
     fun `TrackCoreElement#appleMusicSearchQuery 8`() {
         val actual = TrackDetail.empty.coreElement.copy(title = " abc def ").appleMusicSearchQuery
-        assertEquals("abc+def", actual)
+        assertEquals("abc def", actual)
     }
 
     @Test
     fun `TrackCoreElement#appleMusicSearchQuery 9`() {
         val actual = TrackDetail.empty.coreElement.copy(title = "abc     def").appleMusicSearchQuery
-        assertEquals("abc+def", actual)
+        assertEquals("abc def", actual)
     }
 
     @Test
