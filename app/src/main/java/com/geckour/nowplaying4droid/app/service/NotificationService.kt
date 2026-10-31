@@ -412,48 +412,50 @@ class NotificationService : NotificationListenerService(), CoroutineScope {
         if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_ENABLE_AUTO_POST_MASTODON)) {
             delay(sharedPreferences.getDelayDurationPostMastodon().milliseconds)
 
-            val subject =
-                sharedPreferences.getSharingText(this@NotificationService, trackDetail) ?: return
+            runCatching {
+                val subject =
+                    sharedPreferences.getSharingText(this@NotificationService, trackDetail) ?: return
 
-            FirebaseAnalytics.getInstance(application)
-                .logEvent(
-                    FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
-                        putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
-                    }
-                )
-
-            val artworkFile =
-                if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
-                    trackDetail.artworkUriString?.let {
-                        return@let withCatching {
-                            getBitmapFromUriString(it)?.storeArtworkCache(this)
+                FirebaseAnalytics.getInstance(application)
+                    .logEvent(
+                        FirebaseAnalytics.Event.SELECT_CONTENT, Bundle().apply {
+                            putString(FirebaseAnalytics.Param.ITEM_NAME, "Invoked auto post")
                         }
-                    }
-                } else null
+                    )
 
-            val userInfo = sharedPreferences.getMastodonUserInfo() ?: return
+                val artworkFile =
+                    if (sharedPreferences.getSwitchState(PrefKey.PREF_KEY_WHETHER_BUNDLE_ARTWORK)) {
+                        trackDetail.artworkUriString?.let {
+                            return@let withCatching {
+                                getBitmapFromUriString(it)?.storeArtworkCache(this)
+                            }
+                        }
+                    } else null
 
-            val mastodonClient = MastodonClient.Builder(userInfo.instanceName)
-                .accessToken(userInfo.accessToken.accessToken)
-                .build()
+                val userInfo = sharedPreferences.getMastodonUserInfo() ?: return
 
-            val mediaId = artworkFile?.let {
-                mastodonClient.media.uploadMediaAsync(
-                    FileAsMediaAttachment(it, mediaType = "image/png"),
-                ).executeCatching()?.id
+                val mastodonClient = MastodonClient.Builder(userInfo.instanceName)
+                    .accessToken(userInfo.accessToken.accessToken)
+                    .build()
+
+                val mediaId = artworkFile?.let {
+                    mastodonClient.media.uploadMediaAsync(
+                        FileAsMediaAttachment(it, mediaType = "image/png"),
+                    ).executeCatching()?.id
+                }
+                val result = mastodonClient.statuses.postStatus(
+                    subject,
+                    mediaId?.let { listOf(it) },
+                    sharedPreferences.getVisibilityMastodon().let {
+                        when (it) {
+                            Visibility.PUBLIC -> BigBoneVisibility.PUBLIC
+                            Visibility.UNLISTED -> BigBoneVisibility.UNLISTED
+                            Visibility.PRIVATE -> BigBoneVisibility.PRIVATE
+                        }
+                    }).executeCatching() ?: return
+
+                showShortNotify(result)
             }
-            val result = mastodonClient.statuses.postStatus(
-                subject,
-                mediaId?.let { listOf(it) },
-                sharedPreferences.getVisibilityMastodon().let {
-                    when (it) {
-                        Visibility.PUBLIC -> BigBoneVisibility.PUBLIC
-                        Visibility.UNLISTED -> BigBoneVisibility.UNLISTED
-                        Visibility.PRIVATE -> BigBoneVisibility.PRIVATE
-                    }
-                }).executeCatching() ?: return
-
-            showShortNotify(result)
         }
     }
 
