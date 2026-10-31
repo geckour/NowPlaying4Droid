@@ -19,11 +19,11 @@ android {
         applicationId = "com.geckour.nowplaying4droid"
         targetSdk = 37
         minSdk = 24
-        versionCode = 156
-        versionName = "3.6.1"
+        versionCode = 157
+        versionName = "3.6.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val filesAuthorityValue = applicationId + ".files"
+        val filesAuthorityValue = "$applicationId.files"
         manifestPlaceholders += mapOf("filesAuthority" to filesAuthorityValue)
         buildConfigField("String", "FILES_AUTHORITY", "\"${filesAuthorityValue}\"")
 
